@@ -10,3 +10,4 @@ __pycache__/
 reports/
 demo_recording.log
 evidence_*.json
+*.egg-info/
