@@ -1,4 +1,16 @@
-"""Core gateway logic for tool calls."""
+"""Core gateway logic for tool calls.
+
+This module implements the Gateway class, which is the central coordinator for:
+1. Validating incoming tool call requests
+2. Checking kill switch status
+3. Enforcing rate limits
+4. Evaluating policy decisions
+5. Executing allowed tool calls
+6. Recording trace events for audit
+
+The gateway implements a "deny by default" security posture where all tool calls
+must be explicitly allowed by policy.
+"""
 
 from __future__ import annotations
 
@@ -18,6 +30,8 @@ from agentgate.traces import TraceStore, build_trace_event, hash_arguments_safe
 
 logger = get_logger(__name__)
 
+# Tool names must be alphanumeric with underscores, dots, or hyphens only.
+# This prevents path traversal and injection attacks.
 _TOOL_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
