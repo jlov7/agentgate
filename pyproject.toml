@@ -52,9 +52,9 @@ dev = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/jasegillespie/agentgate#readme"
-Repository = "https://github.com/jasegillespie/agentgate"
-Issues = "https://github.com/jasegillespie/agentgate/issues"
+Documentation = "https://github.com/jlov7/agentgate#readme"
+Repository = "https://github.com/jlov7/agentgate"
+Issues = "https://github.com/jlov7/agentgate/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
