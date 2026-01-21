@@ -2,6 +2,8 @@
 
 AgentGate is a containment-first security gateway for AI agents using MCP tools. It sits between agents and tools, enforces policy-as-code on every call, and produces evidence-grade audit trails.
 
+This is a personal, independent R&D project built out of interest in AI security. It is not affiliated with, sponsored by, or representative of any employer. It is not a commercial product and is not intended for marketing or sales.
+
 This repository is a reference implementation for a NIST RFI response on AI agent security. It is not production-ready.
 
 ## Why containment-first
@@ -84,5 +86,7 @@ make lint
 ```
 
 ## Disclaimer
+
+This is a personal, independent project. It is not affiliated with any employer and is not intended for commercial use.
 
 This is a reference implementation for demonstration purposes. It is not production-ready and does not claim compliance with any standard.
