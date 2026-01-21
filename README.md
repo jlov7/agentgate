@@ -1,6 +1,6 @@
 # AgentGate
 
-[![CI](https://github.com/jasegillespie/agentgate/actions/workflows/ci.yml/badge.svg)](https://github.com/jasegillespie/agentgate/actions)
+[![CI](https://github.com/jlov7/agentgate/actions/workflows/ci.yml/badge.svg)](https://github.com/jlov7/agentgate/actions)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
@@ -79,7 +79,7 @@ See [NIST AI RMF](https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf) for re
 
 ```bash
 # Clone and enter the repository
-git clone https://github.com/jasegillespie/agentgate.git
+git clone https://github.com/jlov7/agentgate.git
 cd agentgate
 
 # Create virtual environment and install dependencies
