@@ -86,6 +86,14 @@ class EvidenceExporter:
         """Export as a self-contained HTML report."""
         json_payload = html.escape(self.to_json(pack))
         summary = pack.summary
+        session_id = _escape(pack.metadata.get("session_id", ""))
+        generated_at = _escape(pack.metadata.get("generated_at", ""))
+        total_calls = _escape(summary.get("total_tool_calls", 0))
+        allowed = _escape(summary.get("by_decision", {}).get("ALLOW", 0))
+        denied = _escape(summary.get("by_decision", {}).get("DENY", 0))
+        requires_approval = _escape(
+            summary.get("by_decision", {}).get("REQUIRE_APPROVAL", 0)
+        )
         timeline_rows = "\n".join(
             _format_timeline_row(event) for event in pack.timeline
         )
@@ -157,25 +165,24 @@ class EvidenceExporter:
 <body>
   <header>
     <h1>AgentGate Evidence Pack</h1>
-    <p>Session {pack.metadata.get("session_id", "")},
-      generated {pack.metadata.get("generated_at", "")}</p>
+    <p>Session {session_id}, generated {generated_at}</p>
   </header>
   <main>
     <section class="grid">
       <div class="card">
-        <div class="stat">{summary.get("total_tool_calls", 0)}</div>
+        <div class="stat">{total_calls}</div>
         <div class="muted">Total tool calls</div>
       </div>
       <div class="card">
-        <div class="stat">{summary.get("by_decision", {}).get("ALLOW", 0)}</div>
+        <div class="stat">{allowed}</div>
         <div class="muted">Allowed</div>
       </div>
       <div class="card">
-        <div class="stat">{summary.get("by_decision", {}).get("DENY", 0)}</div>
+        <div class="stat">{denied}</div>
         <div class="muted">Denied</div>
       </div>
       <div class="card">
-        <div class="stat">{summary.get("by_decision", {}).get("REQUIRE_APPROVAL", 0)}</div>
+        <div class="stat">{requires_approval}</div>
         <div class="muted">Requires approval</div>
       </div>
     </section>
