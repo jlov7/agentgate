@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentGate Evidence Pack</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f6f4ef; color: #1a1a1a; }
+    header { padding: 24px; background: #fff7e8; }
+    section { background: #ffffff; margin: 16px; padding: 16px; border: 1px solid #e4e0d8; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border-bottom: 1px solid #e4e0d8; font-size: 13px; }
+    .decision-ALLOW { color: #0a7a32; font-weight: 600; }
+    .decision-DENY { color: #b00020; font-weight: 600; }
+    .decision-REQUIRE_APPROVAL { color: #7a5f00; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AgentGate Evidence Pack</h1>
+    <p>Session demo_session, generated 2026-01-21T10:00:00Z</p>
+  </header>
+
+  <section>
+    <h2>Executive Summary</h2>
+    <p>Total calls: 5 | Allowed: 2 | Denied: 2 | Requires approval: 1</p>
+  </section>
+
+  <section>
+    <h2>Timeline</h2>
+    <table>
+      <thead>
+        <tr><th>Time</th><th>Tool</th><th>Decision</th><th>Reason</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2026-01-21T09:59:58Z</td><td>db_query</td><td class="decision-ALLOW">ALLOW</td><td>Read-only tool</td></tr>
+        <tr><td>2026-01-21T10:00:01Z</td><td>hack_the_planet</td><td class="decision-DENY">DENY</td><td>Tool not in allowlist</td></tr>
+        <tr><td>2026-01-21T10:00:02Z</td><td>db_insert</td><td class="decision-REQUIRE_APPROVAL">REQUIRE_APPROVAL</td><td>Write action requires human approval</td></tr>
+        <tr><td>2026-01-21T10:00:03Z</td><td>db_insert</td><td class="decision-ALLOW">ALLOW</td><td>Write action approved</td></tr>
+        <tr><td>2026-01-21T10:00:05Z</td><td>db_query</td><td class="decision-DENY">DENY</td><td>Kill switch: Demo session terminated</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Policy Analysis</h2>
+    <p>Rules triggered: read_only_tools (1), unknown_tool (1), write_requires_approval (1), write_with_approval (1), kill_switch (1)</p>
+  </section>
+
+  <section>
+    <h2>Write Actions</h2>
+    <table>
+      <thead>
+        <tr><th>Time</th><th>Tool</th><th>Reversible</th><th>Approved By</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2026-01-21T10:00:03Z</td><td>db_insert</td><td>yes</td><td>token</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Anomalies</h2>
+    <p>None detected</p>
+  </section>
+</body>
+</html>

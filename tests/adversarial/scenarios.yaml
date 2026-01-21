@@ -1,0 +1,224 @@
+# AgentGate Adversarial Test Scenarios
+# These scenarios define expected security behaviors that are also tested in Python.
+# See test_*.py files for the actual test implementations.
+
+scenarios:
+  # Policy Bypass Attempts
+  - id: unknown_tool_denied
+    description: Tools not in allowlist must be denied.
+    category: policy_bypass
+    request:
+      session_id: test
+      tool_name: not_a_real_tool
+      arguments: {}
+    expected:
+      success: false
+      decision: DENY
+
+  - id: path_traversal_denied
+    description: Path traversal in tool names must be rejected.
+    category: policy_bypass
+    request:
+      session_id: test
+      tool_name: "../../../etc/passwd"
+      arguments: {}
+    expected:
+      success: false
+      decision: DENY
+
+  - id: url_encoded_traversal_denied
+    description: URL-encoded path traversal must be rejected.
+    category: policy_bypass
+    request:
+      session_id: test
+      tool_name: "tool%2F..%2Fsecret"
+      arguments: {}
+    expected:
+      success: false
+      decision: DENY
+
+  - id: fake_approval_token_denied
+    description: Fake approval tokens must not grant write access.
+    category: policy_bypass
+    request:
+      session_id: test
+      tool_name: db_insert
+      arguments:
+        data: test
+      approval_token: fake_token_12345
+    expected:
+      success: false
+      decision: REQUIRE_APPROVAL
+
+  # Write Action Controls
+  - id: write_requires_approval
+    description: Write tools require approval token.
+    category: write_controls
+    request:
+      session_id: test
+      tool_name: db_insert
+      arguments:
+        table: products
+        data:
+          name: Example
+    expected:
+      success: false
+      decision: REQUIRE_APPROVAL
+
+  - id: write_with_valid_approval
+    description: Write tools with valid approval should succeed.
+    category: write_controls
+    request:
+      session_id: test
+      tool_name: db_insert
+      arguments:
+        table: products
+        data:
+          name: Example
+      approval_token: approved
+    expected:
+      success: true
+      decision: ALLOW
+
+  # Kill Switch Enforcement
+  - id: killed_session_blocked
+    description: Killed sessions must remain blocked.
+    category: kill_switch
+    precondition: kill_session
+    request:
+      session_id: killed_session
+      tool_name: db_query
+      arguments:
+        query: "SELECT 1"
+    expected:
+      success: false
+      decision: DENY
+
+  - id: global_pause_blocks_all
+    description: Global pause should block all tool calls.
+    category: kill_switch
+    precondition: global_pause
+    request:
+      session_id: any_session
+      tool_name: db_query
+      arguments: {}
+    expected:
+      success: false
+      decision: DENY
+
+  # Rate Limiting
+  - id: rate_limit_enforced
+    description: Rate-limited tool exceeds limit and is denied.
+    category: rate_limit
+    request:
+      session_id: rate_test
+      tool_name: rate_limited_tool
+      arguments: {}
+    expected:
+      success: false
+      decision: DENY
+    note: Requires 10+ prior calls to trigger
+
+  - id: rate_limit_per_user
+    description: Rate limits apply per user, not just per session.
+    category: rate_limit
+    request:
+      session_id: session-1
+      tool_name: rate_limited_tool
+      arguments: {}
+      context:
+        user_id: user-123
+    expected:
+      success: false
+      decision: DENY
+    note: Requires 10+ prior calls from same user
+
+  # Evidence Integrity
+  - id: denied_actions_logged
+    description: Denied actions must appear in evidence timeline.
+    category: evidence
+    request:
+      session_id: evidence_test
+      tool_name: unknown_tool
+      arguments: {}
+    expected:
+      success: false
+      evidence_contains:
+        decision: DENY
+
+  - id: sensitive_args_hashed
+    description: Sensitive arguments must be hashed, not stored raw.
+    category: evidence
+    request:
+      session_id: hash_test
+      tool_name: db_query
+      arguments:
+        query: "SELECT * FROM users WHERE password = 'secret123'"
+    expected:
+      success: true
+      evidence_excludes: "secret123"
+
+  # Input Validation
+  - id: empty_session_id_rejected
+    description: Empty session IDs must be rejected.
+    category: input_validation
+    request:
+      session_id: ""
+      tool_name: db_query
+      arguments: {}
+    expected:
+      status_code: 422
+
+  - id: null_session_id_rejected
+    description: Null session IDs must be rejected.
+    category: input_validation
+    request:
+      session_id: null
+      tool_name: db_query
+      arguments: {}
+    expected:
+      status_code: 422
+
+  - id: oversized_session_id_rejected
+    description: Extremely long session IDs must be rejected.
+    category: input_validation
+    request:
+      session_id: "a" * 10000
+      tool_name: db_query
+      arguments: {}
+    expected:
+      status_code: 422
+
+  - id: invalid_arguments_type_rejected
+    description: Non-dict arguments must be rejected.
+    category: input_validation
+    request:
+      session_id: test
+      tool_name: db_query
+      arguments: "not_a_dict"
+    expected:
+      status_code: 422
+
+  - id: deeply_nested_arguments_handled
+    description: Deeply nested arguments should be handled safely.
+    category: input_validation
+    request:
+      session_id: test
+      tool_name: db_query
+      arguments:
+        nested: {nested: {nested: {nested: {nested: {}}}}}
+    expected:
+      status_code_lt: 500
+
+  # Read-only Tools
+  - id: read_tool_allowed
+    description: Read-only tools should be allowed without approval.
+    category: normal_operation
+    request:
+      session_id: test
+      tool_name: db_query
+      arguments:
+        query: "SELECT 1"
+    expected:
+      success: true
+      decision: ALLOW

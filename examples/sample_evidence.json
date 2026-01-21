@@ -1,0 +1,113 @@
+{
+  "$schema": "https://agentgate.dev/schemas/evidence-pack-v1.json",
+  "metadata": {
+    "version": "1.0.0",
+    "generated_at": "2026-01-21T10:00:00Z",
+    "generator": "AgentGate v0.1.0",
+    "session_id": "demo_session",
+    "user_id": "user-123",
+    "agent_id": "agent-abc",
+    "time_range": {
+      "start": "2026-01-21T09:59:58Z",
+      "end": "2026-01-21T10:00:05Z"
+    }
+  },
+  "summary": {
+    "total_tool_calls": 5,
+    "by_decision": {
+      "ALLOW": 2,
+      "DENY": 2,
+      "REQUIRE_APPROVAL": 1
+    },
+    "by_tool": {
+      "db_query": {"allowed": 1, "denied": 1},
+      "db_insert": {"allowed": 1, "denied": 0},
+      "hack_the_planet": {"allowed": 0, "denied": 1}
+    },
+    "write_actions": {
+      "total": 1,
+      "reversible": 1,
+      "irreversible": 0
+    },
+    "policy_versions_used": ["v0"],
+    "kill_switch_activations": 1
+  },
+  "timeline": [
+    {
+      "event_id": "evt-1",
+      "timestamp": "2026-01-21T09:59:58Z",
+      "tool_name": "db_query",
+      "decision": "ALLOW",
+      "reason": "Read-only tool",
+      "matched_rule": "read_only_tools",
+      "duration_ms": 12,
+      "error": null
+    },
+    {
+      "event_id": "evt-2",
+      "timestamp": "2026-01-21T10:00:01Z",
+      "tool_name": "hack_the_planet",
+      "decision": "DENY",
+      "reason": "Tool not in allowlist",
+      "matched_rule": "unknown_tool",
+      "duration_ms": null,
+      "error": "Policy denied: Tool not in allowlist"
+    },
+    {
+      "event_id": "evt-3",
+      "timestamp": "2026-01-21T10:00:02Z",
+      "tool_name": "db_insert",
+      "decision": "REQUIRE_APPROVAL",
+      "reason": "Write action requires human approval",
+      "matched_rule": "write_requires_approval",
+      "duration_ms": null,
+      "error": "Approval required: Write action requires human approval"
+    },
+    {
+      "event_id": "evt-4",
+      "timestamp": "2026-01-21T10:00:03Z",
+      "tool_name": "db_insert",
+      "decision": "ALLOW",
+      "reason": "Write action approved",
+      "matched_rule": "write_with_approval",
+      "duration_ms": 8,
+      "error": null
+    },
+    {
+      "event_id": "evt-5",
+      "timestamp": "2026-01-21T10:00:05Z",
+      "tool_name": "db_query",
+      "decision": "DENY",
+      "reason": "Kill switch: Demo session terminated",
+      "matched_rule": "kill_switch",
+      "duration_ms": null,
+      "error": "Policy denied: Kill switch: Demo session terminated"
+    }
+  ],
+  "policy_analysis": {
+    "rules_triggered": {
+      "read_only_tools": {"count": 1, "decisions": ["ALLOW"]},
+      "unknown_tool": {"count": 1, "decisions": ["DENY"]},
+      "write_requires_approval": {"count": 1, "decisions": ["REQUIRE_APPROVAL"]},
+      "write_with_approval": {"count": 1, "decisions": ["ALLOW"]},
+      "kill_switch": {"count": 1, "decisions": ["DENY"]}
+    },
+    "untriggered_rules": ["default_deny", "invalid_tool_name", "opa_unavailable", "rate_limit"],
+    "default_denials": 0
+  },
+  "write_action_log": [
+    {
+      "event_id": "evt-4",
+      "timestamp": "2026-01-21T10:00:03Z",
+      "tool_name": "db_insert",
+      "reversible": true,
+      "pre_state_ref": null,
+      "approved_by": "token"
+    }
+  ],
+  "anomalies": [],
+  "integrity": {
+    "event_count": 5,
+    "hash": "a3d2f8c9b1e0d5f4c8a7b6e9d2c1f0a3b8e5d4c7a0f9b6e3d2c1a4f7b0e9d8c5"
+  }
+}

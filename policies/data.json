@@ -1,0 +1,17 @@
+{
+  "read_only_tools": ["db_query", "file_read", "api_get", "rate_limited_tool"],
+  "write_tools": ["db_insert", "db_update", "file_write", "api_post"],
+  "all_known_tools": [
+    "db_query",
+    "db_insert",
+    "db_update",
+    "file_read",
+    "file_write",
+    "api_get",
+    "api_post",
+    "rate_limited_tool"
+  ],
+  "rate_limits": {
+    "rate_limited_tool": 10
+  }
+}
