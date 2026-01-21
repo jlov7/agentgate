@@ -6,6 +6,8 @@ This is a personal, independent R&D project built out of interest in AI security
 
 This repository is a reference implementation for a NIST RFI response on AI agent security. It is not production-ready.
 
+See `INDEPENDENCE.md` for the full independence statement.
+
 ## Why containment-first
 
 Most platforms can observe what agents do, but few can stop them in real time. AgentGate focuses on control-flow:
