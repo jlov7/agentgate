@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+.pytest_cache/
+.DS_Store
+reports/
+demo_recording.log
+evidence_*.json

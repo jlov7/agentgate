@@ -1,0 +1,33 @@
+scenarios:
+  - id: unknown_tool_denied
+    description: Tools not in allowlist must be denied.
+    request:
+      session_id: test
+      tool_name: not_a_real_tool
+      arguments: {}
+    expected:
+      success: false
+      decision: DENY
+
+  - id: write_requires_approval
+    description: Write tools require approval token.
+    request:
+      session_id: test
+      tool_name: db_insert
+      arguments:
+        table: products
+        data:
+          name: Example
+    expected:
+      success: false
+      decision: REQUIRE_APPROVAL
+
+  - id: rate_limit
+    description: Rate-limited tool exceeds limit and is denied.
+    request:
+      session_id: rate_test
+      tool_name: rate_limited_tool
+      arguments: {}
+    expected:
+      success: false
+      decision: DENY
