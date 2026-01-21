@@ -1,8 +1,16 @@
+# AgentGate local development services
+# Run with: docker-compose up -d
+
 services:
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   opa:
     image: openpolicyagent/opa:latest
@@ -14,4 +22,9 @@ services:
       - "--addr=0.0.0.0:8181"
       - "/policies"
     volumes:
-      - ./policies:/policies
+      - ./policies:/policies:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8181/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3

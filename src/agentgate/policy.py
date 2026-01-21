@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 from pathlib import Path
 from typing import Any, Optional
 
@@ -21,10 +22,14 @@ def get_required_approval_token() -> str:
 
 
 def has_valid_approval_token(token: Optional[str]) -> bool:
-    """Return True if the approval token matches the configured value."""
+    """Return True if the approval token matches the configured value.
+
+    Uses constant-time comparison to prevent timing attacks.
+    """
     if not token:
         return False
-    return token == get_required_approval_token()
+    expected = get_required_approval_token()
+    return secrets.compare_digest(token, expected)
 
 
 class PolicyClient:
