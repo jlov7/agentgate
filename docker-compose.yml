@@ -6,7 +6,6 @@ services:
 
   opa:
     image: openpolicyagent/opa:latest
-    platform: linux/amd64
     ports:
       - "8181:8181"
     command:
