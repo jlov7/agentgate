@@ -186,3 +186,57 @@ class KillRequest(BaseModel):
     reason: Optional[str] = Field(
         default=None, description="Reason for the kill action"
     )
+
+
+class ErrorCode:
+    """Standardized error codes for API responses."""
+
+    POLICY_DENIED = "POLICY_DENIED"
+    RATE_LIMITED = "RATE_LIMITED"
+    KILL_SWITCH = "KILL_SWITCH"
+    APPROVAL_REQUIRED = "APPROVAL_REQUIRED"
+    INVALID_INPUT = "INVALID_INPUT"
+    TOOL_ERROR = "TOOL_ERROR"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+
+
+class ErrorResponse(BaseModel):
+    """Standardized error response for API failures.
+
+    Provides consistent error structure across all endpoints for better
+    client integration and debugging.
+
+    Attributes:
+        success: Always False for error responses.
+        error_code: Machine-readable error classification.
+        error: Human-readable error message.
+        trace_id: Audit trail event ID for correlation.
+        details: Optional additional context for debugging.
+    """
+
+    success: Literal[False] = Field(default=False, description="Always false for errors")
+    error_code: str = Field(..., description="Machine-readable error code")
+    error: str = Field(..., description="Human-readable error message")
+    trace_id: str = Field(..., description="Audit trail event ID")
+    details: Optional[dict[str, Any]] = Field(
+        default=None, description="Additional error context"
+    )
+
+
+class RateLimitInfo(BaseModel):
+    """Rate limit status information.
+
+    Returned in headers and optionally in response body to help clients
+    understand their rate limit status.
+
+    Attributes:
+        limit: Maximum calls allowed in the window.
+        remaining: Calls remaining in current window.
+        reset_at: Unix timestamp when the window resets.
+        window_seconds: Duration of the rate limit window.
+    """
+
+    limit: int = Field(..., description="Maximum calls allowed")
+    remaining: int = Field(..., description="Calls remaining in window")
+    reset_at: int = Field(..., description="Unix timestamp of window reset")
+    window_seconds: int = Field(..., description="Window duration in seconds")

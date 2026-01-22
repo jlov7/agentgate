@@ -3,8 +3,18 @@
 [![CI](https://github.com/jlov7/agentgate/actions/workflows/ci.yml/badge.svg)](https://github.com/jlov7/agentgate/actions)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
+[![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-brightgreen.svg)](http://localhost:8000/docs)
 
 **AgentGate** is a containment-first security gateway for AI agents using MCP (Model Context Protocol) tools. It sits between agents and tools, enforces policy-as-code on every call, and produces evidence-grade audit trails.
+
+```
+   _                    _    ____       _
+  / \   __ _  ___ _ __ | |_ / ___| __ _| |_ ___
+ / _ \ / _` |/ _ \ '_ \| __| |  _ / _` | __/ _ \
+/ ___ \ (_| |  __/ | | | |_| |_| | (_| | ||  __/
+/_/  \_\__, |\___|_| |_|\__|\____|\__,_|\__\___|
+       |___/        Containment-First Security
+```
 
 > **Note:** This is a personal, independent R&D project. See [INDEPENDENCE.md](INDEPENDENCE.md) for details. This is a reference implementation—not production-ready.
 
@@ -30,7 +40,19 @@ AgentGate implements a containment-first model with four control layers:
 | **Policy Gates** | ALLOW / DENY / REQUIRE_APPROVAL | OPA/Rego policies evaluated on every call |
 | **Kill Switches** | Session / Tool / Global termination | Redis-backed real-time state |
 | **Credential Broker** | Time-bound, scope-limited access | Stub pattern (integrate with Vault, etc.) |
-| **Evidence Export** | Audit-ready JSON + HTML reports | Append-only SQLite trace store |
+| **Evidence Export** | Audit-ready JSON, HTML, PDF reports | Append-only SQLite trace store with cryptographic signing |
+
+### What's New in v0.2.0
+
+- **Prometheus Metrics** — Full observability at `/metrics`
+- **Webhook Notifications** — Real-time alerts for kill switch activations
+- **PDF Evidence Export** — Audit-ready PDF reports
+- **Cryptographic Signing** — HMAC signatures on evidence packs
+- **Rate Limit Headers** — `X-RateLimit-*` headers on responses
+- **Policy Hot-Reload** — Update policies without restart
+- **Interactive CLI** — `python -m agentgate --demo`
+- **Production Docker** — Hardened container configuration
+- **SBOM Generation** — CycloneDX bill of materials
 
 See [NIST AI RMF](https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf) for related guidance.
 
@@ -94,12 +116,14 @@ The gateway will be available at `http://localhost:8000`.
 **Health check:**
 ```bash
 curl http://localhost:8000/health
-# {"status":"ok","version":"0.1.0","opa":true,"redis":true}
+# {"status":"ok","version":"0.2.0","opa":true,"redis":true}
 ```
 
 ---
 
 ## API Reference
+
+### Core Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -107,11 +131,20 @@ curl http://localhost:8000/health
 | `/tools/list` | GET | List tools allowed by policy |
 | `/sessions` | GET | List active sessions |
 | `/sessions/{id}/kill` | POST | Terminate a session immediately |
-| `/sessions/{id}/evidence` | GET | Export evidence pack for audit |
+| `/sessions/{id}/evidence` | GET | Export evidence pack (JSON, HTML, or PDF) |
 | `/tools/{name}/kill` | POST | Disable a tool globally |
 | `/system/pause` | POST | Pause all tool calls (global kill) |
 | `/system/resume` | POST | Resume after global pause |
+
+### Observability & Admin
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
 | `/health` | GET | Health check with dependency status |
+| `/metrics` | GET | Prometheus metrics |
+| `/docs` | GET | Interactive OpenAPI documentation |
+| `/redoc` | GET | ReDoc API documentation |
+| `/admin/policies/reload` | POST | Hot-reload policies (requires X-API-Key) |
 
 ### Example: Tool Call
 
@@ -155,6 +188,18 @@ Sample outputs: [`examples/sample_evidence.json`](examples/sample_evidence.json)
 
 ## Demo
 
+### Interactive Demo
+
+```bash
+# Start the server first
+make dev
+
+# In another terminal, run the interactive demo
+python -m agentgate --demo
+```
+
+### Scripted Demo
+
 ```bash
 make demo
 ```
@@ -169,6 +214,22 @@ The demo exercises:
 
 To capture terminal output: `bash demo/record_demo.sh`
 
+### CLI Usage
+
+```bash
+# Start the server
+python -m agentgate
+
+# Start with custom host/port
+python -m agentgate --host 0.0.0.0 --port 9000
+
+# Run interactive demo
+python -m agentgate --demo
+
+# Show version
+python -m agentgate --version
+```
+
 ---
 
 ## Testing
@@ -180,8 +241,14 @@ make test
 # Run adversarial security tests
 make test-adversarial
 
+# Run all tests with coverage
+make coverage
+
 # Run linter and type checker
 make lint
+
+# Run security audit
+make audit
 ```
 
 ### Test Coverage
@@ -192,9 +259,24 @@ make lint
 | Adversarial | 17 | Policy bypass, input validation, rate limits |
 | **Total** | **31** | All scenarios documented in `scenarios.yaml` |
 
+### Security Scanning
+
+```bash
+# Generate SBOM (Software Bill of Materials)
+make sbom
+
+# Run pip-audit for vulnerability scanning
+make audit
+
+# Run all pre-commit hooks
+make pre-commit
+```
+
 ---
 
 ## Configuration
+
+### Core Settings
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -206,6 +288,20 @@ make lint
 | `AGENTGATE_POLICY_VERSION` | `v0` | Policy version label for audit |
 | `AGENTGATE_APPROVAL_TOKEN` | `approved` | Token for write operation approval |
 | `AGENTGATE_RATE_WINDOW_SECONDS` | `60` | Rate limit window in seconds |
+
+### Security Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENTGATE_ADMIN_API_KEY` | `admin-secret-change-me` | Admin API key for privileged endpoints |
+| `AGENTGATE_SIGNING_KEY` | *(none)* | HMAC key for evidence signing |
+
+### Webhook Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENTGATE_WEBHOOK_URL` | *(none)* | URL for webhook notifications |
+| `AGENTGATE_WEBHOOK_SECRET` | *(none)* | Shared secret for webhook HMAC |
 
 ---
 
@@ -230,6 +326,67 @@ agentgate/
 ├── demo/                   # Demo agent
 └── examples/               # Sample outputs
 ```
+
+---
+
+## Observability
+
+### Prometheus Metrics
+
+AgentGate exposes metrics at `/metrics` in Prometheus format:
+
+```bash
+curl http://localhost:8000/metrics
+```
+
+Available metrics:
+- `agentgate_tool_calls_total` — Counter of tool calls by tool and decision
+- `agentgate_request_duration_seconds` — Histogram of request latencies
+- `agentgate_kill_switch_activations_total` — Counter of kill switch events
+- `agentgate_policy_evaluations_total` — Counter of policy evaluations
+- `agentgate_rate_limit_hits_total` — Counter of rate limit denials
+- `agentgate_health_status` — Gauge of dependency health (1=healthy, 0=unhealthy)
+
+### Webhook Notifications
+
+Configure webhooks to receive real-time alerts:
+
+```bash
+export AGENTGATE_WEBHOOK_URL=https://your-webhook-endpoint
+export AGENTGATE_WEBHOOK_SECRET=your-shared-secret
+```
+
+Events sent:
+- `kill_switch.activated` — Session, tool, or global kill switch triggered
+- `policy.denied` — Tool call blocked by policy
+- `rate_limit.exceeded` — Rate limit threshold hit
+- `health.degraded` / `health.recovered` — Dependency health changes
+
+---
+
+## Docker Deployment
+
+### Development
+
+```bash
+docker-compose up -d
+```
+
+### Production
+
+The production configuration includes security hardening:
+
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+Production features:
+- Read-only root filesystem
+- Non-root user (UID 1000)
+- Dropped capabilities
+- No privilege escalation
+- Resource limits (CPU/memory)
+- Health checks
 
 ---
 

@@ -10,17 +10,28 @@ Key endpoints:
     - POST /sessions/{id}/kill: Terminate a session immediately
     - GET /sessions/{id}/evidence: Export audit evidence pack
     - GET /health: Health check with dependency status
+    - GET /metrics: Prometheus metrics endpoint
+    - POST /admin/policies/reload: Hot-reload policy data
+
+New in v0.2.0:
+    - Prometheus metrics at /metrics
+    - Rate limit headers (X-RateLimit-*)
+    - Webhook notifications for critical events
+    - Evidence pack cryptographic signing
+    - PDF export for evidence packs
+    - Policy hot-reload without restart
 """
 
 from __future__ import annotations
 
 import os
+import secrets
 import uuid
 from pathlib import Path
 from typing import Awaitable, Callable, Optional
 
-from fastapi import Body, FastAPI, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import Body, FastAPI, Header, HTTPException, Request, Response
+from fastapi.responses import JSONResponse, PlainTextResponse
 from redis.asyncio import Redis
 
 from agentgate.credentials import CredentialBroker
@@ -33,13 +44,25 @@ from agentgate.logging import (
     configure_logging,
     get_logger,
 )
+from agentgate.metrics import get_metrics
 from agentgate.models import KillRequest, ToolCallRequest, ToolCallResponse
-from agentgate.policy import PolicyClient
+from agentgate.policy import PolicyClient, load_policy_data
 from agentgate.rate_limit import RateLimiter
 from agentgate.traces import TraceStore
+from agentgate.webhooks import configure_webhook_notifier, get_webhook_notifier
 
 logger = get_logger(__name__)
 BODY_NONE = Body(default=None)
+
+# ASCII art banner
+BANNER = r"""
+   _                    _    ____       _
+  / \   __ _  ___ _ __ | |_ / ___| __ _| |_ ___
+ / _ \ / _` |/ _ \ '_ \| __| |  _ / _` | __/ _ \
+/ ___ \ (_| |  __/ | | | |_| |_| | (_| | ||  __/
+/_/  \_\__, |\___|_| |_|\__|\____|\__,_|\__\___|
+       |___/        Containment-First Security
+"""
 
 # Maximum request body size (1MB) to prevent DoS attacks
 MAX_REQUEST_SIZE = 1 * 1024 * 1024
@@ -103,8 +126,23 @@ def _get_rate_limit_window_seconds() -> int:
         return 60
 
 
+def _get_admin_api_key() -> str:
+    """Return the admin API key for privileged endpoints."""
+    return os.getenv("AGENTGATE_ADMIN_API_KEY", "admin-secret-change-me")
+
+
+def _get_webhook_url() -> Optional[str]:
+    """Return the webhook URL if configured."""
+    return os.getenv("AGENTGATE_WEBHOOK_URL")
+
+
 def _create_redis_client(redis_url: str) -> Redis:
-    return Redis.from_url(redis_url, decode_responses=True)
+    """Create Redis client with connection pooling."""
+    return Redis.from_url(
+        redis_url,
+        decode_responses=True,
+        max_connections=20,  # Connection pooling for better performance
+    )
 
 
 def create_app(
@@ -118,7 +156,17 @@ def create_app(
     """Create and configure the FastAPI application."""
     configure_logging(_get_log_level())
 
-    app = FastAPI(title="AgentGate", version="0.1.0")
+    # Print banner on startup
+    print(BANNER)
+
+    app = FastAPI(
+        title="AgentGate",
+        version="0.2.0",
+        description="Containment-first security gateway for AI agents using MCP tools",
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
+    )
 
     policy_path = _get_policy_path()
     policy_data_path = policy_path / "data.json"
@@ -133,6 +181,9 @@ def create_app(
         RateLimiter(rate_limits, _get_rate_limit_window_seconds()) if rate_limits else None
     )
 
+    # Configure webhook notifier
+    webhook_notifier = configure_webhook_notifier(webhook_url=_get_webhook_url())
+
     gateway = Gateway(
         policy_client=policy_client,
         kill_switch=kill_switch,
@@ -144,11 +195,16 @@ def create_app(
     )
     evidence_exporter = EvidenceExporter(trace_store=trace_store, version=app.version)
 
+    # Store components in app state
     app.state.gateway = gateway
     app.state.policy_client = policy_client
     app.state.kill_switch = kill_switch
     app.state.trace_store = trace_store
     app.state.evidence_exporter = evidence_exporter
+    app.state.rate_limiter = rate_limiter
+    app.state.webhook_notifier = webhook_notifier
+    app.state.policy_path = policy_path
+    app.state.policy_data_path = policy_data_path
 
     @app.middleware("http")
     async def request_size_middleware(
@@ -178,15 +234,30 @@ def create_app(
     @app.get("/health")
     async def health() -> JSONResponse:
         """Return health status for OPA and Redis dependencies."""
+        metrics = get_metrics()
         opa_ok = await app.state.policy_client.health()
         redis_ok = await app.state.kill_switch.health()
         status = "ok" if opa_ok and redis_ok else "degraded"
+
+        # Update health metrics
+        metrics.health_status.set(1.0 if opa_ok else 0.0, "opa")
+        metrics.health_status.set(1.0 if redis_ok else 0.0, "redis")
+
         return JSONResponse({
             "status": status,
             "version": app.version,
             "opa": opa_ok,
             "redis": redis_ok,
         })
+
+    @app.get("/metrics")
+    async def metrics_endpoint() -> PlainTextResponse:
+        """Expose Prometheus metrics."""
+        metrics = get_metrics()
+        return PlainTextResponse(
+            metrics.collect_all(),
+            media_type="text/plain; version=0.0.4; charset=utf-8",
+        )
 
     @app.get("/tools/list")
     async def list_tools(session_id: str = "anonymous") -> JSONResponse:
@@ -195,15 +266,39 @@ def create_app(
         return JSONResponse({"tools": tools})
 
     @app.post("/tools/call", response_model=ToolCallResponse)
-    async def tools_call(request: ToolCallRequest) -> ToolCallResponse:
+    async def tools_call(request: ToolCallRequest, response: Response) -> ToolCallResponse:
         """Evaluate policy and execute a tool call if allowed."""
+        metrics = get_metrics()
+
         logger.info(
             "tool_call_received",
             session_id=request.session_id,
             tool_name=request.tool_name,
         )
+
+        # Add rate limit headers if applicable
+        rate_limiter = app.state.rate_limiter
+        if rate_limiter:
+            user_id = request.context.get("user_id") if request.context else None
+            subject_id = user_id if isinstance(user_id, str) else request.session_id
+            status = rate_limiter.get_status(subject_id, request.tool_name)
+            if status:
+                response.headers["X-RateLimit-Limit"] = str(status.limit)
+                response.headers["X-RateLimit-Remaining"] = str(status.remaining)
+                response.headers["X-RateLimit-Reset"] = str(status.reset_at)
+
         gateway: Gateway = app.state.gateway
-        return await gateway.call_tool(request)
+
+        with metrics.request_duration_seconds.time("tools_call"):
+            result = await gateway.call_tool(request)
+
+        # Record metrics
+        decision = "ALLOW" if result.success else "DENY"
+        if result.error and "approval" in result.error.lower():
+            decision = "REQUIRE_APPROVAL"
+        metrics.tool_calls_total.inc(request.tool_name, decision)
+
+        return result
 
     @app.get("/sessions")
     async def list_sessions() -> JSONResponse:
@@ -216,12 +311,20 @@ def create_app(
         session_id: str, body: KillRequest | None = BODY_NONE
     ) -> JSONResponse:
         """Kill a session immediately."""
+        metrics = get_metrics()
         reason = body.reason if body else None
         ok = await app.state.kill_switch.kill_session(session_id, reason)
         if not ok:
             return JSONResponse(
                 {"status": "error", "message": "Kill switch unavailable"}, status_code=503
             )
+
+        # Record metrics and send webhook
+        metrics.kill_switch_activations_total.inc("session")
+        webhook = get_webhook_notifier()
+        if webhook.enabled:
+            await webhook.notify_kill_switch("session", session_id, reason)
+
         return JSONResponse({"status": "killed", "session_id": session_id})
 
     @app.post("/tools/{tool_name}/kill")
@@ -229,23 +332,39 @@ def create_app(
         tool_name: str, body: KillRequest | None = BODY_NONE
     ) -> JSONResponse:
         """Kill a tool globally."""
+        metrics = get_metrics()
         reason = body.reason if body else None
         ok = await app.state.kill_switch.kill_tool(tool_name, reason)
         if not ok:
             return JSONResponse(
                 {"status": "error", "message": "Kill switch unavailable"}, status_code=503
             )
+
+        # Record metrics and send webhook
+        metrics.kill_switch_activations_total.inc("tool")
+        webhook = get_webhook_notifier()
+        if webhook.enabled:
+            await webhook.notify_kill_switch("tool", tool_name, reason)
+
         return JSONResponse({"status": "killed", "tool_name": tool_name})
 
     @app.post("/system/pause")
     async def pause_system(body: KillRequest | None = BODY_NONE) -> JSONResponse:
         """Pause all tool calls globally."""
+        metrics = get_metrics()
         reason = body.reason if body else None
         ok = await app.state.kill_switch.global_pause(reason)
         if not ok:
             return JSONResponse(
                 {"status": "error", "message": "Kill switch unavailable"}, status_code=503
             )
+
+        # Record metrics and send webhook
+        metrics.kill_switch_activations_total.inc("global")
+        webhook = get_webhook_notifier()
+        if webhook.enabled:
+            await webhook.notify_kill_switch("global", "system", reason)
+
         return JSONResponse({"status": "paused"})
 
     @app.post("/system/resume")
@@ -259,19 +378,86 @@ def create_app(
         return JSONResponse({"status": "resumed"})
 
     @app.get("/sessions/{session_id}/evidence")
-    async def export_evidence(session_id: str) -> JSONResponse:
-        """Export an evidence pack for a session."""
-        pack = app.state.evidence_exporter.export_session(session_id)
-        payload = {
-            "metadata": pack.metadata,
-            "summary": pack.summary,
-            "timeline": pack.timeline,
-            "policy_analysis": pack.policy_analysis,
-            "write_action_log": pack.write_action_log,
-            "anomalies": pack.anomalies,
-            "integrity": pack.integrity,
-        }
-        return JSONResponse(payload)
+    async def export_evidence(session_id: str, format: str = "json") -> Response:
+        """Export an evidence pack for a session.
+
+        Args:
+            session_id: The session to export evidence for
+            format: Export format - "json" (default), "html", or "pdf"
+        """
+        metrics = get_metrics()
+        exporter = app.state.evidence_exporter
+        pack = exporter.export_session(session_id)
+
+        if format == "html":
+            metrics.evidence_exports_total.inc("html")
+            return Response(
+                content=exporter.to_html(pack),
+                media_type="text/html",
+            )
+        elif format == "pdf":
+            metrics.evidence_exports_total.inc("pdf")
+            try:
+                pdf_content = exporter.to_pdf(pack)
+                return Response(
+                    content=pdf_content,
+                    media_type="application/pdf",
+                    headers={
+                        "Content-Disposition": f'attachment; filename="evidence_{session_id}.pdf"'
+                    },
+                )
+            except ImportError:
+                return JSONResponse(
+                    {"error": "PDF export requires weasyprint. Install with: pip install weasyprint"},
+                    status_code=501,
+                )
+        else:
+            metrics.evidence_exports_total.inc("json")
+            payload = {
+                "metadata": pack.metadata,
+                "summary": pack.summary,
+                "timeline": pack.timeline,
+                "policy_analysis": pack.policy_analysis,
+                "write_action_log": pack.write_action_log,
+                "anomalies": pack.anomalies,
+                "integrity": pack.integrity,
+            }
+            return JSONResponse(payload)
+
+    @app.post("/admin/policies/reload")
+    async def reload_policies(
+        x_api_key: str = Header(..., alias="X-API-Key")
+    ) -> JSONResponse:
+        """Hot-reload policy data from disk (admin only).
+
+        Requires X-API-Key header matching AGENTGATE_ADMIN_API_KEY.
+        """
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+
+        try:
+            policy_data_path = app.state.policy_data_path
+            new_policy_data = load_policy_data(policy_data_path)
+            app.state.policy_client.policy_data = new_policy_data
+
+            # Update rate limiter with new limits
+            rate_limits = new_policy_data.get("rate_limits", {})
+            if rate_limits:
+                app.state.rate_limiter = RateLimiter(
+                    rate_limits, _get_rate_limit_window_seconds()
+                )
+                app.state.gateway.rate_limiter = app.state.rate_limiter
+
+            logger.info("policies_reloaded", path=str(policy_data_path))
+            return JSONResponse({
+                "status": "reloaded",
+                "policy_path": str(policy_data_path),
+                "tools_count": len(new_policy_data.get("all_known_tools", [])),
+            })
+        except Exception as exc:
+            logger.error("policy_reload_failed", error=str(exc))
+            raise HTTPException(status_code=500, detail=f"Failed to reload: {exc}") from exc
 
     return app
 

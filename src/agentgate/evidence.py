@@ -1,16 +1,39 @@
-"""Evidence exporter for audit-ready reports."""
+"""Evidence exporter for audit-ready reports.
+
+This module provides evidence pack generation for audit and compliance purposes.
+Evidence packs include:
+    - Session metadata and time range
+    - Summary statistics by decision and tool
+    - Complete timeline of all events
+    - Policy analysis with rule triggering
+    - Write action log with reversibility status
+    - Anomaly detection (rapid fire, unusual tools)
+    - Cryptographic integrity verification
+
+Evidence packs can be exported in JSON, HTML, and PDF formats.
+"""
 
 from __future__ import annotations
 
 import hashlib
+import hmac
 import html
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from agentgate.models import TraceEvent
 from agentgate.traces import TraceStore
+
+
+def _get_signing_key() -> Optional[bytes]:
+    """Get the signing key from environment or return None."""
+    key = os.getenv("AGENTGATE_SIGNING_KEY")
+    if key:
+        return key.encode("utf-8")
+    return None
 
 _KNOWN_RULES = {
     "read_only_tools",
@@ -81,6 +104,28 @@ class EvidenceExporter:
             "integrity": pack.integrity,
         }
         return json.dumps(payload, indent=2)
+
+    def to_pdf(self, pack: EvidencePack) -> bytes:
+        """Export as a PDF report.
+
+        Requires the 'weasyprint' package to be installed.
+        Install with: pip install weasyprint
+
+        Returns:
+            PDF content as bytes
+
+        Raises:
+            ImportError: If weasyprint is not installed
+        """
+        try:
+            from weasyprint import HTML
+        except ImportError as exc:
+            raise ImportError(
+                "PDF export requires weasyprint. Install with: pip install weasyprint"
+            ) from exc
+
+        html_content = self.to_html(pack)
+        return HTML(string=html_content).write_pdf()
 
     def to_html(self, pack: EvidencePack) -> str:
         """Export as a self-contained HTML report."""
@@ -391,11 +436,35 @@ class EvidenceExporter:
         return anomalies
 
     def _build_integrity(self, traces: list[TraceEvent]) -> dict[str, Any]:
-        """Compute a simple integrity hash over event IDs."""
+        """Compute integrity hash and optional cryptographic signature.
+
+        The hash is computed over all event IDs concatenated together.
+        If AGENTGATE_SIGNING_KEY is set, an HMAC signature is also generated
+        for tamper-evident verification.
+        """
         event_ids = [trace.event_id for trace in traces]
         hash_input = "".join(event_ids).encode("utf-8")
         digest = hashlib.sha256(hash_input).hexdigest()
-        return {"event_count": len(event_ids), "hash": digest}
+
+        integrity: dict[str, Any] = {
+            "event_count": len(event_ids),
+            "hash": digest,
+            "hash_algorithm": "sha256",
+        }
+
+        # Add cryptographic signature if signing key is configured
+        signing_key = _get_signing_key()
+        if signing_key:
+            signature = hmac.new(
+                signing_key,
+                hash_input,
+                hashlib.sha256,
+            ).hexdigest()
+            integrity["signature"] = signature
+            integrity["signature_algorithm"] = "hmac-sha256"
+            integrity["signed_at"] = datetime.now(timezone.utc).isoformat()
+
+        return integrity
 
 
 def _calculate_time_range(traces: list[TraceEvent]) -> dict[str, str | None]:

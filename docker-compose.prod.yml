@@ -1,0 +1,126 @@
+# AgentGate production deployment configuration
+# Run with: docker-compose -f docker-compose.prod.yml up -d
+#
+# Security features:
+#   - Read-only root filesystem
+#   - Non-root user
+#   - Dropped capabilities
+#   - No privilege escalation
+#   - Resource limits
+#   - Health checks
+
+services:
+  agentgate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agentgate:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - AGENTGATE_REDIS_URL=redis://redis:6379/0
+      - AGENTGATE_OPA_URL=http://opa:8181
+      - AGENTGATE_LOG_LEVEL=INFO
+      - AGENTGATE_POLICY_VERSION=v1
+      # Set these in production:
+      # - AGENTGATE_ADMIN_API_KEY=your-secure-key
+      # - AGENTGATE_SIGNING_KEY=your-signing-key
+      # - AGENTGATE_WEBHOOK_URL=https://your-webhook-endpoint
+    read_only: true
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=64M,mode=1777
+    volumes:
+      - ./policies:/app/policies:ro
+      - agentgate-traces:/app/traces
+    depends_on:
+      redis:
+        condition: service_healthy
+      opa:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    read_only: true
+    user: "999:999"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 256M
+    restart: unless-stopped
+
+  opa:
+    image: openpolicyagent/opa:latest-static
+    ports:
+      - "8181:8181"
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "--log-level=error"
+      - "/policies"
+    volumes:
+      - ./policies:/policies:ro
+    read_only: true
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8181/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 256M
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
+  agentgate-traces:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "false"
