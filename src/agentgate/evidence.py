@@ -125,7 +125,8 @@ class EvidenceExporter:
             ) from exc
 
         html_content = self.to_html(pack)
-        return HTML(string=html_content).write_pdf()
+        pdf_bytes: bytes = HTML(string=html_content).write_pdf()
+        return pdf_bytes
 
     def to_html(self, pack: EvidencePack) -> str:
         """Export as a self-contained HTML report."""
