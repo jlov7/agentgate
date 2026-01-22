@@ -7,7 +7,6 @@ import json
 import sqlite3
 from datetime import datetime
 from threading import Lock
-from typing import Optional
 
 from agentgate.models import TraceEvent
 
@@ -113,8 +112,8 @@ class TraceStore:
 
     def query(
         self,
-        session_id: Optional[str] = None,
-        since: Optional[datetime] = None,
+        session_id: str | None = None,
+        since: datetime | None = None,
     ) -> list[TraceEvent]:
         """Query traces with optional filters."""
         clauses: list[str] = []
@@ -189,17 +188,17 @@ def build_trace_event(
     event_id: str,
     timestamp: datetime,
     session_id: str,
-    user_id: Optional[str],
-    agent_id: Optional[str],
+    user_id: str | None,
+    agent_id: str | None,
     tool_name: str,
     arguments_hash: str,
     policy_version: str,
     policy_decision: str,
     policy_reason: str,
-    matched_rule: Optional[str],
+    matched_rule: str | None,
     executed: bool,
-    duration_ms: Optional[int],
-    error: Optional[str],
+    duration_ms: int | None,
+    error: str | None,
     is_write_action: bool,
     approval_token_present: bool,
 ) -> TraceEvent:

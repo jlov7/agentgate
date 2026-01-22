@@ -31,8 +31,7 @@ class TestEvidenceIntegrity:
 
     def test_evidence_cannot_be_deleted(self, trace_store) -> None:
         """Trace store should not expose deletion primitives."""
-        with pytest.raises(AttributeError):
-            getattr(trace_store, "delete")
+        assert not hasattr(trace_store, "delete")
 
     @pytest.mark.asyncio
     async def test_sensitive_args_are_hashed(self, async_client) -> None:
@@ -46,7 +45,7 @@ class TestEvidenceIntegrity:
                 "session_id": session_id,
                 "tool_name": "db_query",
                 "arguments": {
-                    "query": f"SELECT * FROM users WHERE password = '{sensitive_data}'"
+                    "query": f"SELECT * FROM users WHERE password = '{sensitive_data}'"  # noqa: S608
                 },
             },
         )

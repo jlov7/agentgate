@@ -6,7 +6,6 @@ import time
 from collections import deque
 from dataclasses import dataclass
 from threading import Lock
-from typing import Deque, Optional
 
 
 @dataclass
@@ -26,7 +25,7 @@ class RateLimiter:
     def __init__(self, limits: dict[str, int], window_seconds: int = 60) -> None:
         self.limits = limits
         self.window_seconds = window_seconds
-        self._events: dict[str, Deque[float]] = {}
+        self._events: dict[str, deque[float]] = {}
         self._lock = Lock()
 
     def allow(self, subject_id: str, tool_name: str) -> bool:
@@ -34,7 +33,7 @@ class RateLimiter:
         status = self.check(subject_id, tool_name)
         return status.allowed if status else True
 
-    def check(self, subject_id: str, tool_name: str) -> Optional[RateLimitStatus]:
+    def check(self, subject_id: str, tool_name: str) -> RateLimitStatus | None:
         """Check rate limit status without consuming a request.
 
         Returns None if no rate limit applies to this tool.
@@ -76,7 +75,7 @@ class RateLimiter:
                 window_seconds=self.window_seconds,
             )
 
-    def get_status(self, subject_id: str, tool_name: str) -> Optional[RateLimitStatus]:
+    def get_status(self, subject_id: str, tool_name: str) -> RateLimitStatus | None:
         """Get rate limit status without consuming a request.
 
         Returns None if no rate limit applies to this tool.

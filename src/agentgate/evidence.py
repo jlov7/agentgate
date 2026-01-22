@@ -21,14 +21,14 @@ import html
 import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from agentgate.models import TraceEvent
 from agentgate.traces import TraceStore
 
 
-def _get_signing_key() -> Optional[bytes]:
+def _get_signing_key() -> bytes | None:
     """Get the signing key from environment or return None."""
     key = os.getenv("AGENTGATE_SIGNING_KEY")
     if key:
@@ -319,7 +319,7 @@ class EvidenceExporter:
         time_range = _calculate_time_range(traces)
         return {
             "version": "1.0.0",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "generator": f"AgentGate v{self.version}",
             "session_id": session_id,
             "user_id": _collapse_identity(user_ids),
@@ -462,7 +462,7 @@ class EvidenceExporter:
             ).hexdigest()
             integrity["signature"] = signature
             integrity["signature_algorithm"] = "hmac-sha256"
-            integrity["signed_at"] = datetime.now(timezone.utc).isoformat()
+            integrity["signed_at"] = datetime.now(UTC).isoformat()
 
         return integrity
 

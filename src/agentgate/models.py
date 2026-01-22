@@ -12,7 +12,7 @@ All models use Pydantic for validation and serialization.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -45,7 +45,7 @@ class ToolCallRequest(BaseModel):
         default_factory=dict,
         description="Optional metadata (user_id, agent_id, etc.)",
     )
-    approval_token: Optional[str] = Field(
+    approval_token: str | None = Field(
         default=None,
         description="Approval token for write operations",
     )
@@ -92,10 +92,10 @@ class PolicyDecision(BaseModel):
         ..., description="Policy decision"
     )
     reason: str = Field(..., description="Explanation for the decision")
-    matched_rule: Optional[str] = Field(
+    matched_rule: str | None = Field(
         default=None, description="Policy rule that matched"
     )
-    allowed_scope: Optional[str] = Field(
+    allowed_scope: str | None = Field(
         default=None, description="Scope of access granted"
     )
     credential_ttl: int = Field(
@@ -117,10 +117,10 @@ class ToolCallResponse(BaseModel):
     """
 
     success: bool = Field(..., description="Whether the call succeeded")
-    result: Optional[dict[str, Any]] = Field(
+    result: dict[str, Any] | None = Field(
         default=None, description="Tool output if successful"
     )
-    error: Optional[str] = Field(
+    error: str | None = Field(
         default=None, description="Error message if failed"
     )
     trace_id: str = Field(..., description="Audit trail event ID")
@@ -155,19 +155,19 @@ class TraceEvent(BaseModel):
     event_id: str = Field(..., description="Unique event identifier (UUID)")
     timestamp: datetime = Field(..., description="Event timestamp (UTC)")
     session_id: str = Field(..., description="Agent session ID")
-    user_id: Optional[str] = Field(default=None, description="User ID from context")
-    agent_id: Optional[str] = Field(default=None, description="Agent ID from context")
+    user_id: str | None = Field(default=None, description="User ID from context")
+    agent_id: str | None = Field(default=None, description="Agent ID from context")
     tool_name: str = Field(..., description="Requested tool name")
     arguments_hash: str = Field(..., description="SHA256 hash of arguments")
     policy_version: str = Field(default="unknown", description="Policy version")
     policy_decision: str = Field(..., description="Policy decision")
     policy_reason: str = Field(..., description="Decision reason")
-    matched_rule: Optional[str] = Field(default=None, description="Matched rule name")
+    matched_rule: str | None = Field(default=None, description="Matched rule name")
     executed: bool = Field(..., description="Whether tool was executed")
-    duration_ms: Optional[int] = Field(
+    duration_ms: int | None = Field(
         default=None, description="Execution time in ms"
     )
-    error: Optional[str] = Field(default=None, description="Error message")
+    error: str | None = Field(default=None, description="Error message")
     is_write_action: bool = Field(default=False, description="Is write operation")
     approval_token_present: bool = Field(
         default=False, description="Was approval token provided"
@@ -183,7 +183,7 @@ class KillRequest(BaseModel):
         reason: Optional explanation for the kill action (recorded in audit).
     """
 
-    reason: Optional[str] = Field(
+    reason: str | None = Field(
         default=None, description="Reason for the kill action"
     )
 
@@ -218,7 +218,7 @@ class ErrorResponse(BaseModel):
     error_code: str = Field(..., description="Machine-readable error code")
     error: str = Field(..., description="Human-readable error message")
     trace_id: str = Field(..., description="Audit trail event ID")
-    details: Optional[dict[str, Any]] = Field(
+    details: dict[str, Any] | None = Field(
         default=None, description="Additional error context"
     )
 

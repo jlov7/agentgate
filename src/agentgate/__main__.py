@@ -109,7 +109,7 @@ async def run_demo() -> None:
                 session_id=session_id,
                 tool_name="db_insert",
                 arguments={"table": "products", "data": {"name": "New Product"}},
-                approval_token="approved",
+                approval_token="approved",  # noqa: S106
             )
             if result.get("success"):
                 print("   ✓ ALLOWED (with approval)")
@@ -175,7 +175,7 @@ def main() -> None:
         "--demo", action="store_true", help="Run interactive demo"
     )
     parser.add_argument(
-        "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"
+        "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"  # noqa: S104
     )
     parser.add_argument(
         "--port", type=int, default=8000, help="Port to bind to (default: 8000)"

@@ -15,10 +15,10 @@ Metrics collected:
 from __future__ import annotations
 
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from threading import Lock
-from typing import Generator, Optional
 
 
 @dataclass
@@ -55,7 +55,7 @@ class Counter:
                 for label_values, value in sorted(self._values.items()):
                     if self.labels and label_values:
                         label_str = ",".join(
-                            f'{k}="{v}"' for k, v in zip(self.labels, label_values)
+                            f'{k}="{v}"' for k, v in zip(self.labels, label_values, strict=False)
                         )
                         lines.append(f"{self.name}{{{label_str}}} {value}")
                     else:
@@ -108,7 +108,7 @@ class Gauge:
                 for label_values, value in sorted(self._values.items()):
                     if self.labels and label_values:
                         label_str = ",".join(
-                            f'{k}="{v}"' for k, v in zip(self.labels, label_values)
+                            f'{k}="{v}"' for k, v in zip(self.labels, label_values, strict=False)
                         )
                         lines.append(f"{self.name}{{{label_str}}} {value}")
                     else:
@@ -134,7 +134,7 @@ class Histogram:
         with self._lock:
             key = label_values
             if key not in self._bucket_counts:
-                self._bucket_counts[key] = {b: 0 for b in self.buckets}
+                self._bucket_counts[key] = dict.fromkeys(self.buckets, 0)
             for bucket in self.buckets:
                 if value <= bucket:
                     self._bucket_counts[key][bucket] += 1
@@ -161,7 +161,7 @@ class Histogram:
                 label_prefix = ""
                 if self.labels and label_values:
                     label_prefix = ",".join(
-                        f'{k}="{v}"' for k, v in zip(self.labels, label_values)
+                        f'{k}="{v}"' for k, v in zip(self.labels, label_values, strict=False)
                     ) + ","
                 
                 cumulative = 0
@@ -170,15 +170,12 @@ class Histogram:
                     lines.append(
                         f'{self.name}_bucket{{{label_prefix}le="{bucket}"}} {cumulative}'
                     )
-                lines.append(
-                    f'{self.name}_bucket{{{label_prefix}le="+Inf"}} {self._counts.get(label_values, 0)}'
-                )
-                lines.append(
-                    f"{self.name}_sum{{{label_prefix[:-1] if label_prefix else ''}}} {self._sums.get(label_values, 0.0)}"
-                )
-                lines.append(
-                    f"{self.name}_count{{{label_prefix[:-1] if label_prefix else ''}}} {self._counts.get(label_values, 0)}"
-                )
+                count = self._counts.get(label_values, 0)
+                lines.append(f'{self.name}_bucket{{{label_prefix}le="+Inf"}} {count}')
+                labels = label_prefix[:-1] if label_prefix else ""
+                sum_val = self._sums.get(label_values, 0.0)
+                lines.append(f"{self.name}_sum{{{labels}}} {sum_val}")
+                lines.append(f"{self.name}_count{{{labels}}} {count}")
         return "\n".join(lines)
 
 

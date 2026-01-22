@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import TracebackType
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import httpx
 
@@ -21,8 +21,8 @@ class AgentGateClient:
         session_id: str,
         tool_name: str,
         arguments: dict[str, Any],
-        approval_token: Optional[str] = None,
-        context: Optional[dict[str, Any]] = None,
+        approval_token: str | None = None,
+        context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Call a tool through the AgentGate gateway."""
         payload: dict[str, Any] = {
@@ -38,9 +38,9 @@ class AgentGateClient:
         response.raise_for_status()
         return cast(dict[str, Any], response.json())
 
-    async def kill_session(self, session_id: str, reason: Optional[str] = None) -> None:
+    async def kill_session(self, session_id: str, reason: str | None = None) -> None:
         """Kill an agent session via the gateway."""
-        payload: dict[str, Optional[str]] = {"reason": reason}
+        payload: dict[str, str | None] = {"reason": reason}
         response = await self._client.post(f"/sessions/{session_id}/kill", json=payload)
         response.raise_for_status()
 
@@ -54,7 +54,7 @@ class AgentGateClient:
         """Close the underlying HTTP client."""
         await self._client.aclose()
 
-    async def __aenter__(self) -> "AgentGateClient":
+    async def __aenter__(self) -> AgentGateClient:
         return self
 
     async def __aexit__(

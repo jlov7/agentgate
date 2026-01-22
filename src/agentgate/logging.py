@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, cast
+from typing import cast
 
 import structlog
 from structlog.contextvars import bind_contextvars, clear_contextvars
@@ -41,6 +41,6 @@ def clear_logging_context() -> None:
     clear_contextvars()
 
 
-def get_logger(name: Optional[str] = None) -> structlog.BoundLogger:
+def get_logger(name: str | None = None) -> structlog.BoundLogger:
     """Return a structured logger."""
     return cast(structlog.BoundLogger, structlog.get_logger(name))

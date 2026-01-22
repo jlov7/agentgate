@@ -27,8 +27,8 @@ from __future__ import annotations
 import os
 import secrets
 import uuid
+from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Awaitable, Callable, Optional
 
 from fastapi import Body, FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -131,7 +131,7 @@ def _get_admin_api_key() -> str:
     return os.getenv("AGENTGATE_ADMIN_API_KEY", "admin-secret-change-me")
 
 
-def _get_webhook_url() -> Optional[str]:
+def _get_webhook_url() -> str | None:
     """Return the webhook URL if configured."""
     return os.getenv("AGENTGATE_WEBHOOK_URL")
 
@@ -147,11 +147,11 @@ def _create_redis_client(redis_url: str) -> Redis:
 
 def create_app(
     *,
-    policy_client: Optional[PolicyClient] = None,
-    kill_switch: Optional[KillSwitch] = None,
-    trace_store: Optional[TraceStore] = None,
-    credential_broker: Optional[CredentialBroker] = None,
-    tool_executor: Optional[ToolExecutor] = None,
+    policy_client: PolicyClient | None = None,
+    kill_switch: KillSwitch | None = None,
+    trace_store: TraceStore | None = None,
+    credential_broker: CredentialBroker | None = None,
+    tool_executor: ToolExecutor | None = None,
 ) -> FastAPI:
     """Create and configure the FastAPI application."""
     configure_logging(_get_log_level())
@@ -408,7 +408,7 @@ def create_app(
                 )
             except ImportError:
                 return JSONResponse(
-                    {"error": "PDF export requires weasyprint. Install with: pip install weasyprint"},
+                    {"error": "PDF export requires weasyprint: pip install weasyprint"},
                     status_code=501,
                 )
         else:

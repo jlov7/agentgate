@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from agentgate.evidence import EvidenceExporter
 from agentgate.models import TraceEvent
@@ -12,7 +12,7 @@ from agentgate.traces import TraceStore
 def _build_trace(event_id: str, decision: str, tool_name: str) -> TraceEvent:
     return TraceEvent(
         event_id=event_id,
-        timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 1, 1, tzinfo=UTC),
         session_id="sess-1",
         user_id="user-1",
         agent_id="agent-1",

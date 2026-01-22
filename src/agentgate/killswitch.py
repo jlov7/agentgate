@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from redis.asyncio import Redis
 
 from agentgate.logging import get_logger
@@ -18,7 +16,7 @@ class KillSwitch:
         self.redis = redis
         self.prefix = prefix
 
-    async def is_blocked(self, session_id: str, tool_name: str) -> tuple[bool, Optional[str]]:
+    async def is_blocked(self, session_id: str, tool_name: str) -> tuple[bool, str | None]:
         """Check if a session/tool/global kill switch is active."""
         try:
             global_key = f"{self.prefix}:global"
@@ -32,37 +30,37 @@ class KillSwitch:
             if await self.redis.exists(session_key):
                 return True, await self.redis.get(session_key)
             return False, None
-        except Exception as exc:  # noqa: BLE001 - defensive fail-closed
+        except Exception as exc:
             logger.error("killswitch_check_failed", error=str(exc))
             return True, "Kill switch unavailable"
 
-    async def kill_session(self, session_id: str, reason: Optional[str]) -> bool:
+    async def kill_session(self, session_id: str, reason: str | None) -> bool:
         """Kill a session immediately."""
         key = f"{self.prefix}:session:{session_id}"
         try:
             await self.redis.set(key, reason or "Session terminated")
             return True
-        except Exception as exc:  # noqa: BLE001 - defensive handling
+        except Exception as exc:
             logger.error("killswitch_kill_session_failed", error=str(exc))
             return False
 
-    async def kill_tool(self, tool_name: str, reason: Optional[str]) -> bool:
+    async def kill_tool(self, tool_name: str, reason: str | None) -> bool:
         """Kill a tool globally."""
         key = f"{self.prefix}:tool:{tool_name}"
         try:
             await self.redis.set(key, reason or "Tool terminated")
             return True
-        except Exception as exc:  # noqa: BLE001 - defensive handling
+        except Exception as exc:
             logger.error("killswitch_kill_tool_failed", error=str(exc))
             return False
 
-    async def global_pause(self, reason: Optional[str]) -> bool:
+    async def global_pause(self, reason: str | None) -> bool:
         """Pause all tool calls globally."""
         key = f"{self.prefix}:global"
         try:
             await self.redis.set(key, reason or "System paused")
             return True
-        except Exception as exc:  # noqa: BLE001 - defensive handling
+        except Exception as exc:
             logger.error("killswitch_global_pause_failed", error=str(exc))
             return False
 
@@ -72,7 +70,7 @@ class KillSwitch:
         try:
             await self.redis.delete(key)
             return True
-        except Exception as exc:  # noqa: BLE001 - defensive handling
+        except Exception as exc:
             logger.error("killswitch_resume_failed", error=str(exc))
             return False
 
@@ -81,5 +79,5 @@ class KillSwitch:
         try:
             await self.redis.ping()
             return True
-        except Exception:  # noqa: BLE001 - defensive check
+        except Exception:
             return False

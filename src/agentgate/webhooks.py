@@ -17,8 +17,8 @@ from __future__ import annotations
 import asyncio
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import httpx
 
@@ -63,8 +63,8 @@ class WebhookNotifier:
 
     def __init__(
         self,
-        webhook_url: Optional[str] = None,
-        secret: Optional[str] = None,
+        webhook_url: str | None = None,
+        secret: str | None = None,
         timeout: float = 5.0,
         max_retries: int = 3,
     ) -> None:
@@ -101,7 +101,7 @@ class WebhookNotifier:
 
         event = WebhookEvent(
             event_type=event_type,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             payload=payload,
         )
 
@@ -121,7 +121,7 @@ class WebhookNotifier:
             headers["X-AgentGate-Signature"] = f"sha256={signature}"
 
         attempts = self.max_retries if retry else 1
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
 
         for attempt in range(attempts):
             try:
@@ -138,7 +138,7 @@ class WebhookNotifier:
                         status_code=response.status_code,
                     )
                     return True
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 last_error = exc
                 if attempt < attempts - 1:
                     # Exponential backoff: 1s, 2s, 4s
@@ -156,7 +156,7 @@ class WebhookNotifier:
         self,
         level: str,
         target: str,
-        reason: Optional[str],
+        reason: str | None,
     ) -> bool:
         """Notify about kill switch activation."""
         return await self.notify(
@@ -206,7 +206,7 @@ class WebhookNotifier:
         self,
         dependency: str,
         healthy: bool,
-        details: Optional[str] = None,
+        details: str | None = None,
     ) -> bool:
         """Notify about health status change."""
         event_type = "health.recovered" if healthy else "health.degraded"
@@ -221,7 +221,7 @@ class WebhookNotifier:
 
 
 # Global webhook notifier (configured on app startup)
-_notifier: Optional[WebhookNotifier] = None
+_notifier: WebhookNotifier | None = None
 
 
 def get_webhook_notifier() -> WebhookNotifier:
@@ -233,8 +233,8 @@ def get_webhook_notifier() -> WebhookNotifier:
 
 
 def configure_webhook_notifier(
-    webhook_url: Optional[str] = None,
-    secret: Optional[str] = None,
+    webhook_url: str | None = None,
+    secret: str | None = None,
 ) -> WebhookNotifier:
     """Configure and return the global webhook notifier."""
     global _notifier

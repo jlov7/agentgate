@@ -6,7 +6,7 @@ import json
 import os
 import secrets
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -21,7 +21,7 @@ def get_required_approval_token() -> str:
     return os.getenv("AGENTGATE_APPROVAL_TOKEN", "approved")
 
 
-def has_valid_approval_token(token: Optional[str]) -> bool:
+def has_valid_approval_token(token: str | None) -> bool:
     """Return True if the approval token matches the configured value.
 
     Uses constant-time comparison to prevent timing attacks.
@@ -64,7 +64,7 @@ class PolicyClient:
             if not isinstance(result, dict):
                 raise ValueError("OPA response missing result")
             return PolicyDecision(**result)
-        except Exception as exc:  # noqa: BLE001 - defensive deny
+        except Exception as exc:
             logger.error("opa_evaluation_failed", error=str(exc))
             return PolicyDecision(
                 action="DENY",
@@ -88,7 +88,7 @@ class PolicyClient:
             async with httpx.AsyncClient(timeout=2.0) as client:
                 response = await client.get(f"{self.opa_url}/health")
                 return response.status_code == 200
-        except Exception:  # noqa: BLE001 - defensive check
+        except Exception:
             return False
 
 

@@ -17,8 +17,8 @@ from __future__ import annotations
 import re
 import time
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from agentgate.credentials import CredentialBroker
 from agentgate.killswitch import KillSwitch
@@ -112,7 +112,7 @@ class Gateway:
     async def call_tool(self, request: ToolCallRequest) -> ToolCallResponse:
         """Handle a tool call with policy enforcement and tracing."""
         event_id = str(uuid.uuid4())
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         arguments_hash = hash_arguments_safe(request.arguments)
         user_id, agent_id = _extract_identity(request.context)
 
@@ -226,7 +226,7 @@ class Gateway:
                 error=None,
             )
             return ToolCallResponse(success=True, result=result, error=None, trace_id=event_id)
-        except Exception as exc:  # noqa: BLE001 - defensive capture
+        except Exception as exc:
             duration_ms = int((time.perf_counter() - start) * 1000)
             error = f"Tool execution failed: {exc}"
             self._append_trace(
@@ -281,8 +281,8 @@ class Gateway:
         agent_id: str | None,
         decision: PolicyDecision,
         executed: bool,
-        duration_ms: Optional[int],
-        error: Optional[str],
+        duration_ms: int | None,
+        error: str | None,
     ) -> None:
         event = build_trace_event(
             event_id=event_id,
@@ -309,9 +309,7 @@ def _is_valid_tool_name(tool_name: str) -> bool:
     """Return True if a tool name is safe and well-formed."""
     if not _TOOL_NAME_RE.fullmatch(tool_name):
         return False
-    if ".." in tool_name:
-        return False
-    return True
+    return ".." not in tool_name
 
 
 def _extract_identity(context: dict[str, Any]) -> tuple[str | None, str | None]:
