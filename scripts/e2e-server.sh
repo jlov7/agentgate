@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-docker-compose up -d
+if command -v docker-compose >/dev/null 2>&1; then
+  compose_cmd=(docker-compose)
+else
+  compose_cmd=(docker compose)
+fi
+
+"${compose_cmd[@]}" up -d
 
 cleanup() {
-  docker-compose down
+  "${compose_cmd[@]}" down
 }
 trap cleanup EXIT
 
