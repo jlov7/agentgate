@@ -50,6 +50,8 @@ AgentGate implements a containment-first model with four control layers:
 | **Credential Broker** | Time-bound, scope-limited access | Stub pattern (integrate with Vault, etc.) |
 | **Evidence Export** | Audit-ready JSON, HTML, PDF reports | Append-only SQLite trace store with cryptographic signing |
 
+**Current release:** v0.2.1 (patch: docs/example version alignment)
+
 ### What's New in v0.2.0
 
 - **Prometheus Metrics** — Full observability at `/metrics`
@@ -124,7 +126,7 @@ The gateway will be available at `http://localhost:8000`.
 **Health check:**
 ```bash
 curl http://localhost:8000/health
-# {"status":"ok","version":"0.2.0","opa":true,"redis":true}
+# {"status":"ok","version":"0.2.1","opa":true,"redis":true}
 ```
 
 ---

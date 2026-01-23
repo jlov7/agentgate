@@ -161,7 +161,7 @@ def create_app(
 
     app = FastAPI(
         title="AgentGate",
-        version="0.2.0",
+        version="0.2.1",
         description="Containment-first security gateway for AI agents using MCP tools",
         docs_url="/docs",
         redoc_url="/redoc",
