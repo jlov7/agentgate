@@ -76,7 +76,7 @@ jobs:
           .venv/bin/pip install weasyprint
 
       - name: Install Node dependencies
-        run: npm install
+        run: npm ci
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
