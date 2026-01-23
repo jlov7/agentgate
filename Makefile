@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks unit integration evals e2e verify
+.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e verify
 
 # ============================================================================
 # Development
@@ -38,6 +38,9 @@ integration:
 evals:
 	.venv/bin/pytest tests/evals -v -m evals
 
+ai-evals:
+	.venv/bin/python evals/run_evals.py
+
 e2e:
 	npx playwright test
 
@@ -56,6 +59,7 @@ verify:
 	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term --cov-report=xml
 	.venv/bin/pytest tests/integration -v -m integration
 	.venv/bin/pytest tests/evals -v -m evals
+	.venv/bin/python evals/run_evals.py
 	npx playwright test
 
 # ============================================================================
@@ -158,11 +162,12 @@ help:
 	@echo "  make unit            Run unit tests with coverage"
 	@echo "  make integration     Run integration tests"
 	@echo "  make evals           Run golden-set eval tests"
+	@echo "  make ai-evals        Run evaluation harness (golden cases + invariants)"
 	@echo "  make e2e             Run Playwright E2E tests"
 	@echo "  make test-adversarial Run security tests"
 	@echo "  make test-all        Run all tests"
 	@echo "  make coverage        Run tests with coverage"
-	@echo "  make verify          Run lint, typecheck, unit, integration, eval, and E2E tests"
+	@echo "  make verify          Run lint, typecheck, unit, integration, evals, AI evals, and E2E tests"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint            Run linter and type checker"

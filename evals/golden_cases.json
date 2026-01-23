@@ -1,0 +1,331 @@
+[
+  {
+    "id": "allow_db_query_basic",
+    "description": "Read-only db_query allowed without approval.",
+    "request": {
+      "session_id": "eval-001",
+      "tool_name": "db_query",
+      "arguments": {"query": "SELECT * FROM widgets LIMIT 1"}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_file_read_basic",
+    "description": "Read-only file_read allowed without approval.",
+    "request": {
+      "session_id": "eval-002",
+      "tool_name": "file_read",
+      "arguments": {"path": "/tmp/report.txt"}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_api_get_basic",
+    "description": "Read-only api_get allowed without approval.",
+    "request": {
+      "session_id": "eval-003",
+      "tool_name": "api_get",
+      "arguments": {"endpoint": "/status"}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_rate_limited_tool_basic",
+    "description": "Rate-limited tool allowed for a single call.",
+    "request": {
+      "session_id": "eval-004",
+      "tool_name": "rate_limited_tool",
+      "arguments": {"ping": true}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "require_db_insert",
+    "description": "Write db_insert requires approval.",
+    "request": {
+      "session_id": "eval-005",
+      "tool_name": "db_insert",
+      "arguments": {"table": "widgets", "data": {"name": "Bolt"}}
+    },
+    "expect": {"decision": "REQUIRE_APPROVAL", "error_contains": "approval required"}
+  },
+  {
+    "id": "require_db_update",
+    "description": "Write db_update requires approval.",
+    "request": {
+      "session_id": "eval-006",
+      "tool_name": "db_update",
+      "arguments": {"table": "widgets", "set": {"name": "Nut"}}
+    },
+    "expect": {"decision": "REQUIRE_APPROVAL", "error_contains": "approval required"}
+  },
+  {
+    "id": "require_file_write",
+    "description": "Write file_write requires approval.",
+    "request": {
+      "session_id": "eval-007",
+      "tool_name": "file_write",
+      "arguments": {"path": "/tmp/output.txt", "content": "hello"}
+    },
+    "expect": {"decision": "REQUIRE_APPROVAL", "error_contains": "approval required"}
+  },
+  {
+    "id": "require_api_post",
+    "description": "Write api_post requires approval.",
+    "request": {
+      "session_id": "eval-008",
+      "tool_name": "api_post",
+      "arguments": {"endpoint": "/submit", "payload": {"id": 1}}
+    },
+    "expect": {"decision": "REQUIRE_APPROVAL", "error_contains": "approval required"}
+  },
+  {
+    "id": "allow_db_insert_with_approval",
+    "description": "Write db_insert allowed with approval token.",
+    "request": {
+      "session_id": "eval-009",
+      "tool_name": "db_insert",
+      "approval_token": "approved",
+      "arguments": {"table": "widgets", "data": {"name": "Bolt"}}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_db_update_with_approval",
+    "description": "Write db_update allowed with approval token.",
+    "request": {
+      "session_id": "eval-010",
+      "tool_name": "db_update",
+      "approval_token": "approved",
+      "arguments": {"table": "widgets", "set": {"name": "Nut"}}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_file_write_with_approval",
+    "description": "Write file_write allowed with approval token.",
+    "request": {
+      "session_id": "eval-011",
+      "tool_name": "file_write",
+      "approval_token": "approved",
+      "arguments": {"path": "/tmp/out.txt", "content": "ok"}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_api_post_with_approval",
+    "description": "Write api_post allowed with approval token.",
+    "request": {
+      "session_id": "eval-012",
+      "tool_name": "api_post",
+      "approval_token": "approved",
+      "arguments": {"endpoint": "/submit", "payload": {"id": 2}}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "deny_unknown_tool_simple",
+    "description": "Unknown tool denied.",
+    "request": {
+      "session_id": "eval-013",
+      "tool_name": "unknown_tool",
+      "arguments": {}
+    },
+    "expect": {"decision": "DENY", "error_contains": "allowlist"}
+  },
+  {
+    "id": "deny_unknown_tool_with_approval",
+    "description": "Unknown tool denied even with approval.",
+    "request": {
+      "session_id": "eval-014",
+      "tool_name": "unknown_tool",
+      "approval_token": "approved",
+      "arguments": {}
+    },
+    "expect": {"decision": "DENY", "error_contains": "allowlist"}
+  },
+  {
+    "id": "deny_unknown_tool_with_context",
+    "description": "Unknown tool denied with context.",
+    "request": {
+      "session_id": "eval-015",
+      "tool_name": "unknown_tool",
+      "arguments": {},
+      "context": {"user_id": "user-1"}
+    },
+    "expect": {"decision": "DENY", "error_contains": "allowlist"}
+  },
+  {
+    "id": "deny_unknown_tool_with_args",
+    "description": "Unknown tool denied with arguments.",
+    "request": {
+      "session_id": "eval-016",
+      "tool_name": "unknown_tool",
+      "arguments": {"query": "SELECT 1"}
+    },
+    "expect": {"decision": "DENY", "error_contains": "allowlist"}
+  },
+  {
+    "id": "deny_invalid_tool_name_space",
+    "description": "Invalid tool name with space denied.",
+    "request": {
+      "session_id": "eval-017",
+      "tool_name": "db query",
+      "arguments": {}
+    },
+    "expect": {"decision": "DENY", "error_contains": "invalid tool name"}
+  },
+  {
+    "id": "deny_invalid_tool_name_slash",
+    "description": "Invalid tool name with slash denied.",
+    "request": {
+      "session_id": "eval-018",
+      "tool_name": "db/query",
+      "arguments": {}
+    },
+    "expect": {"decision": "DENY", "error_contains": "invalid tool name"}
+  },
+  {
+    "id": "deny_invalid_tool_name_symbol",
+    "description": "Invalid tool name with symbol denied.",
+    "request": {
+      "session_id": "eval-019",
+      "tool_name": "db$query",
+      "arguments": {}
+    },
+    "expect": {"decision": "DENY", "error_contains": "invalid tool name"}
+  },
+  {
+    "id": "require_db_update_bad_token",
+    "description": "Write db_update still requires approval with bad token.",
+    "request": {
+      "session_id": "eval-021",
+      "tool_name": "db_update",
+      "approval_token": "nope",
+      "arguments": {"table": "widgets", "set": {"name": "X"}}
+    },
+    "expect": {"decision": "REQUIRE_APPROVAL", "error_contains": "approval required"}
+  },
+  {
+    "id": "require_db_insert_bad_token",
+    "description": "Write db_insert still requires approval with bad token.",
+    "request": {
+      "session_id": "eval-022",
+      "tool_name": "db_insert",
+      "approval_token": "wrong",
+      "arguments": {"table": "widgets", "data": {"name": "Y"}}
+    },
+    "expect": {"decision": "REQUIRE_APPROVAL", "error_contains": "approval required"}
+  },
+  {
+    "id": "require_file_write_bad_token",
+    "description": "Write file_write still requires approval with bad token.",
+    "request": {
+      "session_id": "eval-023",
+      "tool_name": "file_write",
+      "approval_token": "bad",
+      "arguments": {"path": "/tmp/a.txt", "content": "x"}
+    },
+    "expect": {"decision": "REQUIRE_APPROVAL", "error_contains": "approval required"}
+  },
+  {
+    "id": "require_api_post_bad_token",
+    "description": "Write api_post still requires approval with bad token.",
+    "request": {
+      "session_id": "eval-024",
+      "tool_name": "api_post",
+      "approval_token": "bad",
+      "arguments": {"endpoint": "/submit", "payload": {"id": 3}}
+    },
+    "expect": {"decision": "REQUIRE_APPROVAL", "error_contains": "approval required"}
+  },
+  {
+    "id": "allow_db_query_with_approval",
+    "description": "Read-only db_query allowed even with approval token.",
+    "request": {
+      "session_id": "eval-025",
+      "tool_name": "db_query",
+      "approval_token": "approved",
+      "arguments": {"query": "SELECT 1"}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_file_read_with_approval",
+    "description": "Read-only file_read allowed even with approval token.",
+    "request": {
+      "session_id": "eval-026",
+      "tool_name": "file_read",
+      "approval_token": "approved",
+      "arguments": {"path": "/tmp/input.txt"}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_api_get_with_approval",
+    "description": "Read-only api_get allowed even with approval token.",
+    "request": {
+      "session_id": "eval-027",
+      "tool_name": "api_get",
+      "approval_token": "approved",
+      "arguments": {"endpoint": "/health"}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_rate_limited_tool_with_approval",
+    "description": "Rate-limited tool allowed with approval token.",
+    "request": {
+      "session_id": "eval-028",
+      "tool_name": "rate_limited_tool",
+      "approval_token": "approved",
+      "arguments": {"echo": "ok"}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_db_query_with_context_user",
+    "description": "Read-only db_query allowed with user context.",
+    "request": {
+      "session_id": "eval-029",
+      "tool_name": "db_query",
+      "arguments": {"query": "SELECT * FROM widgets"},
+      "context": {"user_id": "user-123"}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "allow_db_query_with_context_extra",
+    "description": "Read-only db_query allowed with extra context.",
+    "request": {
+      "session_id": "eval-030",
+      "tool_name": "db_query",
+      "arguments": {"query": "SELECT * FROM widgets"},
+      "context": {"user_id": "user-123", "region": "us-east", "tags": ["a", "b"]}
+    },
+    "expect": {"decision": "ALLOW"}
+  },
+  {
+    "id": "require_db_update_with_context_no_approval",
+    "description": "Write db_update still requires approval with context.",
+    "request": {
+      "session_id": "eval-031",
+      "tool_name": "db_update",
+      "arguments": {"table": "widgets", "set": {"name": "Z"}},
+      "context": {"user_id": "user-123", "role": "analyst"}
+    },
+    "expect": {"decision": "REQUIRE_APPROVAL", "error_contains": "approval required"}
+  },
+  {
+    "id": "allow_db_update_with_context_approval",
+    "description": "Write db_update allowed with approval and context.",
+    "request": {
+      "session_id": "eval-032",
+      "tool_name": "db_update",
+      "approval_token": "approved",
+      "arguments": {"table": "widgets", "set": {"name": "Z"}},
+      "context": {"user_id": "user-123", "role": "admin"}
+    },
+    "expect": {"decision": "ALLOW"}
+  }
+]

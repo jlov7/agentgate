@@ -39,6 +39,7 @@ make verify
 - PDF export integration test using WeasyPrint
 - Golden-set eval tests
 - Playwright E2E tests against the running FastAPI server
+- AI evaluation harness (golden cases + invariants)
 
 ## Optional commands
 
@@ -47,6 +48,7 @@ make lint
 make unit
 make integration
 make evals
+make ai-evals
 make e2e
 make coverage
 ```
