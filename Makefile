@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks
+.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks unit integration evals verify
 
 # ============================================================================
 # Development
@@ -29,6 +29,15 @@ demo-interactive:
 test:
 	.venv/bin/pytest tests/ -v
 
+unit:
+	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term
+
+integration:
+	.venv/bin/pytest tests/integration -v -m integration
+
+evals:
+	.venv/bin/pytest tests/evals -v -m evals
+
 test-adversarial:
 	.venv/bin/python run_adversarial.py
 
@@ -37,6 +46,13 @@ test-all: test test-adversarial
 coverage:
 	.venv/bin/pytest tests/ -v --cov=src/agentgate --cov-report=html --cov-report=term
 	@echo "\n✓ Coverage report: htmlcov/index.html"
+
+verify:
+	.venv/bin/ruff check src/ tests/
+	.venv/bin/mypy src/
+	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term
+	.venv/bin/pytest tests/integration -v -m integration
+	.venv/bin/pytest tests/evals -v -m evals
 
 # ============================================================================
 # Code Quality
@@ -135,9 +151,13 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test            Run unit tests"
+	@echo "  make unit            Run unit tests with coverage"
+	@echo "  make integration     Run integration tests"
+	@echo "  make evals           Run golden-set eval tests"
 	@echo "  make test-adversarial Run security tests"
 	@echo "  make test-all        Run all tests"
 	@echo "  make coverage        Run tests with coverage"
+	@echo "  make verify          Run lint, typecheck, unit, integration, and eval tests"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint            Run linter and type checker"

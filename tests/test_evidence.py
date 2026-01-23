@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import sys
 from datetime import UTC, datetime
+from types import ModuleType
 
 from agentgate.evidence import EvidenceExporter
 from agentgate.models import TraceEvent
@@ -56,3 +58,25 @@ def test_exporter_json_and_html(tmp_path) -> None:
     html_output = exporter.to_html(pack)
     assert "AgentGate Evidence Pack" in html_output
     assert "Timeline" in html_output
+
+
+def test_exporter_pdf_with_stub(tmp_path, monkeypatch) -> None:
+    trace_store = TraceStore(str(tmp_path / "traces.db"))
+    trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
+
+    exporter = EvidenceExporter(trace_store, version="0.1.0")
+    pack = exporter.export_session("sess-1")
+
+    class DummyHTML:
+        def __init__(self, string: str) -> None:
+            self.string = string
+
+        def write_pdf(self) -> bytes:
+            return b"%PDF-1.4 dummy"
+
+    dummy_module = ModuleType("weasyprint")
+    dummy_module.HTML = DummyHTML  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "weasyprint", dummy_module)
+
+    pdf_bytes = exporter.to_pdf(pack)
+    assert pdf_bytes.startswith(b"%PDF-")

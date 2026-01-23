@@ -20,6 +20,7 @@ import hmac
 import html
 import json
 import os
+import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -34,6 +35,22 @@ def _get_signing_key() -> bytes | None:
     if key:
         return key.encode("utf-8")
     return None
+
+
+def _ensure_weasyprint_paths() -> None:
+    """Ensure macOS loader can find Homebrew libraries for WeasyPrint."""
+    if sys.platform != "darwin":
+        return
+    candidates = ["/opt/homebrew/lib", "/usr/local/lib"]
+    existing = os.environ.get("DYLD_LIBRARY_PATH", "")
+    parts = [p for p in existing.split(":") if p]
+    updated = False
+    for candidate in candidates:
+        if os.path.isdir(candidate) and candidate not in parts:
+            parts.append(candidate)
+            updated = True
+    if updated:
+        os.environ["DYLD_LIBRARY_PATH"] = ":".join(parts)
 
 _KNOWN_RULES = {
     "read_only_tools",
@@ -117,6 +134,7 @@ class EvidenceExporter:
         Raises:
             ImportError: If weasyprint is not installed
         """
+        _ensure_weasyprint_paths()
         try:
             from weasyprint import HTML
         except ImportError as exc:
