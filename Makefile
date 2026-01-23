@@ -30,7 +30,7 @@ test:
 	.venv/bin/pytest tests/ -v
 
 unit:
-	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term
+	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term --cov-report=xml
 
 integration:
 	.venv/bin/pytest tests/integration -v -m integration
@@ -53,7 +53,7 @@ coverage:
 verify:
 	.venv/bin/ruff check src/ tests/
 	.venv/bin/mypy src/
-	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term
+	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term --cov-report=xml
 	.venv/bin/pytest tests/integration -v -m integration
 	.venv/bin/pytest tests/evals -v -m evals
 	npx playwright test
