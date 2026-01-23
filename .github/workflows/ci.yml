@@ -101,6 +101,16 @@ jobs:
           files: coverage.xml
           fail_ci_if_error: false
 
+      - name: Upload Playwright artifacts (failure only)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 14
+
   security:
     name: Security Scan
     runs-on: ubuntu-latest
