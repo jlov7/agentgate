@@ -20,6 +20,14 @@
 
 ---
 
+## 📚 New Here?
+
+**For a non-technical introduction**, read **[Understanding AgentGate](docs/UNDERSTANDING_AGENTGATE.md)** — a plain-language guide that explains what AgentGate is, why it matters, and how it works. No technical background required.
+
+**For technical details**, continue reading this README.
+
+---
+
 ## The Problem
 
 Most platforms can **observe** what agents do, but few can **stop** them in real time.
@@ -422,3 +430,16 @@ Contributions welcome! Start with the adversarial test suite if you want to find
 ## Disclaimer
 
 This is a personal, independent project. It is not affiliated with any employer and is not intended for commercial use. See [DISCLAIMER.md](DISCLAIMER.md) for full details.
+
+---
+
+## Quick Links
+
+| Resource | Description |
+|----------|-------------|
+| [Understanding AgentGate](docs/UNDERSTANDING_AGENTGATE.md) | Non-technical introduction |
+| [API Documentation](http://localhost:8000/docs) | Interactive OpenAPI docs (when running) |
+| [Contributing Guide](CONTRIBUTING.md) | How to contribute |
+| [Security Policy](SECURITY.md) | Security model and reporting |
+| [Changelog](CHANGELOG.md) | Version history |
+| [Sample Evidence](examples/sample_evidence.html) | Example audit report |

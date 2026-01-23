@@ -2,6 +2,10 @@
 
 Thank you for your interest in contributing to AgentGate! This document provides guidelines and information for contributors.
 
+> **New to AgentGate?** Start with [Understanding AgentGate](docs/UNDERSTANDING_AGENTGATE.md) for a non-technical introduction to the project.
+
+---
+
 ## Code of Conduct
 
 By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
