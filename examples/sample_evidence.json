@@ -3,7 +3,7 @@
   "metadata": {
     "version": "1.0.0",
     "generated_at": "2026-01-21T10:00:00Z",
-    "generator": "AgentGate v0.1.0",
+    "generator": "AgentGate v0.2.0",
     "session_id": "demo_session",
     "user_id": "user-123",
     "agent_id": "agent-abc",
