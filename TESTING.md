@@ -1,12 +1,18 @@
 # Testing AgentGate
 
-This project uses pytest for automated testing and FastAPI's TestClient for API
-integration checks. There is no web UI, so there are no E2E browser tests.
+This project uses pytest for automated testing, FastAPI's TestClient for API
+integration checks, and Playwright for browser-based E2E coverage.
 
 ## Setup
 
 ```bash
 make setup
+```
+
+## Playwright setup (E2E)
+
+```bash
+npx playwright install
 ```
 
 ## PDF export dependencies (WeasyPrint)
@@ -32,6 +38,7 @@ make verify
 - Integration API contract tests and a live-stack test (Redis + OPA via Docker)
 - PDF export integration test using WeasyPrint
 - Golden-set eval tests
+- Playwright E2E tests against the running FastAPI server
 
 ## Optional commands
 
@@ -40,6 +47,7 @@ make lint
 make unit
 make integration
 make evals
+make e2e
 make coverage
 ```
 

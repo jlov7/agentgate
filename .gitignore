@@ -25,6 +25,11 @@ htmlcov/
 .nox/
 coverage.xml
 *.cover
+playwright-report/
+test-results/
+
+# Node
+node_modules/
 
 # Type checking
 .mypy_cache/
