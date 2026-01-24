@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate verify verify-strict
+.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke verify verify-strict
 
 # ============================================================================
 # Development
@@ -47,6 +47,14 @@ e2e:
 mutate:
 	.venv/bin/mutmut run
 	.venv/bin/python scripts/check_mutmut.py
+
+LOAD_SMOKE_URL ?= http://127.0.0.1:8000/health
+LOAD_SMOKE_TOTAL ?= 200
+LOAD_SMOKE_CONCURRENCY ?= 20
+LOAD_SMOKE_TIMEOUT ?= 5
+
+load-smoke:
+	.venv/bin/python scripts/load_smoke.py --url $(LOAD_SMOKE_URL) --total $(LOAD_SMOKE_TOTAL) --concurrency $(LOAD_SMOKE_CONCURRENCY) --timeout $(LOAD_SMOKE_TIMEOUT)
 
 test-adversarial:
 	.venv/bin/python run_adversarial.py
@@ -172,6 +180,7 @@ help:
 	@echo "  make e2e             Run Playwright E2E tests"
 	@echo "  make mutate          Run mutation tests for critical modules"
 	@echo "  make test-adversarial Run security tests"
+	@echo "  make load-smoke      Run a lightweight load smoke test (requires a running server)"
 	@echo "  make test-all        Run all tests"
 	@echo "  make coverage        Run tests with coverage"
 	@echo "  make verify          Run lint, typecheck, unit, integration, evals, AI evals, and E2E tests"

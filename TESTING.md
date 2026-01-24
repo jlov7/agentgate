@@ -50,6 +50,24 @@ make verify-strict
 `make verify-strict` runs `make verify` plus mutation testing on critical
 modules and enforces a 100% mutation score.
 
+## Load smoke (optional)
+
+Requires a running server (see "Local run" below).
+
+```bash
+make load-smoke
+```
+
+Override defaults:
+
+```bash
+LOAD_SMOKE_URL=http://127.0.0.1:8000/health \
+LOAD_SMOKE_TOTAL=200 \
+LOAD_SMOKE_CONCURRENCY=20 \
+LOAD_SMOKE_TIMEOUT=5 \
+make load-smoke
+```
+
 ## Optional commands
 
 ```bash
@@ -60,6 +78,7 @@ make evals
 make ai-evals
 make e2e
 make mutate
+make load-smoke
 make coverage
 make verify-strict
 ```

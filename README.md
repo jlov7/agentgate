@@ -280,6 +280,9 @@ make e2e
 # Mutation testing (optional/nightly)
 make mutate
 
+# Lightweight load smoke test (requires running server)
+make load-smoke
+
 # Coverage report
 make coverage
 ```
