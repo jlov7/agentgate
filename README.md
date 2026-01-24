@@ -283,6 +283,9 @@ make mutate
 # Lightweight load smoke test (requires running server)
 make load-smoke
 
+# Load test with thresholds (k6, starts local server)
+make load-test
+
 # Coverage report
 make coverage
 ```

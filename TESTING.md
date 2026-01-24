@@ -83,6 +83,39 @@ make coverage
 make verify-strict
 ```
 
+## Load test (k6, optional/nightly)
+
+`make load-test` starts the local stack and runs a k6 test with thresholds.
+
+```bash
+make load-test
+```
+
+Override defaults:
+
+```bash
+LOAD_TEST_VUS=20 \
+LOAD_TEST_DURATION=30s \
+LOAD_TEST_RAMP_UP=10s \
+LOAD_TEST_RAMP_DOWN=10s \
+LOAD_TEST_P95=500 \
+make load-test
+```
+
+Run against a remote target:
+
+```bash
+LOAD_TEST_URL=https://staging.example.com \
+make load-test-remote
+```
+
+## Staging smoke + load (optional)
+
+```bash
+STAGING_URL=https://staging.example.com \
+make staging-smoke
+```
+
 ## Local run
 
 ```bash

@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke verify verify-strict
+.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke verify verify-strict
 
 # ============================================================================
 # Development
@@ -55,6 +55,22 @@ LOAD_SMOKE_TIMEOUT ?= 5
 
 load-smoke:
 	.venv/bin/python scripts/load_smoke.py --url $(LOAD_SMOKE_URL) --total $(LOAD_SMOKE_TOTAL) --concurrency $(LOAD_SMOKE_CONCURRENCY) --timeout $(LOAD_SMOKE_TIMEOUT)
+
+LOAD_TEST_URL ?= http://127.0.0.1:8000
+LOAD_TEST_VUS ?= 20
+LOAD_TEST_DURATION ?= 30s
+LOAD_TEST_RAMP_UP ?= 10s
+LOAD_TEST_RAMP_DOWN ?= 10s
+LOAD_TEST_P95 ?= 500
+
+load-test:
+	LOAD_TEST_URL=$(LOAD_TEST_URL) LOAD_VUS=$(LOAD_TEST_VUS) LOAD_DURATION=$(LOAD_TEST_DURATION) LOAD_RAMP_UP=$(LOAD_TEST_RAMP_UP) LOAD_RAMP_DOWN=$(LOAD_TEST_RAMP_DOWN) LOAD_P95=$(LOAD_TEST_P95) scripts/load_server.sh scripts/run_load_test.sh
+
+load-test-remote:
+	LOAD_TEST_URL=$(LOAD_TEST_URL) LOAD_VUS=$(LOAD_TEST_VUS) LOAD_DURATION=$(LOAD_TEST_DURATION) LOAD_RAMP_UP=$(LOAD_TEST_RAMP_UP) LOAD_RAMP_DOWN=$(LOAD_TEST_RAMP_DOWN) LOAD_P95=$(LOAD_TEST_P95) scripts/run_load_test.sh
+
+staging-smoke:
+	STAGING_URL=$(STAGING_URL) scripts/staging_smoke.sh
 
 test-adversarial:
 	.venv/bin/python run_adversarial.py
@@ -181,6 +197,9 @@ help:
 	@echo "  make mutate          Run mutation tests for critical modules"
 	@echo "  make test-adversarial Run security tests"
 	@echo "  make load-smoke      Run a lightweight load smoke test (requires a running server)"
+	@echo "  make load-test       Run a k6 load test (starts local server)"
+	@echo "  make load-test-remote Run a k6 load test against LOAD_TEST_URL"
+	@echo "  make staging-smoke   Run smoke + load against STAGING_URL"
 	@echo "  make test-all        Run all tests"
 	@echo "  make coverage        Run tests with coverage"
 	@echo "  make verify          Run lint, typecheck, unit, integration, evals, AI evals, and E2E tests"
