@@ -5,6 +5,13 @@ All notable changes to AgentGate are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- k6-based load testing harness plus `make load-test`/`make load-test-remote` targets.
+- Staging smoke + load runner (`make staging-smoke`) and a scheduled CI load-test job.
+
 ## [0.2.1] - 2026-01-23
 
 ### Fixed
