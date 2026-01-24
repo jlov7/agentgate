@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 
-THRESHOLD = 0.85
+THRESHOLD = 1.0
 
 
 def main() -> int:

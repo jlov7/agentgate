@@ -14,6 +14,11 @@ def test_rate_limiter_no_limit_allows() -> None:
     assert limiter.get_status("subject", "other_tool") is None
 
 
+def test_rate_limiter_default_window_seconds() -> None:
+    limiter = RateLimiter({"tool": 1})
+    assert limiter.window_seconds == 60
+
+
 def test_rate_limiter_check_and_status(monkeypatch) -> None:
     now = 1000.0
     monkeypatch.setattr(time, "time", lambda: now)
@@ -58,6 +63,20 @@ def test_rate_limiter_check_and_status(monkeypatch) -> None:
     assert status.remaining == 1
 
 
+def test_rate_limiter_check_reset_at_tracks_oldest(monkeypatch) -> None:
+    now = 5000.0
+    monkeypatch.setattr(time, "time", lambda: now)
+
+    limiter = RateLimiter({"tool": 2}, window_seconds=10)
+
+    status = limiter.check("subject", "tool")
+    assert status.reset_at == 5010
+
+    now = 5005.0
+    status = limiter.check("subject", "tool")
+    assert status.reset_at == 5010
+
+
 def test_rate_limiter_get_status_empty_bucket(monkeypatch) -> None:
     now = 2000.0
     monkeypatch.setattr(time, "time", lambda: now)
@@ -67,3 +86,14 @@ def test_rate_limiter_get_status_empty_bucket(monkeypatch) -> None:
     assert status.allowed is True
     assert status.remaining == 3
     assert status.reset_at == 2020
+
+
+def test_rate_limiter_get_status_fields(monkeypatch) -> None:
+    now = 3000.0
+    monkeypatch.setattr(time, "time", lambda: now)
+
+    limiter = RateLimiter({"tool": 1}, window_seconds=15)
+    limiter.check("subject", "tool")
+    status = limiter.get_status("subject", "tool")
+    assert status.limit == 1
+    assert status.window_seconds == 15

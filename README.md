@@ -244,30 +244,44 @@ python -m agentgate --version
 
 ## Testing
 
+See `TESTING.md` for full setup, environment requirements, and verification details.
+
 ```bash
-# Run all tests
-make test
+# Full QA run
+make verify
 
-# Run adversarial security tests
-make test-adversarial
-
-# Run all tests with coverage
-make coverage
-
-# Run linter and type checker
-make lint
-
-# Run security audit
-make audit
+# Strict QA run (includes mutation testing)
+make verify-strict
 ```
 
-### Test Coverage
+Common testing commands:
 
-| Category | Tests | Description |
-|----------|-------|-------------|
-| Unit | 14 | Gateway, policy, kill switch, evidence |
-| Adversarial | 17 | Policy bypass, input validation, rate limits |
-| **Total** | **31** | All scenarios documented in `scenarios.yaml` |
+```bash
+# Lint + typecheck
+make lint
+
+# Unit tests with coverage
+make unit
+
+# Adversarial security tests
+make test-adversarial
+
+# Integration tests (API + live stack)
+make integration
+
+# Eval tests and AI evaluation harness
+make evals
+make ai-evals
+
+# Playwright E2E tests
+make e2e
+
+# Mutation testing (optional/nightly)
+make mutate
+
+# Coverage report
+make coverage
+```
 
 ### Security Scanning
 

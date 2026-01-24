@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 from datetime import UTC
+from typing import Any
 
-from agentgate.traces import hash_arguments_safe
+import pytest
+
+from agentgate.gateway import Gateway, _is_valid_tool_name
+from agentgate.models import PolicyDecision, ToolCallRequest
+from agentgate.traces import TraceStore, hash_arguments_safe
 
 
 def test_tools_list(client) -> None:
@@ -203,3 +208,365 @@ def test_tool_call_traces_rate_limit(client, trace_store) -> None:
     assert event.user_id == "user-rate"
     assert event.executed is False
     assert event.error and "rate limit" in event.error.lower()
+
+
+class RecordingPolicyClient:
+    def __init__(self, decision: PolicyDecision) -> None:
+        self.decision = decision
+        self.requests: list[ToolCallRequest] = []
+
+    async def evaluate(self, request: ToolCallRequest) -> PolicyDecision:
+        self.requests.append(request)
+        return self.decision
+
+
+class RecordingKillSwitch:
+    def __init__(self, blocked: bool, reason: str | None = None) -> None:
+        self.blocked = blocked
+        self.reason = reason
+        self.calls: list[tuple[str, str]] = []
+
+    async def is_blocked(self, session_id: str, tool_name: str) -> tuple[bool, str | None]:
+        self.calls.append((session_id, tool_name))
+        return self.blocked, self.reason
+
+
+class RecordingCredentialBroker:
+    def __init__(self, credentials: dict[str, Any] | None = None) -> None:
+        self.credentials = credentials or {"scope": "read", "token": "token"}
+        self.calls: list[tuple[str, str, int]] = []
+
+    def get_credentials(self, tool: str, scope: str, ttl: int) -> dict[str, Any]:
+        self.calls.append((tool, scope, ttl))
+        return self.credentials
+
+
+class RecordingToolExecutor:
+    def __init__(
+        self,
+        result: dict[str, Any] | None = None,
+        error: Exception | None = None,
+    ) -> None:
+        self.result = result or {"ok": True}
+        self.error = error
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+
+    async def execute(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        self.calls.append((tool_name, arguments))
+        if self.error:
+            raise self.error
+        return self.result
+
+
+class RecordingRateLimiter:
+    def __init__(self, allowed: bool) -> None:
+        self.allowed = allowed
+        self.calls: list[tuple[str, str]] = []
+
+    def allow(self, subject_id: str, tool_name: str) -> bool:
+        self.calls.append((subject_id, tool_name))
+        return self.allowed
+
+
+class RecordingLogger:
+    def __init__(self) -> None:
+        self.info_calls: list[tuple[str, dict[str, Any]]] = []
+
+    def info(self, message: str, **kwargs: Any) -> None:
+        self.info_calls.append((message, kwargs))
+
+
+def _build_gateway(
+    trace_store: TraceStore,
+    decision: PolicyDecision,
+    *,
+    kill_switch: RecordingKillSwitch | None = None,
+    credential_broker: RecordingCredentialBroker | None = None,
+    tool_executor: RecordingToolExecutor | None = None,
+    rate_limiter: RecordingRateLimiter | None = None,
+    policy_version: str = "unit-test",
+) -> Gateway:
+    policy_client = RecordingPolicyClient(decision)
+    kill_switch = kill_switch or RecordingKillSwitch(False)
+    credential_broker = credential_broker or RecordingCredentialBroker()
+    tool_executor = tool_executor or RecordingToolExecutor()
+    return Gateway(
+        policy_client=policy_client,
+        kill_switch=kill_switch,
+        credential_broker=credential_broker,
+        trace_store=trace_store,
+        tool_executor=tool_executor,
+        rate_limiter=rate_limiter,
+        policy_version=policy_version,
+    )
+
+
+def test_gateway_default_policy_version(trace_store) -> None:
+    decision = PolicyDecision(action="ALLOW", reason="ok")
+    policy_client = RecordingPolicyClient(decision)
+    gateway = Gateway(
+        policy_client=policy_client,
+        kill_switch=RecordingKillSwitch(False),
+        credential_broker=RecordingCredentialBroker(),
+        trace_store=trace_store,
+        tool_executor=RecordingToolExecutor(),
+    )
+    assert gateway.policy_version == "unknown"
+
+
+def test_valid_tool_name_rejects_double_dot() -> None:
+    assert _is_valid_tool_name("db..query") is False
+
+
+@pytest.mark.asyncio
+async def test_gateway_invalid_tool_name_returns_reason(trace_store) -> None:
+    decision = PolicyDecision(action="ALLOW", reason="ok")
+    gateway = _build_gateway(trace_store, decision, policy_version="v-unit")
+    request = ToolCallRequest(
+        session_id="sess-invalid",
+        tool_name="db..query",
+        arguments={},
+        context={"user_id": "user-1", "agent_id": "agent-1"},
+    )
+
+    response = await gateway.call_tool(request)
+
+    assert response.success is False
+    assert response.error == "Policy denied: Invalid tool name"
+    assert "result" in response.model_fields_set
+
+    events = trace_store.query(session_id="sess-invalid")
+    assert len(events) == 1
+    event = events[0]
+    assert event.user_id == "user-1"
+    assert event.agent_id == "agent-1"
+    assert event.policy_reason == "Invalid tool name"
+    assert event.matched_rule == "invalid_tool_name"
+    assert event.executed is False
+    assert event.policy_version == "v-unit"
+
+
+@pytest.mark.asyncio
+async def test_gateway_kill_switch_denies_with_identity(trace_store) -> None:
+    decision = PolicyDecision(action="ALLOW", reason="ok")
+    kill_switch = RecordingKillSwitch(True, "maintenance")
+    gateway = _build_gateway(
+        trace_store,
+        decision,
+        kill_switch=kill_switch,
+        policy_version="v-unit",
+    )
+    request = ToolCallRequest(
+        session_id="sess-kill",
+        tool_name="db_query",
+        arguments={},
+        context={"user_id": "user-9", "agent_id": "agent-9"},
+    )
+
+    response = await gateway.call_tool(request)
+
+    assert kill_switch.calls == [("sess-kill", "db_query")]
+    assert response.success is False
+    assert response.error == "Policy denied: Kill switch: maintenance"
+    assert "result" in response.model_fields_set
+
+    event = trace_store.query(session_id="sess-kill")[0]
+    assert event.user_id == "user-9"
+    assert event.agent_id == "agent-9"
+    assert event.matched_rule == "kill_switch"
+    assert event.policy_reason == "Kill switch: maintenance"
+    assert event.executed is False
+
+
+@pytest.mark.asyncio
+async def test_gateway_rate_limit_denies_with_user_id(trace_store) -> None:
+    decision = PolicyDecision(action="ALLOW", reason="ok")
+    rate_limiter = RecordingRateLimiter(False)
+    gateway = _build_gateway(
+        trace_store,
+        decision,
+        rate_limiter=rate_limiter,
+        policy_version="v-unit",
+    )
+    request = ToolCallRequest(
+        session_id="sess-rate",
+        tool_name="rate_limited_tool",
+        arguments={},
+        context={"user_id": "user-7", "agent_id": "agent-7"},
+    )
+
+    response = await gateway.call_tool(request)
+
+    assert rate_limiter.calls == [("user-7", "rate_limited_tool")]
+    assert response.success is False
+    assert response.error == "Policy denied: Rate limit exceeded"
+    assert "result" in response.model_fields_set
+
+    event = trace_store.query(session_id="sess-rate")[0]
+    assert event.user_id == "user-7"
+    assert event.agent_id == "agent-7"
+    assert event.matched_rule == "rate_limit"
+    assert event.policy_reason == "Rate limit exceeded"
+    assert event.executed is False
+
+
+@pytest.mark.asyncio
+async def test_gateway_policy_deny_propagates_reason(trace_store) -> None:
+    decision = PolicyDecision(
+        action="DENY",
+        reason="Nope",
+        matched_rule="deny_rule",
+        is_write_action=True,
+    )
+    gateway = _build_gateway(trace_store, decision, policy_version="v-unit")
+    request = ToolCallRequest(
+        session_id="sess-deny",
+        tool_name="db_query",
+        arguments={},
+        context={"user_id": "user-1", "agent_id": "agent-1"},
+    )
+
+    response = await gateway.call_tool(request)
+
+    assert response.success is False
+    assert response.error == "Policy denied: Nope"
+    assert "result" in response.model_fields_set
+
+    event = trace_store.query(session_id="sess-deny")[0]
+    assert event.user_id == "user-1"
+    assert event.agent_id == "agent-1"
+    assert event.matched_rule == "deny_rule"
+    assert event.policy_reason == "Nope"
+    assert event.is_write_action is True
+
+
+@pytest.mark.asyncio
+async def test_gateway_requires_approval_records_trace(trace_store) -> None:
+    decision = PolicyDecision(
+        action="REQUIRE_APPROVAL",
+        reason="Need human",
+        matched_rule="approval_rule",
+        is_write_action=True,
+    )
+    gateway = _build_gateway(trace_store, decision, policy_version="v-unit")
+    request = ToolCallRequest(
+        session_id="sess-approval",
+        tool_name="db_insert",
+        arguments={"table": "widgets"},
+        context={"user_id": "user-4", "agent_id": "agent-4"},
+    )
+
+    response = await gateway.call_tool(request)
+
+    assert response.success is False
+    assert response.error == "Approval required: Need human"
+    assert "result" in response.model_fields_set
+
+    event = trace_store.query(session_id="sess-approval")[0]
+    assert event.user_id == "user-4"
+    assert event.agent_id == "agent-4"
+    assert event.executed is False
+    assert event.error == "Approval required: Need human"
+    assert event.matched_rule == "approval_rule"
+    assert event.policy_reason == "Need human"
+    assert event.approval_token_present is False
+
+
+@pytest.mark.asyncio
+async def test_gateway_allow_calls_broker_and_logs(trace_store, monkeypatch) -> None:
+    decision = PolicyDecision(
+        action="ALLOW",
+        reason="ok",
+        matched_rule="read_only_tools",
+        credential_ttl=120,
+    )
+    credential_broker = RecordingCredentialBroker(credentials={"scope": "read"})
+    tool_executor = RecordingToolExecutor(result={"rows": [1]})
+    gateway = _build_gateway(
+        trace_store,
+        decision,
+        credential_broker=credential_broker,
+        tool_executor=tool_executor,
+        policy_version="v-unit",
+    )
+
+    logger = RecordingLogger()
+    monkeypatch.setattr("agentgate.gateway.logger", logger)
+
+    perf_values = iter([1.0, 1.001999])
+    monkeypatch.setattr(
+        "agentgate.gateway.time.perf_counter", lambda: next(perf_values, 1.001999)
+    )
+
+    request = ToolCallRequest(
+        session_id="sess-allow",
+        tool_name="db_query",
+        arguments={"query": "SELECT 1"},
+        context={"user_id": "user-2", "agent_id": "agent-2"},
+    )
+
+    response = await gateway.call_tool(request)
+
+    assert response.success is True
+    assert response.result == {"rows": [1]}
+    assert response.error is None
+    assert "error" in response.model_fields_set
+    assert "result" in response.model_fields_set
+    assert credential_broker.calls == [("db_query", "read", 120)]
+    assert tool_executor.calls == [("db_query", {"query": "SELECT 1"})]
+
+    assert logger.info_calls
+    message, fields = logger.info_calls[0]
+    assert message == "tool_call_allowed"
+    assert fields["session_id"] == "sess-allow"
+    assert fields["tool_name"] == "db_query"
+    assert fields["credentials_scope"] == "read"
+
+    event = trace_store.query(session_id="sess-allow")[0]
+    assert event.user_id == "user-2"
+    assert event.agent_id == "agent-2"
+    assert event.executed is True
+    assert event.duration_ms == 1
+    assert event.policy_version == "v-unit"
+    assert event.error is None
+
+
+@pytest.mark.asyncio
+async def test_gateway_tool_execution_error_records_duration(trace_store, monkeypatch) -> None:
+    decision = PolicyDecision(
+        action="ALLOW",
+        reason="ok",
+        matched_rule="read_only_tools",
+    )
+    tool_executor = RecordingToolExecutor(error=ValueError("boom"))
+    gateway = _build_gateway(
+        trace_store,
+        decision,
+        tool_executor=tool_executor,
+        policy_version="v-unit",
+    )
+
+    perf_values = iter([2.0, 2.001999])
+    monkeypatch.setattr(
+        "agentgate.gateway.time.perf_counter", lambda: next(perf_values, 2.001999)
+    )
+
+    request = ToolCallRequest(
+        session_id="sess-error",
+        tool_name="db_query",
+        arguments={"query": "SELECT 1"},
+        context={"user_id": "user-3", "agent_id": "agent-3"},
+    )
+
+    response = await gateway.call_tool(request)
+
+    assert response.success is False
+    assert response.error == "Tool execution failed: boom"
+    assert "result" in response.model_fields_set
+
+    event = trace_store.query(session_id="sess-error")[0]
+    assert event.executed is False
+    assert event.duration_ms == 1
+    assert event.user_id == "user-3"
+    assert event.agent_id == "agent-3"
+    assert event.error == "Tool execution failed: boom"
