@@ -75,6 +75,50 @@ class FakeAgentGateClient:
         }
 
 
+class ScriptedAgentGateClient:
+    def __init__(
+        self,
+        base_url: str,
+        responses: dict[tuple[str, int], dict[str, object]],
+        evidence: dict[str, object] | None = None,
+    ) -> None:
+        self.base_url = base_url
+        self._responses = responses
+        self._evidence = evidence or {
+            "summary": {"total_tool_calls": 0, "by_decision": {"ALLOW": 0, "DENY": 0}},
+            "integrity": {"signature": None},
+        }
+        self._calls: dict[str, int] = {}
+
+    async def __aenter__(self) -> ScriptedAgentGateClient:
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        return None
+
+    async def call_tool(
+        self,
+        *,
+        session_id: str,
+        tool_name: str,
+        arguments: dict[str, object],
+        approval_token: str | None = None,
+        context: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        call_index = self._calls.get(tool_name, 0) + 1
+        self._calls[tool_name] = call_index
+        key = (tool_name, call_index)
+        if key not in self._responses:
+            raise AssertionError(f"Missing scripted response for {key}")
+        return self._responses[key]
+
+    async def kill_session(self, session_id: str, reason: str | None = None) -> None:
+        return None
+
+    async def export_evidence(self, session_id: str) -> dict[str, object]:
+        return self._evidence
+
+
 class BrokenAgentGateClient:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
@@ -95,6 +139,56 @@ async def test_run_demo_smoke(monkeypatch, capsys) -> None:
     output = capsys.readouterr().out
     assert "Demo Complete" in output
     assert "Listing available tools" in output
+
+
+@pytest.mark.asyncio
+async def test_run_demo_error_branches(monkeypatch, capsys) -> None:
+    responses = {
+        ("db_query", 1): {"success": False, "error": "read denied"},
+        ("hack_the_planet", 1): {"success": False, "error": "denied"},
+        ("db_insert", 1): {"success": False, "error": "write blocked"},
+        ("db_insert", 2): {"success": False, "error": "approval failed"},
+        ("db_query", 2): {"success": False, "error": "killed"},
+    }
+    evidence = {
+        "summary": {"total_tool_calls": 0, "by_decision": {"ALLOW": 0, "DENY": 0}},
+        "integrity": {"signature": "sig"},
+    }
+
+    def make_client(base_url: str) -> ScriptedAgentGateClient:
+        return ScriptedAgentGateClient(base_url, responses, evidence)
+
+    monkeypatch.setattr("httpx.AsyncClient", FakeAsyncClient)
+    monkeypatch.setattr("agentgate.client.AgentGateClient", make_client)
+
+    await run_demo()
+    output = capsys.readouterr().out
+    assert "✗ BLOCKED: read denied" in output
+    assert "✗ BLOCKED: write blocked" in output
+    assert "✗ BLOCKED: approval failed" in output
+    assert "✗ BLOCKED: killed" in output
+    assert "cryptographically signed" in output
+
+
+@pytest.mark.asyncio
+async def test_run_demo_unexpected_success_branches(monkeypatch, capsys) -> None:
+    responses = {
+        ("db_query", 1): {"success": True, "result": "ok"},
+        ("hack_the_planet", 1): {"success": True},
+        ("db_insert", 1): {"success": True, "result": "unexpected insert"},
+        ("db_insert", 2): {"success": True, "result": "ok"},
+        ("db_query", 2): {"success": True, "result": "post-kill"},
+    }
+
+    def make_client(base_url: str) -> ScriptedAgentGateClient:
+        return ScriptedAgentGateClient(base_url, responses)
+
+    monkeypatch.setattr("httpx.AsyncClient", FakeAsyncClient)
+    monkeypatch.setattr("agentgate.client.AgentGateClient", make_client)
+
+    await run_demo()
+    output = capsys.readouterr().out
+    assert "ALLOWED (unexpected!)" in output
 
 
 @pytest.mark.asyncio

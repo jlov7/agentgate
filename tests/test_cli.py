@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import runpy
 import sys
 
 import pytest
@@ -64,3 +65,27 @@ def test_cli_runs_uvicorn(monkeypatch) -> None:
         "port": 9001,
         "reload": False,
     }
+
+
+def test_main_module_runs(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class DummyUvicorn:
+        @staticmethod
+        def run(app: str, host: str, port: int, reload: bool) -> None:
+            captured["app"] = app
+            captured["host"] = host
+            captured["port"] = port
+            captured["reload"] = reload
+
+    monkeypatch.setitem(sys.modules, "uvicorn", DummyUvicorn)
+    monkeypatch.setattr(sys, "argv", ["agentgate"])
+
+    prior_main = sys.modules.pop("agentgate.__main__", None)
+    try:
+        runpy.run_module("agentgate.__main__", run_name="__main__")
+    finally:
+        if prior_main is not None:
+            sys.modules["agentgate.__main__"] = prior_main
+
+    assert captured["host"] == "0.0.0.0"  # noqa: S104
