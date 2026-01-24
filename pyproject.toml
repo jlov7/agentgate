@@ -50,6 +50,7 @@ dev = [
   "pytest-cov>=4.1",
   "ruff>=0.3",
   "mypy>=1.8",
+  "mutmut>=2.4",
   "types-redis>=4.6.0.20241004",
   "pyyaml>=6.0",
   "pre-commit>=3.6",
@@ -97,6 +98,7 @@ ignore = ["S101"]  # Allow assert in tests
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "S106"]  # Allow assert and hardcoded passwords in tests
+"tests/conftest.py" = ["E402"]
 "src/agentgate/__main__.py" = ["S104", "S106"]  # Demo CLI: allow bind to 0.0.0.0 and demo approval token
 
 [tool.mypy]
@@ -126,4 +128,25 @@ exclude_lines = [
   "pragma: no cover",
   "if TYPE_CHECKING:",
   "raise NotImplementedError",
+]
+
+[tool.mutmut]
+paths_to_mutate = [
+  "src/agentgate/gateway.py",
+  "src/agentgate/policy.py",
+  "src/agentgate/rate_limit.py",
+]
+also_copy = [
+  "policies/",
+  "src/agentgate/",
+]
+mutate_only_covered_lines = true
+pytest_add_cli_args_test_selection = [
+  "tests/test_gateway.py",
+  "tests/test_policy.py",
+  "tests/test_rate_limit.py",
+  "tests/test_tool_executor.py",
+  "tests/test_killswitch.py",
+  "tests/adversarial/test_rate_limits.py",
+  "tests/adversarial/test_policy_bypass.py",
 ]

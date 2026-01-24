@@ -41,6 +41,15 @@ make verify
 - Playwright E2E tests against the running FastAPI server
 - AI evaluation harness (golden cases + invariants)
 
+## Verify (strict)
+
+```bash
+make verify-strict
+```
+
+`make verify-strict` runs `make verify` plus mutation testing on critical
+modules and enforces a minimum mutation score.
+
 ## Optional commands
 
 ```bash
@@ -50,7 +59,9 @@ make integration
 make evals
 make ai-evals
 make e2e
+make mutate
 make coverage
+make verify-strict
 ```
 
 ## Local run

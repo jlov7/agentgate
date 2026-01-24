@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e verify
+.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate verify verify-strict
 
 # ============================================================================
 # Development
@@ -44,6 +44,10 @@ ai-evals:
 e2e:
 	npx playwright test
 
+mutate:
+	.venv/bin/mutmut run
+	.venv/bin/python scripts/check_mutmut.py
+
 test-adversarial:
 	.venv/bin/python run_adversarial.py
 
@@ -61,6 +65,8 @@ verify:
 	.venv/bin/pytest tests/evals -v -m evals
 	.venv/bin/python evals/run_evals.py
 	npx playwright test
+
+verify-strict: verify mutate
 
 # ============================================================================
 # Code Quality
@@ -164,10 +170,12 @@ help:
 	@echo "  make evals           Run golden-set eval tests"
 	@echo "  make ai-evals        Run evaluation harness (golden cases + invariants)"
 	@echo "  make e2e             Run Playwright E2E tests"
+	@echo "  make mutate          Run mutation tests for critical modules"
 	@echo "  make test-adversarial Run security tests"
 	@echo "  make test-all        Run all tests"
 	@echo "  make coverage        Run tests with coverage"
 	@echo "  make verify          Run lint, typecheck, unit, integration, evals, AI evals, and E2E tests"
+	@echo "  make verify-strict   Run verify plus mutation testing (nightly)"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint            Run linter and type checker"

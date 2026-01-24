@@ -25,6 +25,7 @@ htmlcov/
 .nox/
 coverage.xml
 *.cover
+mutants/
 playwright-report/
 test-results/
 
