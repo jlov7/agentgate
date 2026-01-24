@@ -245,6 +245,7 @@ python -m agentgate --version
 ## Testing
 
 See `TESTING.md` for full setup, environment requirements, and verification details.
+QA Autopilot skill (Codex): `qa-autopilot.skill` is published with the v0.2.1 release assets: https://github.com/jlov7/agentgate/releases/download/v0.2.1/qa-autopilot.skill
 
 ```bash
 # Full QA run

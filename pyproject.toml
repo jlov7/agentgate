@@ -136,6 +136,7 @@ paths_to_mutate = [
   "src/agentgate/policy.py",
   "src/agentgate/rate_limit.py",
 ]
+timeout_factor = 2.0
 also_copy = [
   "policies/",
   "src/agentgate/",
