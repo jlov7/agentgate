@@ -250,7 +250,7 @@ See `TESTING.md` for full setup, environment requirements, and verification deta
 # Full QA run
 make verify
 
-# Strict QA run (includes mutation testing)
+# Strict QA run (includes mutation testing + 100% mutation score)
 make verify-strict
 ```
 

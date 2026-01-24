@@ -48,7 +48,7 @@ make verify-strict
 ```
 
 `make verify-strict` runs `make verify` plus mutation testing on critical
-modules and enforces a minimum mutation score.
+modules and enforces a 100% mutation score.
 
 ## Optional commands
 
