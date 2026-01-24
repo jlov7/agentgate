@@ -2,33 +2,55 @@
 
 from __future__ import annotations
 
+import os
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import ModuleType
 
-from agentgate.evidence import EvidenceExporter
+import pytest
+
+from agentgate.evidence import EvidenceExporter, _ensure_weasyprint_paths
 from agentgate.models import TraceEvent
 from agentgate.traces import TraceStore
 
 
-def _build_trace(event_id: str, decision: str, tool_name: str) -> TraceEvent:
+def _build_trace(
+    event_id: str,
+    decision: str,
+    tool_name: str,
+    *,
+    session_id: str = "sess-1",
+    user_id: str | None = "user-1",
+    agent_id: str | None = "agent-1",
+    policy_version: str = "v1",
+    matched_rule: str | None = "read_only_tools",
+    executed: bool = True,
+    is_write_action: bool | None = None,
+    approval_token_present: bool = False,
+    timestamp: datetime | None = None,
+    error: str | None = None,
+) -> TraceEvent:
+    if timestamp is None:
+        timestamp = datetime(2026, 1, 1, tzinfo=UTC)
+    if is_write_action is None:
+        is_write_action = tool_name in {"db_insert", "db_update"}
     return TraceEvent(
         event_id=event_id,
-        timestamp=datetime(2026, 1, 1, tzinfo=UTC),
-        session_id="sess-1",
-        user_id="user-1",
-        agent_id="agent-1",
+        timestamp=timestamp,
+        session_id=session_id,
+        user_id=user_id,
+        agent_id=agent_id,
         tool_name=tool_name,
         arguments_hash="hash",
-        policy_version="v1",
+        policy_version=policy_version,
         policy_decision=decision,
         policy_reason="reason",
-        matched_rule="read_only_tools",
-        executed=True,
+        matched_rule=matched_rule,
+        executed=executed,
         duration_ms=12,
-        error=None,
-        is_write_action=tool_name in {"db_insert", "db_update"},
-        approval_token_present=False,
+        error=error,
+        is_write_action=is_write_action,
+        approval_token_present=approval_token_present,
     )
 
 
@@ -80,3 +102,163 @@ def test_exporter_pdf_with_stub(tmp_path, monkeypatch) -> None:
 
     pdf_bytes = exporter.to_pdf(pack)
     assert pdf_bytes.startswith(b"%PDF-")
+
+
+def test_exporter_pdf_import_error(tmp_path, monkeypatch) -> None:
+    trace_store = TraceStore(str(tmp_path / "traces.db"))
+    trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
+
+    exporter = EvidenceExporter(trace_store, version="0.1.0")
+    pack = exporter.export_session("sess-1")
+
+    dummy_module = ModuleType("weasyprint")
+    monkeypatch.setitem(sys.modules, "weasyprint", dummy_module)
+    monkeypatch.setattr(sys, "platform", "linux")
+
+    with pytest.raises(ImportError) as excinfo:
+        exporter.to_pdf(pack)
+    assert "weasyprint" in str(excinfo.value)
+
+
+def test_weasyprint_paths_updates_env(monkeypatch) -> None:
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setattr(os.path, "isdir", lambda path: path == "/opt/homebrew/lib")
+    monkeypatch.setenv("DYLD_LIBRARY_PATH", "")
+
+    _ensure_weasyprint_paths()
+
+    assert "/opt/homebrew/lib" in os.environ.get("DYLD_LIBRARY_PATH", "")
+
+
+def test_weasyprint_paths_no_update(monkeypatch) -> None:
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setattr(os.path, "isdir", lambda path: False)
+    monkeypatch.setenv("DYLD_LIBRARY_PATH", "")
+
+    _ensure_weasyprint_paths()
+
+    assert os.environ.get("DYLD_LIBRARY_PATH", "") == ""
+
+
+def test_exporter_signing_and_metadata_identity(tmp_path, monkeypatch) -> None:
+    trace_store = TraceStore(str(tmp_path / "traces.db"))
+    trace_store.append(
+        _build_trace(
+            "event-1",
+            "ALLOW",
+            "db_query",
+            user_id="user-1",
+            agent_id="agent-1",
+            policy_version="v1",
+        )
+    )
+    trace_store.append(
+        _build_trace(
+            "event-2",
+            "DENY",
+            "db_update",
+            user_id="user-2",
+            agent_id="agent-2",
+            policy_version="v2",
+            matched_rule="kill_switch",
+            is_write_action=True,
+        )
+    )
+    monkeypatch.setenv("AGENTGATE_SIGNING_KEY", "secret")
+
+    exporter = EvidenceExporter(trace_store, version="0.1.0")
+    pack = exporter.export_session("sess-1")
+
+    assert pack.metadata["user_id"] == "multiple"
+    assert pack.metadata["agent_id"] == "multiple"
+    assert pack.summary["kill_switch_activations"] == 1
+    assert set(pack.summary["policy_versions_used"]) == {"v1", "v2"}
+    assert pack.integrity["signature"]
+    assert pack.integrity["signature_algorithm"] == "hmac-sha256"
+
+
+def test_exporter_anomalies_and_summary(tmp_path) -> None:
+    trace_store = TraceStore(str(tmp_path / "traces.db"))
+    base_time = datetime(2026, 1, 1, tzinfo=UTC)
+
+    for i in range(11):
+        trace_store.append(
+            _build_trace(
+                f"rapid-{i}",
+                "ALLOW",
+                "db_query",
+                session_id="sess-rapid",
+                timestamp=base_time + timedelta(milliseconds=i * 50),
+            )
+        )
+
+    trace_store.append(
+        _build_trace(
+            "rare-1",
+            "ALLOW",
+            "rare_tool",
+            session_id="sess-rapid",
+            timestamp=base_time,
+        )
+    )
+
+    trace_store.append(
+        _build_trace(
+            "deny-approval",
+            "DENY",
+            "db_insert",
+            session_id="sess-rapid",
+            policy_version="v2",
+            matched_rule="default_deny",
+            is_write_action=True,
+            approval_token_present=True,
+            timestamp=base_time,
+        )
+    )
+
+    trace_store.append(
+        _build_trace(
+            "irreversible",
+            "ALLOW",
+            "external_write",
+            session_id="sess-rapid",
+            policy_version="v2",
+            matched_rule="write_with_approval",
+            is_write_action=True,
+            approval_token_present=True,
+            timestamp=base_time,
+        )
+    )
+    trace_store.append(
+        _build_trace(
+            "unknown-decision",
+            "UNKNOWN",
+            "db_query",
+            session_id="sess-rapid",
+            policy_version="",
+            matched_rule="unknown",
+            is_write_action=False,
+            timestamp=base_time + timedelta(seconds=2),
+        )
+    )
+
+    exporter = EvidenceExporter(trace_store, version="0.1.0")
+    pack = exporter.export_session("sess-rapid")
+
+    assert pack.summary["write_actions"]["total"] == 2
+    assert pack.summary["write_actions"]["irreversible"] == 1
+    assert pack.policy_analysis["default_denials"] == 1
+
+    anomaly_types = {entry["type"] for entry in pack.anomalies}
+    assert "rapid_fire" in anomaly_types
+    assert "unusual_tool" in anomaly_types
+    assert "denied_after_approval" in anomaly_types
+
+    unusual = next(
+        entry for entry in pack.anomalies if entry["type"] == "unusual_tool"
+    )
+    assert "rare-1" in unusual["event_ids"]
+
+    html_output = exporter.to_html(pack)
+    assert "<td>no</td>" in html_output
+    assert "denied_after_approval" in html_output

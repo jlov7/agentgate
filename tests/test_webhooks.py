@@ -10,7 +10,8 @@ from typing import Any
 import httpx
 import pytest
 
-from agentgate.webhooks import WebhookNotifier
+from agentgate import webhooks
+from agentgate.webhooks import WebhookNotifier, get_webhook_notifier
 
 
 class DummyResponse:
@@ -103,3 +104,32 @@ async def test_webhook_retries_on_failure(monkeypatch) -> None:
     assert ok is False
     assert len(attempts) == 3
     assert sleeps == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_webhook_helper_notifications(monkeypatch) -> None:
+    captured: list[tuple[str, dict[str, Any]]] = []
+
+    async def fake_notify(self, event_type: str, payload: dict[str, Any]) -> bool:
+        captured.append((event_type, payload))
+        return True
+
+    monkeypatch.setattr("agentgate.webhooks.WebhookNotifier.notify", fake_notify)
+
+    notifier = WebhookNotifier(webhook_url="https://example.test/webhook")
+    assert await notifier.notify_policy_denial("sess", "tool", "reason", "trace") is True
+    assert await notifier.notify_rate_limit("subject", "tool", 10) is True
+    assert await notifier.notify_health_change("redis", True, None) is True
+    assert await notifier.notify_health_change("redis", False, "down") is True
+
+    event_types = [event for event, _ in captured]
+    assert "policy.denied" in event_types
+    assert "rate_limit.exceeded" in event_types
+    assert "health.recovered" in event_types
+    assert "health.degraded" in event_types
+
+
+def test_get_webhook_notifier_creates_instance(monkeypatch) -> None:
+    monkeypatch.setattr(webhooks, "_notifier", None)
+    notifier = get_webhook_notifier()
+    assert isinstance(notifier, WebhookNotifier)

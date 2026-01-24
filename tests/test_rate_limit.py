@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections import deque
 
 from agentgate.rate_limit import RateLimiter
 
@@ -97,3 +98,14 @@ def test_rate_limiter_get_status_fields(monkeypatch) -> None:
     status = limiter.get_status("subject", "tool")
     assert status.limit == 1
     assert status.window_seconds == 15
+
+
+def test_rate_limiter_get_status_expired_bucket(monkeypatch) -> None:
+    now = 4000.0
+    monkeypatch.setattr(time, "time", lambda: now)
+
+    limiter = RateLimiter({"tool": 1}, window_seconds=10)
+    limiter._events["subject:tool"] = deque([now - 20])
+
+    status = limiter.get_status("subject", "tool")
+    assert status.reset_at == 4010

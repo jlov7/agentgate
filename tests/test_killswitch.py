@@ -58,6 +58,16 @@ async def test_kill_switch_precedence(fake_redis) -> None:
 
 
 @pytest.mark.asyncio
+async def test_kill_switch_tool_block(fake_redis) -> None:
+    kill_switch = KillSwitch(fake_redis)
+    await fake_redis.set("agentgate:killed:tool:db_query", "Tool blocked")
+
+    blocked, reason = await kill_switch.is_blocked("sess", "db_query")
+    assert blocked is True
+    assert reason == "Tool blocked"
+
+
+@pytest.mark.asyncio
 async def test_kill_switch_defaults_reason(fake_redis) -> None:
     kill_switch = KillSwitch(fake_redis)
 

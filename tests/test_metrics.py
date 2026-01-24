@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agentgate.metrics import MetricsRegistry
+from agentgate.metrics import Counter, Gauge, Histogram, MetricsRegistry
 
 
 def test_metrics_collect_all_includes_expected_metrics() -> None:
@@ -26,3 +26,31 @@ def test_metrics_collect_all_includes_expected_metrics() -> None:
     assert "agentgate_active_sessions" in output
     assert "agentgate_evidence_exports_total" in output
     assert "agentgate_health_status" in output
+
+
+def test_counter_get_and_collect_no_labels() -> None:
+    counter = Counter(name="test_counter", description="Test counter")
+    assert counter.get() == 0.0
+    counter.inc(amount=2.0)
+    assert counter.get() == 2.0
+    output = counter.collect()
+    assert "test_counter 2.0" in output
+
+
+def test_gauge_inc_dec_get() -> None:
+    gauge = Gauge(name="test_gauge", description="Test gauge")
+    gauge.inc(amount=3.0)
+    gauge.dec(amount=1.0)
+    assert gauge.get() == 2.0
+
+
+def test_histogram_collect_without_label_values() -> None:
+    histogram = Histogram(
+        name="test_histogram",
+        description="Test histogram",
+        labels=("endpoint",),
+        buckets=(1.0,),
+    )
+    histogram.observe(0.5)
+    output = histogram.collect()
+    assert 'test_histogram_bucket{le="1.0"} 1' in output
