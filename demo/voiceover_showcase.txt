@@ -1,4 +1,5 @@
-AgentGate sits between agents and tools, enforcing policy in real time.
-We allow a safe read, deny an unknown tool, and require approval for a write.
+AgentGate is a containment-first security gateway for AI tools.
+Every call is evaluated in real time.
+We allow a safe read, deny an unknown tool, and require approval for writes.
 With an approval token, the write succeeds.
-We trigger the kill switch, block further access, and export a full evidence pack with HTML, PDF, and metrics.
+We activate the kill switch, block further access, and export an evidence pack with HTML, PDF, and metrics.

@@ -64,24 +64,24 @@
 <body>
   <header>
     <h1>AgentGate Evidence Pack</h1>
-    <p>Session showcase, generated 2026-01-24T23:53:54.604925+00:00</p>
+    <p>Session showcase, generated 2026-01-24T23:58:23.452070+00:00</p>
   </header>
   <main>
     <section class="grid">
       <div class="card">
-        <div class="stat">50</div>
+        <div class="stat">55</div>
         <div class="muted">Total tool calls</div>
       </div>
       <div class="card">
-        <div class="stat">20</div>
+        <div class="stat">22</div>
         <div class="muted">Allowed</div>
       </div>
       <div class="card">
-        <div class="stat">20</div>
+        <div class="stat">22</div>
         <div class="muted">Denied</div>
       </div>
       <div class="card">
-        <div class="stat">10</div>
+        <div class="stat">11</div>
         <div class="muted">Requires approval</div>
       </div>
     </section>
@@ -150,6 +150,11 @@
 <tr><td>2026-01-24T23:53:44.512928+00:00</td><td>db_insert</td><td class="decision-REQUIRE_APPROVAL">REQUIRE_APPROVAL</td><td>Write action requires human approval</td><td>None</td></tr>
 <tr><td>2026-01-24T23:53:47.030681+00:00</td><td>db_insert</td><td class="decision-ALLOW">ALLOW</td><td>Write action approved</td><td>0</td></tr>
 <tr><td>2026-01-24T23:53:52.053927+00:00</td><td>db_query</td><td class="decision-DENY">DENY</td><td>Kill switch: Showcase completed</td><td>None</td></tr>
+<tr><td>2026-01-24T23:58:08.320535+00:00</td><td>db_query</td><td class="decision-ALLOW">ALLOW</td><td>Read-only tool</td><td>0</td></tr>
+<tr><td>2026-01-24T23:58:10.846043+00:00</td><td>hack_the_planet</td><td class="decision-DENY">DENY</td><td>Tool not in allowlist</td><td>None</td></tr>
+<tr><td>2026-01-24T23:58:13.360939+00:00</td><td>db_insert</td><td class="decision-REQUIRE_APPROVAL">REQUIRE_APPROVAL</td><td>Write action requires human approval</td><td>None</td></tr>
+<tr><td>2026-01-24T23:58:15.879665+00:00</td><td>db_insert</td><td class="decision-ALLOW">ALLOW</td><td>Write action approved</td><td>0</td></tr>
+<tr><td>2026-01-24T23:58:20.901830+00:00</td><td>db_query</td><td class="decision-DENY">DENY</td><td>Kill switch: Showcase completed</td><td>None</td></tr>
           </tbody>
         </table>
       </div>
@@ -166,11 +171,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>read_only_tools</td><td>10</td><td>ALLOW</td></tr>
-<tr><td>unknown_tool</td><td>10</td><td>DENY</td></tr>
-<tr><td>write_requires_approval</td><td>10</td><td>REQUIRE_APPROVAL</td></tr>
-<tr><td>write_with_approval</td><td>10</td><td>ALLOW</td></tr>
-<tr><td>kill_switch</td><td>10</td><td>DENY</td></tr>
+          <tr><td>read_only_tools</td><td>11</td><td>ALLOW</td></tr>
+<tr><td>unknown_tool</td><td>11</td><td>DENY</td></tr>
+<tr><td>write_requires_approval</td><td>11</td><td>REQUIRE_APPROVAL</td></tr>
+<tr><td>write_with_approval</td><td>11</td><td>ALLOW</td></tr>
+<tr><td>kill_switch</td><td>11</td><td>DENY</td></tr>
         </tbody>
       </table>
     </section>
@@ -197,6 +202,7 @@
 <tr><td>2026-01-24T23:51:21.503631+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
 <tr><td>2026-01-24T23:52:09.918254+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
 <tr><td>2026-01-24T23:53:47.030681+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
+<tr><td>2026-01-24T23:58:15.879665+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
         </tbody>
       </table>
     </section>
@@ -224,46 +230,46 @@
   &quot;$schema&quot;: &quot;https://agentgate.dev/schemas/evidence-pack-v1.json&quot;,
   &quot;metadata&quot;: {
     &quot;version&quot;: &quot;1.0.0&quot;,
-    &quot;generated_at&quot;: &quot;2026-01-24T23:53:54.604925+00:00&quot;,
+    &quot;generated_at&quot;: &quot;2026-01-24T23:58:23.452070+00:00&quot;,
     &quot;generator&quot;: &quot;AgentGate v0.2.1&quot;,
     &quot;session_id&quot;: &quot;showcase&quot;,
     &quot;user_id&quot;: null,
     &quot;agent_id&quot;: null,
     &quot;time_range&quot;: {
       &quot;start&quot;: &quot;2026-01-24T17:13:54.979948+00:00&quot;,
-      &quot;end&quot;: &quot;2026-01-24T23:53:52.053927+00:00&quot;
+      &quot;end&quot;: &quot;2026-01-24T23:58:20.901830+00:00&quot;
     }
   },
   &quot;summary&quot;: {
-    &quot;total_tool_calls&quot;: 50,
+    &quot;total_tool_calls&quot;: 55,
     &quot;by_decision&quot;: {
-      &quot;ALLOW&quot;: 20,
-      &quot;DENY&quot;: 20,
-      &quot;REQUIRE_APPROVAL&quot;: 10
+      &quot;ALLOW&quot;: 22,
+      &quot;DENY&quot;: 22,
+      &quot;REQUIRE_APPROVAL&quot;: 11
     },
     &quot;by_tool&quot;: {
       &quot;db_query&quot;: {
-        &quot;allowed&quot;: 10,
-        &quot;denied&quot;: 10
+        &quot;allowed&quot;: 11,
+        &quot;denied&quot;: 11
       },
       &quot;hack_the_planet&quot;: {
         &quot;allowed&quot;: 0,
-        &quot;denied&quot;: 10
+        &quot;denied&quot;: 11
       },
       &quot;db_insert&quot;: {
-        &quot;allowed&quot;: 10,
+        &quot;allowed&quot;: 11,
         &quot;denied&quot;: 0
       }
     },
     &quot;write_actions&quot;: {
-      &quot;total&quot;: 20,
-      &quot;reversible&quot;: 20,
+      &quot;total&quot;: 22,
+      &quot;reversible&quot;: 22,
       &quot;irreversible&quot;: 0
     },
     &quot;policy_versions_used&quot;: [
       &quot;v0&quot;
     ],
-    &quot;kill_switch_activations&quot;: 10
+    &quot;kill_switch_activations&quot;: 11
   },
   &quot;timeline&quot;: [
     {
@@ -765,36 +771,86 @@
       &quot;matched_rule&quot;: &quot;kill_switch&quot;,
       &quot;duration_ms&quot;: null,
       &quot;error&quot;: &quot;Policy denied: Kill switch: Showcase completed&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;b72a2bea-0868-43ed-a83e-e5961cf79c3b&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T23:58:08.320535+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_query&quot;,
+      &quot;decision&quot;: &quot;ALLOW&quot;,
+      &quot;reason&quot;: &quot;Read-only tool&quot;,
+      &quot;matched_rule&quot;: &quot;read_only_tools&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;error&quot;: null
+    },
+    {
+      &quot;event_id&quot;: &quot;ae970e7d-263c-4aa2-a7af-8e91523f627e&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T23:58:10.846043+00:00&quot;,
+      &quot;tool_name&quot;: &quot;hack_the_planet&quot;,
+      &quot;decision&quot;: &quot;DENY&quot;,
+      &quot;reason&quot;: &quot;Tool not in allowlist&quot;,
+      &quot;matched_rule&quot;: &quot;unknown_tool&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Policy denied: Tool not in allowlist&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;07bae89a-2e1c-4009-b9c6-6f61763f4b52&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T23:58:13.360939+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;decision&quot;: &quot;REQUIRE_APPROVAL&quot;,
+      &quot;reason&quot;: &quot;Write action requires human approval&quot;,
+      &quot;matched_rule&quot;: &quot;write_requires_approval&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Approval required: Write action requires human approval&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;09591890-80f1-4499-80f0-a5587c99a89d&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T23:58:15.879665+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;decision&quot;: &quot;ALLOW&quot;,
+      &quot;reason&quot;: &quot;Write action approved&quot;,
+      &quot;matched_rule&quot;: &quot;write_with_approval&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;error&quot;: null
+    },
+    {
+      &quot;event_id&quot;: &quot;0faa4216-729e-448b-b0f3-97da24008720&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T23:58:20.901830+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_query&quot;,
+      &quot;decision&quot;: &quot;DENY&quot;,
+      &quot;reason&quot;: &quot;Kill switch: Showcase completed&quot;,
+      &quot;matched_rule&quot;: &quot;kill_switch&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Policy denied: Kill switch: Showcase completed&quot;
     }
   ],
   &quot;policy_analysis&quot;: {
     &quot;rules_triggered&quot;: {
       &quot;read_only_tools&quot;: {
-        &quot;count&quot;: 10,
+        &quot;count&quot;: 11,
         &quot;decisions&quot;: [
           &quot;ALLOW&quot;
         ]
       },
       &quot;unknown_tool&quot;: {
-        &quot;count&quot;: 10,
+        &quot;count&quot;: 11,
         &quot;decisions&quot;: [
           &quot;DENY&quot;
         ]
       },
       &quot;write_requires_approval&quot;: {
-        &quot;count&quot;: 10,
+        &quot;count&quot;: 11,
         &quot;decisions&quot;: [
           &quot;REQUIRE_APPROVAL&quot;
         ]
       },
       &quot;write_with_approval&quot;: {
-        &quot;count&quot;: 10,
+        &quot;count&quot;: 11,
         &quot;decisions&quot;: [
           &quot;ALLOW&quot;
         ]
       },
       &quot;kill_switch&quot;: {
-        &quot;count&quot;: 10,
+        &quot;count&quot;: 11,
         &quot;decisions&quot;: [
           &quot;DENY&quot;
         ]
@@ -888,16 +944,24 @@
       &quot;reversible&quot;: true,
       &quot;pre_state_ref&quot;: null,
       &quot;approved_by&quot;: &quot;token&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;09591890-80f1-4499-80f0-a5587c99a89d&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T23:58:15.879665+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;reversible&quot;: true,
+      &quot;pre_state_ref&quot;: null,
+      &quot;approved_by&quot;: &quot;token&quot;
     }
   ],
   &quot;anomalies&quot;: [],
   &quot;integrity&quot;: {
-    &quot;event_count&quot;: 50,
-    &quot;hash&quot;: &quot;67f5943ca1ab38b7bb12088581c4d61e892c9706c39cd94390df7b0e4d6cd4b0&quot;,
+    &quot;event_count&quot;: 55,
+    &quot;hash&quot;: &quot;1979cd5dad1ebf88e7ae8818871ecf844b167b897f8e2c7d85d1593efeb922fa&quot;,
     &quot;hash_algorithm&quot;: &quot;sha256&quot;,
-    &quot;signature&quot;: &quot;bec0b43bdc5951e3da062acd3b88c371b67eef31b298420decc35a16c5ce4411&quot;,
+    &quot;signature&quot;: &quot;8f26f2f1775f89147ddfdce5f4849b6cc311de1959403fb3c16b6db241b52738&quot;,
     &quot;signature_algorithm&quot;: &quot;hmac-sha256&quot;,
-    &quot;signed_at&quot;: &quot;2026-01-24T23:53:54.632099+00:00&quot;
+    &quot;signed_at&quot;: &quot;2026-01-24T23:58:23.481615+00:00&quot;
   }
 }</pre>
       </details>
