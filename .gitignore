@@ -1,6 +1,5 @@
 # Virtual environment
 .venv/
-AGENTS.md
 venv/
 env/
 
