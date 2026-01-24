@@ -93,18 +93,18 @@ Every single action an AI agent tries to take goes through this checkpoint. No e
 </tr>
 <tr>
 <td><strong>2. Kill Switches</strong></td>
-<td>Instantly stops an agent, a specific tool, or the entire system</td>
+<td>Stops further tool calls for an agent, a specific tool, or the entire system</td>
 <td>Like an emergency stop button in a factory</td>
 </tr>
 <tr>
 <td><strong>3. Credential Broker</strong></td>
-<td>Gives agents temporary, limited access instead of permanent keys</td>
+<td>Gives agents temporary, limited access instead of permanent keys (stub pattern in this build)</td>
 <td>Like a visitor badge that expires at 5pm</td>
 </tr>
 <tr>
 <td><strong>4. Evidence Export</strong></td>
-<td>Creates tamper-proof records of everything that happened</td>
-<td>Like CCTV footage with timestamps that can't be edited</td>
+<td>Creates audit-ready records (tamper-evident when signing is enabled)</td>
+<td>Like CCTV footage with timestamps and integrity seals</td>
 </tr>
 </table>
 
@@ -154,7 +154,7 @@ Agent: (Continues doing things for 20 minutes)
 ```
 You: POST /sessions/agent-123/kill
 AgentGate: Session terminated. All further actions blocked.
-Time elapsed: 0.3 seconds
+Time elapsed: near-immediate (blocks the next tool call)
 ```
 
 ---
@@ -195,18 +195,18 @@ These human-readable rules get translated into enforceable policies.
 
 ### Evidence Packs (The Proof)
 
-Every action is recorded. When you need proof of what happened, AgentGate generates an **Evidence Pack**—a complete, tamper-proof record containing:
+Every action is recorded. When you need proof of what happened, AgentGate generates an **Evidence Pack**—a complete, audit-ready record (tamper-evident when signing is enabled) containing:
 
 - **What** happened (every tool call)
 - **When** it happened (timestamps)
 - **Who** did it (agent and user IDs)
 - **Why** it was allowed or denied (policy decisions)
-- **Cryptographic proof** that the record hasn't been altered
+- **Integrity checks** with optional signatures for tamper-evident proof
 
 Evidence Packs can be exported as:
 - 📄 **JSON** — For automated processing
 - 🌐 **HTML** — For human review in a browser
-- 📑 **PDF** — For compliance reports and audits
+- 📑 **PDF** — For compliance reports and audits (requires WeasyPrint)
 
 ### Kill Switches (The Emergency Stop)
 
@@ -218,7 +218,7 @@ Three levels of emergency control:
 | **Tool** | One tool across all agents | "Disable database writes" |
 | **Global** | Everything, everywhere | "Stop all agents now" |
 
-Kill switches activate in milliseconds and are backed by Redis for reliability.
+Kill switches are checked on every tool call and are backed by Redis for fast blocking.
 
 ---
 
@@ -230,7 +230,7 @@ No. Logging tells you what **happened**. AgentGate controls what **can happen**.
 
 ### "Will this slow down my agents?"
 
-AgentGate adds approximately 10-50ms per tool call. For most applications, this is imperceptible. The security benefits far outweigh this minimal overhead.
+AgentGate adds some overhead per tool call (policy evaluation + logging). Measure in your environment to set expectations.
 
 ### "What if AgentGate itself fails?"
 
@@ -238,11 +238,11 @@ AgentGate is designed to **fail closed**. If the policy engine is unavailable, r
 
 ### "Can agents bypass AgentGate?"
 
-Only if they have direct access to tools without going through AgentGate. The architecture assumes AgentGate is the **only** path to tools—this is enforced at the network level.
+Only if they have direct access to tools without going through AgentGate. The architecture assumes AgentGate is the **only** path to tools—this must be enforced at deployment (network/VPC/ACLs).
 
 ### "Do I need to be technical to use this?"
 
-To **deploy** AgentGate, some technical knowledge is helpful. To **understand** what it does and **review** its reports, no technical background is needed. The evidence packs and dashboards are designed for non-technical stakeholders.
+To **deploy** AgentGate, some technical knowledge is helpful. To **understand** what it does and **review** its reports, no technical background is needed. The evidence packs are designed for non-technical stakeholders.
 
 ### "Is this production-ready?"
 
@@ -333,7 +333,7 @@ AgentGate is a **reference implementation**—a working proof of concept designe
 | AgentGate is a **security checkpoint** for AI agents |
 | Every action is **checked against policies** before it can proceed |
 | Agents can be **stopped instantly** at any time |
-| Everything is **logged and auditable** with tamper-proof evidence |
+| Everything is **logged and auditable** with tamper-evident evidence (when signing is enabled) |
 | It's designed to **fail safely**—when in doubt, access is denied |
 
 ---
