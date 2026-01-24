@@ -1,0 +1,43 @@
+name: Release Artifacts
+
+on:
+  release:
+    types: [ published ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build release artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install -e ".[dev]"
+
+      - name: Generate showcase artifacts
+        run: scripts/generate_showcase_assets.sh docs/showcase
+
+      - name: Generate SBOM
+        run: make sbom
+
+      - name: Package showcase bundle
+        run: zip -r release-showcase.zip docs/showcase
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            reports/sbom.json
+            release-showcase.zip

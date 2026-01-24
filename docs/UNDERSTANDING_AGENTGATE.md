@@ -255,7 +255,7 @@ AgentGate is a **reference implementation**—a working proof of concept designe
 ### For Evaluators and Decision-Makers
 
 1. **Read this guide** — You just did ✓
-2. **Review the [sample evidence pack](../examples/sample_evidence.html)** — See what audit output looks like
+2. **Review the [sample evidence pack](showcase/evidence.html)** — See what audit output looks like
 3. **Try the demo** — Run `make demo` to see AgentGate in action
 
 ### For Technical Teams
@@ -285,7 +285,7 @@ AgentGate is a **reference implementation**—a working proof of concept designe
 
 1. **Review the policy configuration** in `policies/`
 2. **Examine the evidence export format** in `examples/`
-3. **Read the [SECURITY.md](../SECURITY.md)** for the security model
+3. **Read the [security policy](https://github.com/jlov7/agentgate/blob/main/SECURITY.md)** for the security model
 
 ---
 
@@ -342,11 +342,11 @@ AgentGate is a **reference implementation**—a working proof of concept designe
 
 | Resource | Description |
 |----------|-------------|
-| [README.md](../README.md) | Technical overview and quickstart |
-| [CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute |
-| [SECURITY.md](../SECURITY.md) | Security model and vulnerability reporting |
-| [CHANGELOG.md](../CHANGELOG.md) | Version history |
-| [Sample Evidence (HTML)](../examples/sample_evidence.html) | Example audit report |
+| [README.md](https://github.com/jlov7/agentgate/blob/main/README.md) | Technical overview and quickstart |
+| [CONTRIBUTING.md](https://github.com/jlov7/agentgate/blob/main/CONTRIBUTING.md) | How to contribute |
+| [SECURITY.md](https://github.com/jlov7/agentgate/blob/main/SECURITY.md) | Security model and vulnerability reporting |
+| [CHANGELOG.md](https://github.com/jlov7/agentgate/blob/main/CHANGELOG.md) | Version history |
+| [Sample Evidence (HTML)](showcase/evidence.html) | Example audit report |
 | [API Documentation](http://localhost:8000/docs) | Interactive API reference (when running) |
 
 ---

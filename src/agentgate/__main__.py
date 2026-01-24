@@ -3,6 +3,7 @@
 Usage:
     python -m agentgate              # Start the server
     python -m agentgate --demo       # Run interactive demo
+    python -m agentgate --showcase   # Run showcase and generate artifacts
     python -m agentgate --version    # Print version
     python -m agentgate --help       # Show help
 """
@@ -11,7 +12,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
+from pathlib import Path
+
+DEMO_BASE_URL = "http://localhost:8000"
 
 
 def print_banner() -> None:
@@ -27,17 +32,18 @@ def print_banner() -> None:
     print(banner)
 
 
-async def run_demo() -> None:
+async def run_demo(base_url: str | None = None) -> None:
     """Run the interactive demo."""
     from agentgate.client import AgentGateClient
 
+    base_url = base_url or DEMO_BASE_URL
     print_banner()
     print("=== AgentGate Interactive Demo ===\n")
-    print("This demo requires the AgentGate server running at http://localhost:8000")
+    print(f"This demo requires the AgentGate server running at {base_url}")
     print("Start the server with: make dev\n")
 
     try:
-        async with AgentGateClient("http://localhost:8000") as client:
+        async with AgentGateClient(base_url) as client:
             session_id = "interactive_demo"
 
             # Step 1: Health check
@@ -45,7 +51,7 @@ async def run_demo() -> None:
             import httpx
 
             async with httpx.AsyncClient() as http:
-                resp = await http.get("http://localhost:8000/health")
+                resp = await http.get(f"{base_url}/health")
                 health = resp.json()
                 print(f"   Status: {health['status']}")
                 print(f"   Version: {health['version']}")
@@ -56,7 +62,7 @@ async def run_demo() -> None:
             print("\n2. Listing available tools...")
             async with httpx.AsyncClient() as http:
                 resp = await http.get(
-                    "http://localhost:8000/tools/list",
+                    f"{base_url}/tools/list",
                     params={"session_id": session_id},
                 )
                 tools = resp.json()
@@ -163,6 +169,7 @@ async def run_demo() -> None:
 def main() -> None:
     """CLI entrypoint."""
     from agentgate import __version__
+    from agentgate.showcase import ShowcaseConfig, run_showcase
 
     parser = argparse.ArgumentParser(
         prog="agentgate",
@@ -171,8 +178,25 @@ def main() -> None:
     parser.add_argument(
         "--version", "-v", action="version", version=f"AgentGate {__version__}"
     )
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument("--demo", action="store_true", help="Run interactive demo")
+    mode_group.add_argument(
+        "--showcase", action="store_true", help="Run showcase and generate artifacts"
+    )
     parser.add_argument(
-        "--demo", action="store_true", help="Run interactive demo"
+        "--base-url",
+        default="http://localhost:8000",
+        help="Base URL for demo/showcase (default: http://localhost:8000)",
+    )
+    parser.add_argument(
+        "--showcase-output",
+        default="docs/showcase",
+        help="Output directory for showcase artifacts (default: docs/showcase)",
+    )
+    parser.add_argument(
+        "--showcase-session",
+        default="showcase",
+        help="Session ID for showcase run (default: showcase)",
     )
     parser.add_argument(
         "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"  # nosec B104
@@ -184,7 +208,17 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.demo:
+        global DEMO_BASE_URL
+        DEMO_BASE_URL = args.base_url
         asyncio.run(run_demo())
+    elif args.showcase:
+        config = ShowcaseConfig(
+            base_url=args.base_url,
+            output_dir=Path(args.showcase_output),
+            session_id=args.showcase_session,
+            approval_token=os.getenv("AGENTGATE_APPROVAL_TOKEN", "approved"),
+        )
+        sys.exit(asyncio.run(run_showcase(config)))
     else:
         print_banner()
         import uvicorn

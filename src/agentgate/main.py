@@ -24,10 +24,12 @@ Key capabilities in v0.2.x:
 
 from __future__ import annotations
 
+import inspect
 import os
 import secrets
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Body, FastAPI, Header, HTTPException, Request, Response
@@ -159,6 +161,25 @@ def create_app(
     # Print banner on startup
     print(BANNER)
 
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        yield
+        app.state.trace_store.close()
+        redis_client = getattr(app.state.kill_switch, "redis", None)
+        if redis_client is None:
+            return
+        close_result = getattr(redis_client, "close", None)
+        if callable(close_result):
+            result = close_result()
+            if inspect.isawaitable(result):
+                await result
+        pool = getattr(redis_client, "connection_pool", None)
+        disconnect = getattr(pool, "disconnect", None)
+        if callable(disconnect):
+            result = disconnect()
+            if inspect.isawaitable(result):
+                await result
+
     app = FastAPI(
         title="AgentGate",
         version="0.2.1",
@@ -166,6 +187,7 @@ def create_app(
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
+        lifespan=lifespan,
     )
 
     policy_path = _get_policy_path()

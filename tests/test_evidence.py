@@ -55,69 +55,69 @@ def _build_trace(
 
 
 def test_exporter_builds_pack(tmp_path) -> None:
-    trace_store = TraceStore(str(tmp_path / "traces.db"))
-    trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
-    trace_store.append(_build_trace("event-2", "DENY", "unknown_tool"))
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
+        trace_store.append(_build_trace("event-2", "DENY", "unknown_tool"))
 
-    exporter = EvidenceExporter(trace_store, version="0.1.0")
-    pack = exporter.export_session("sess-1")
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-1")
 
-    assert pack.summary["total_tool_calls"] == 2
-    assert pack.integrity["event_count"] == 2
-    assert pack.metadata["session_id"] == "sess-1"
+        assert pack.summary["total_tool_calls"] == 2
+        assert pack.integrity["event_count"] == 2
+        assert pack.metadata["session_id"] == "sess-1"
 
 
 def test_exporter_json_and_html(tmp_path) -> None:
-    trace_store = TraceStore(str(tmp_path / "traces.db"))
-    trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
 
-    exporter = EvidenceExporter(trace_store, version="0.1.0")
-    pack = exporter.export_session("sess-1")
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-1")
 
-    json_output = exporter.to_json(pack)
-    assert "evidence-pack-v1.json" in json_output
+        json_output = exporter.to_json(pack)
+        assert "evidence-pack-v1.json" in json_output
 
-    html_output = exporter.to_html(pack)
-    assert "AgentGate Evidence Pack" in html_output
-    assert "Timeline" in html_output
+        html_output = exporter.to_html(pack)
+        assert "AgentGate Evidence Pack" in html_output
+        assert "Timeline" in html_output
 
 
 def test_exporter_pdf_with_stub(tmp_path, monkeypatch) -> None:
-    trace_store = TraceStore(str(tmp_path / "traces.db"))
-    trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
 
-    exporter = EvidenceExporter(trace_store, version="0.1.0")
-    pack = exporter.export_session("sess-1")
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-1")
 
-    class DummyHTML:
-        def __init__(self, string: str) -> None:
-            self.string = string
+        class DummyHTML:
+            def __init__(self, string: str) -> None:
+                self.string = string
 
-        def write_pdf(self) -> bytes:
-            return b"%PDF-1.4 dummy"
+            def write_pdf(self) -> bytes:
+                return b"%PDF-1.4 dummy"
 
-    dummy_module = ModuleType("weasyprint")
-    dummy_module.HTML = DummyHTML  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "weasyprint", dummy_module)
+        dummy_module = ModuleType("weasyprint")
+        dummy_module.HTML = DummyHTML  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "weasyprint", dummy_module)
 
-    pdf_bytes = exporter.to_pdf(pack)
-    assert pdf_bytes.startswith(b"%PDF-")
+        pdf_bytes = exporter.to_pdf(pack)
+        assert pdf_bytes.startswith(b"%PDF-")
 
 
 def test_exporter_pdf_import_error(tmp_path, monkeypatch) -> None:
-    trace_store = TraceStore(str(tmp_path / "traces.db"))
-    trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
 
-    exporter = EvidenceExporter(trace_store, version="0.1.0")
-    pack = exporter.export_session("sess-1")
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-1")
 
-    dummy_module = ModuleType("weasyprint")
-    monkeypatch.setitem(sys.modules, "weasyprint", dummy_module)
-    monkeypatch.setattr(sys, "platform", "linux")
+        dummy_module = ModuleType("weasyprint")
+        monkeypatch.setitem(sys.modules, "weasyprint", dummy_module)
+        monkeypatch.setattr(sys, "platform", "linux")
 
-    with pytest.raises(ImportError) as excinfo:
-        exporter.to_pdf(pack)
-    assert "weasyprint" in str(excinfo.value)
+        with pytest.raises(ImportError) as excinfo:
+            exporter.to_pdf(pack)
+        assert "weasyprint" in str(excinfo.value)
 
 
 def test_weasyprint_paths_updates_env(monkeypatch) -> None:
@@ -141,124 +141,124 @@ def test_weasyprint_paths_no_update(monkeypatch) -> None:
 
 
 def test_exporter_signing_and_metadata_identity(tmp_path, monkeypatch) -> None:
-    trace_store = TraceStore(str(tmp_path / "traces.db"))
-    trace_store.append(
-        _build_trace(
-            "event-1",
-            "ALLOW",
-            "db_query",
-            user_id="user-1",
-            agent_id="agent-1",
-            policy_version="v1",
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(
+            _build_trace(
+                "event-1",
+                "ALLOW",
+                "db_query",
+                user_id="user-1",
+                agent_id="agent-1",
+                policy_version="v1",
+            )
         )
-    )
-    trace_store.append(
-        _build_trace(
-            "event-2",
-            "DENY",
-            "db_update",
-            user_id="user-2",
-            agent_id="agent-2",
-            policy_version="v2",
-            matched_rule="kill_switch",
-            is_write_action=True,
+        trace_store.append(
+            _build_trace(
+                "event-2",
+                "DENY",
+                "db_update",
+                user_id="user-2",
+                agent_id="agent-2",
+                policy_version="v2",
+                matched_rule="kill_switch",
+                is_write_action=True,
+            )
         )
-    )
-    monkeypatch.setenv("AGENTGATE_SIGNING_KEY", "secret")
+        monkeypatch.setenv("AGENTGATE_SIGNING_KEY", "secret")
 
-    exporter = EvidenceExporter(trace_store, version="0.1.0")
-    pack = exporter.export_session("sess-1")
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-1")
 
-    assert pack.metadata["user_id"] == "multiple"
-    assert pack.metadata["agent_id"] == "multiple"
-    assert pack.summary["kill_switch_activations"] == 1
-    assert set(pack.summary["policy_versions_used"]) == {"v1", "v2"}
-    assert pack.integrity["signature"]
-    assert pack.integrity["signature_algorithm"] == "hmac-sha256"
+        assert pack.metadata["user_id"] == "multiple"
+        assert pack.metadata["agent_id"] == "multiple"
+        assert pack.summary["kill_switch_activations"] == 1
+        assert set(pack.summary["policy_versions_used"]) == {"v1", "v2"}
+        assert pack.integrity["signature"]
+        assert pack.integrity["signature_algorithm"] == "hmac-sha256"
 
 
 def test_exporter_anomalies_and_summary(tmp_path) -> None:
-    trace_store = TraceStore(str(tmp_path / "traces.db"))
-    base_time = datetime(2026, 1, 1, tzinfo=UTC)
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        base_time = datetime(2026, 1, 1, tzinfo=UTC)
 
-    for i in range(11):
+        for i in range(11):
+            trace_store.append(
+                _build_trace(
+                    f"rapid-{i}",
+                    "ALLOW",
+                    "db_query",
+                    session_id="sess-rapid",
+                    timestamp=base_time + timedelta(milliseconds=i * 50),
+                )
+            )
+
         trace_store.append(
             _build_trace(
-                f"rapid-{i}",
+                "rare-1",
                 "ALLOW",
-                "db_query",
+                "rare_tool",
                 session_id="sess-rapid",
-                timestamp=base_time + timedelta(milliseconds=i * 50),
+                timestamp=base_time,
             )
         )
 
-    trace_store.append(
-        _build_trace(
-            "rare-1",
-            "ALLOW",
-            "rare_tool",
-            session_id="sess-rapid",
-            timestamp=base_time,
+        trace_store.append(
+            _build_trace(
+                "deny-approval",
+                "DENY",
+                "db_insert",
+                session_id="sess-rapid",
+                policy_version="v2",
+                matched_rule="default_deny",
+                is_write_action=True,
+                approval_token_present=True,
+                timestamp=base_time,
+            )
         )
-    )
 
-    trace_store.append(
-        _build_trace(
-            "deny-approval",
-            "DENY",
-            "db_insert",
-            session_id="sess-rapid",
-            policy_version="v2",
-            matched_rule="default_deny",
-            is_write_action=True,
-            approval_token_present=True,
-            timestamp=base_time,
+        trace_store.append(
+            _build_trace(
+                "irreversible",
+                "ALLOW",
+                "external_write",
+                session_id="sess-rapid",
+                policy_version="v2",
+                matched_rule="write_with_approval",
+                is_write_action=True,
+                approval_token_present=True,
+                timestamp=base_time,
+            )
         )
-    )
-
-    trace_store.append(
-        _build_trace(
-            "irreversible",
-            "ALLOW",
-            "external_write",
-            session_id="sess-rapid",
-            policy_version="v2",
-            matched_rule="write_with_approval",
-            is_write_action=True,
-            approval_token_present=True,
-            timestamp=base_time,
+        trace_store.append(
+            _build_trace(
+                "unknown-decision",
+                "UNKNOWN",
+                "db_query",
+                session_id="sess-rapid",
+                policy_version="",
+                matched_rule="unknown",
+                is_write_action=False,
+                timestamp=base_time + timedelta(seconds=2),
+            )
         )
-    )
-    trace_store.append(
-        _build_trace(
-            "unknown-decision",
-            "UNKNOWN",
-            "db_query",
-            session_id="sess-rapid",
-            policy_version="",
-            matched_rule="unknown",
-            is_write_action=False,
-            timestamp=base_time + timedelta(seconds=2),
+
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-rapid")
+
+        assert pack.summary["write_actions"]["total"] == 2
+        assert pack.summary["write_actions"]["irreversible"] == 1
+        assert pack.policy_analysis["default_denials"] == 1
+
+        anomaly_types = {entry["type"] for entry in pack.anomalies}
+        assert "rapid_fire" in anomaly_types
+        assert "unusual_tool" in anomaly_types
+        assert "denied_after_approval" in anomaly_types
+
+        unusual = next(
+            entry for entry in pack.anomalies if entry["type"] == "unusual_tool"
         )
-    )
+        assert "rare-1" in unusual["event_ids"]
 
-    exporter = EvidenceExporter(trace_store, version="0.1.0")
-    pack = exporter.export_session("sess-rapid")
-
-    assert pack.summary["write_actions"]["total"] == 2
-    assert pack.summary["write_actions"]["irreversible"] == 1
-    assert pack.policy_analysis["default_denials"] == 1
-
-    anomaly_types = {entry["type"] for entry in pack.anomalies}
-    assert "rapid_fire" in anomaly_types
-    assert "unusual_tool" in anomaly_types
-    assert "denied_after_approval" in anomaly_types
-
-    unusual = next(
-        entry for entry in pack.anomalies if entry["type"] == "unusual_tool"
-    )
-    assert "rare-1" in unusual["event_ids"]
-
-    html_output = exporter.to_html(pack)
-    assert "<td>no</td>" in html_output
-    assert "denied_after_approval" in html_output
+        html_output = exporter.to_html(pack)
+        assert "<td>no</td>" in html_output
+        assert "denied_after_approval" in html_output

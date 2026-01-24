@@ -41,6 +41,7 @@ dependencies = [
   "pydantic>=2.6",
   "redis>=5.0",
   "structlog>=24.1",
+  "rich>=13.7",
 ]
 
 [project.optional-dependencies]

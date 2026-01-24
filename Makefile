@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint test-adversarial demo clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke verify verify-strict
+.PHONY: setup dev test lint test-adversarial demo showcase showcase-record clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke verify verify-strict
 
 # ============================================================================
 # Development
@@ -21,6 +21,12 @@ demo:
 
 demo-interactive:
 	.venv/bin/python -m agentgate --demo
+
+showcase:
+	bash demo/run_showcase.sh
+
+showcase-record:
+	bash demo/record_demo.sh docs/showcase/showcase.log demo/run_showcase.sh
 
 # ============================================================================
 # Testing
@@ -186,6 +192,8 @@ help:
 	@echo "  make run             Start server without reload"
 	@echo "  make demo            Run scripted demo"
 	@echo "  make demo-interactive Run interactive demo"
+	@echo "  make showcase        Run showcase demo + generate artifacts"
+	@echo "  make showcase-record Record showcase output to docs/showcase/showcase.log"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test            Run unit tests"

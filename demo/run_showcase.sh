@@ -9,4 +9,6 @@ if [[ ! -x ".venv/bin/uvicorn" ]]; then
   exit 1
 fi
 
-scripts/load_server.sh .venv/bin/python demo/agent.py
+mkdir -p docs/showcase
+
+scripts/load_server.sh .venv/bin/python -m agentgate --showcase --showcase-output docs/showcase

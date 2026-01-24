@@ -1,0 +1,51 @@
+# HELP agentgate_tool_calls_total Total number of tool calls processed
+# TYPE agentgate_tool_calls_total counter
+agentgate_tool_calls_total{tool="db_insert",decision="ALLOW"} 1.0
+agentgate_tool_calls_total{tool="db_insert",decision="REQUIRE_APPROVAL"} 1.0
+agentgate_tool_calls_total{tool="db_query",decision="ALLOW"} 1.0
+agentgate_tool_calls_total{tool="db_query",decision="DENY"} 1.0
+agentgate_tool_calls_total{tool="hack_the_planet",decision="DENY"} 1.0
+
+# HELP agentgate_request_duration_seconds Request processing duration in seconds
+# TYPE agentgate_request_duration_seconds histogram
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.005"} 1
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.01"} 4
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.025"} 9
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.05"} 14
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.1"} 19
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.25"} 24
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.5"} 29
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="1.0"} 34
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="2.5"} 39
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="5.0"} 44
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="10.0"} 49
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="+Inf"} 5
+agentgate_request_duration_seconds_sum{endpoint="tools_call"} 0.05152741610072553
+agentgate_request_duration_seconds_count{endpoint="tools_call"} 5
+
+# HELP agentgate_kill_switch_activations_total Total number of kill switch activations
+# TYPE agentgate_kill_switch_activations_total counter
+agentgate_kill_switch_activations_total{level="session"} 1.0
+
+# HELP agentgate_policy_evaluations_total Total number of policy evaluations
+# TYPE agentgate_policy_evaluations_total counter
+agentgate_policy_evaluations_total 0
+
+# HELP agentgate_rate_limit_hits_total Total number of rate limit denials
+# TYPE agentgate_rate_limit_hits_total counter
+agentgate_rate_limit_hits_total 0
+
+# HELP agentgate_active_sessions Number of active agent sessions
+# TYPE agentgate_active_sessions gauge
+agentgate_active_sessions 0
+
+# HELP agentgate_evidence_exports_total Total number of evidence pack exports
+# TYPE agentgate_evidence_exports_total counter
+agentgate_evidence_exports_total{format="html"} 1.0
+agentgate_evidence_exports_total{format="json"} 1.0
+agentgate_evidence_exports_total{format="pdf"} 1.0
+
+# HELP agentgate_health_status Health status of dependencies (1=healthy, 0=unhealthy)
+# TYPE agentgate_health_status gauge
+agentgate_health_status{dependency="opa"} 1.0
+agentgate_health_status{dependency="redis"} 1.0

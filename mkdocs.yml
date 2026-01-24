@@ -1,0 +1,55 @@
+site_name: AgentGate
+site_description: Containment-first security gateway for AI agents using MCP tools.
+site_url: https://jlov7.github.io/agentgate/
+repo_url: https://github.com/jlov7/agentgate
+repo_name: jlov7/agentgate
+edit_uri: edit/main/docs/
+
+nav:
+  - Home: index.md
+  - Executive Summary: EXEC_SUMMARY.md
+  - Demo Script: DEMO_SCRIPT.md
+  - Architecture: ARCHITECTURE.md
+  - Threat Model: THREAT_MODEL.md
+  - Showcase Artifacts: showcase/README.md
+  - Understanding AgentGate: UNDERSTANDING_AGENTGATE.md
+  - Docs Hub: DOCS_HUB.md
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.tabs.link
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: teal
+      accent: amber
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_div_format
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js
+  - javascripts/mermaid-init.js

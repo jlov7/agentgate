@@ -1,0 +1,25 @@
+{
+  "artifacts": {
+    "evidence_html": "docs/showcase/evidence.html",
+    "evidence_json": "docs/showcase/evidence.json",
+    "evidence_pdf": "docs/showcase/evidence.pdf",
+    "metrics": "docs/showcase/metrics.prom",
+    "summary": "docs/showcase/summary.json"
+  },
+  "base_url": "http://localhost:8000",
+  "health": {
+    "opa": true,
+    "redis": true,
+    "status": "ok",
+    "version": "0.2.1"
+  },
+  "results": {
+    "allow": true,
+    "approved": true,
+    "blocked": true,
+    "deny": true,
+    "pending": "REQUIRE_APPROVAL"
+  },
+  "session_id": "showcase",
+  "timestamp": "2026-01-24T17:18:26.745222+00:00"
+}

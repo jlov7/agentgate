@@ -42,16 +42,18 @@ def test_hash_arguments_safe_falls_back() -> None:
 
 
 def test_trace_store_list_sessions_and_since_filter(tmp_path) -> None:
-    store = TraceStore(str(tmp_path / "traces.db"))
-    store.append(_build_event("evt-1", "sess-a", datetime(2026, 1, 1, tzinfo=UTC)))
-    store.append(_build_event("evt-2", "sess-b", datetime(2026, 1, 2, tzinfo=UTC)))
-    store.append(_build_event("evt-3", "sess-a", datetime(2026, 1, 3, tzinfo=UTC)))
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        store.append(_build_event("evt-1", "sess-a", datetime(2026, 1, 1, tzinfo=UTC)))
+        store.append(_build_event("evt-2", "sess-b", datetime(2026, 1, 2, tzinfo=UTC)))
+        store.append(_build_event("evt-3", "sess-a", datetime(2026, 1, 3, tzinfo=UTC)))
 
-    sessions = store.list_sessions()
-    assert sessions == ["sess-a", "sess-b"]
+        sessions = store.list_sessions()
+        assert sessions == ["sess-a", "sess-b"]
 
-    filtered = store.query(session_id="sess-a", since=datetime(2026, 1, 2, tzinfo=UTC))
-    assert [event.event_id for event in filtered] == ["evt-3"]
+        filtered = store.query(
+            session_id="sess-a", since=datetime(2026, 1, 2, tzinfo=UTC)
+        )
+        assert [event.event_id for event in filtered] == ["evt-3"]
 
 
 def test_trace_store_migrates_legacy_schema(tmp_path) -> None:
@@ -77,15 +79,15 @@ def test_trace_store_migrates_legacy_schema(tmp_path) -> None:
     conn.commit()
     conn.close()
 
-    store = TraceStore(str(db_path))
-    columns = {
-        row[1] for row in store.conn.execute("PRAGMA table_info(traces)").fetchall()
-    }
-    assert "user_id" in columns
-    assert "agent_id" in columns
-    assert "policy_version" in columns
-    assert "is_write_action" in columns
-    assert "approval_token_present" in columns
+    with TraceStore(str(db_path)) as store:
+        columns = {
+            row[1] for row in store.conn.execute("PRAGMA table_info(traces)").fetchall()
+        }
+        assert "user_id" in columns
+        assert "agent_id" in columns
+        assert "policy_version" in columns
+        assert "is_write_action" in columns
+        assert "approval_token_present" in columns
 
 
 def test_hash_arguments_deterministic() -> None:

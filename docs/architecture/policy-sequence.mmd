@@ -1,0 +1,22 @@
+sequenceDiagram
+  autonumber
+  participant Agent
+  participant Gateway
+  participant Policy as Policy Gate
+  participant Trace as Trace Store
+  participant Tool as Tool Server
+
+  Agent->>Gateway: POST /tools/call
+  Gateway->>Policy: Evaluate policy
+  Policy-->>Gateway: ALLOW / DENY / REQUIRE_APPROVAL
+  Gateway->>Trace: Append decision + context
+  alt ALLOW
+    Gateway->>Tool: Execute tool call
+    Tool-->>Gateway: Result
+  else REQUIRE_APPROVAL
+    Gateway-->>Agent: Pending approval
+  else DENY
+    Gateway-->>Agent: Denied
+  end
+  Gateway->>Trace: Append outcome
+  Gateway-->>Agent: Response

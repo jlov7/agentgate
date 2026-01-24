@@ -82,7 +82,9 @@ def policy_data() -> dict[str, Any]:
 
 @pytest.fixture()
 def trace_store(tmp_path: Path) -> TraceStore:
-    return TraceStore(str(tmp_path / "traces.db"))
+    store = TraceStore(str(tmp_path / "traces.db"))
+    yield store
+    store.close()
 
 
 @pytest.fixture()

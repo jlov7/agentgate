@@ -1,7 +1,11 @@
 # AgentGate
 
 [![CI](https://github.com/jlov7/agentgate/actions/workflows/ci.yml/badge.svg)](https://github.com/jlov7/agentgate/actions)
+[![CodeQL](https://github.com/jlov7/agentgate/actions/workflows/codeql.yml/badge.svg)](https://github.com/jlov7/agentgate/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jlov7/agentgate/badge)](https://securityscorecards.dev/viewer/?uri=github.com/jlov7/agentgate)
+[![Docs](https://github.com/jlov7/agentgate/actions/workflows/docs.yml/badge.svg)](https://jlov7.github.io/agentgate/)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Mutation Score](docs/assets/mutation-score.svg)](docs/assets/mutation-score.svg)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-brightgreen.svg)](http://localhost:8000/docs)
 
@@ -23,6 +27,12 @@
 ## 📚 New Here?
 
 **For a non-technical introduction**, read **[Understanding AgentGate](docs/UNDERSTANDING_AGENTGATE.md)** — a plain-language guide that explains what AgentGate is, why it matters, and how it works. No technical background required.
+
+**For execs and stakeholders**, read **[Executive Summary](docs/EXEC_SUMMARY.md)** — a one-page brief with positioning, differentiators, and the 60-second proof path.
+
+**For a 60-second live demo**, use **[Demo Script](docs/DEMO_SCRIPT.md)** and run `make showcase`.
+
+**For the docs site**, visit **https://jlov7.github.io/agentgate/**.
 
 **For technical details**, continue reading this README.
 
@@ -103,6 +113,22 @@ See [NIST AI RMF](https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf) for re
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### Architecture (Mermaid)
+
+```mermaid
+flowchart LR
+  A[Agent Runtime] -->|MCP tool call| B[AgentGate Gateway]
+  B --> C[Policy Gate OPA Rego]
+  B --> D[Kill Switch Redis]
+  B --> E[Credential Broker]
+  B --> F[Trace Store append-only]
+  B --> G[Metrics endpoint]
+  B --> H[Webhook Alerts]
+  B --> I[MCP Tool Servers]
+```
+
+See `docs/ARCHITECTURE.md` for the policy decision sequence and slide-ready SVGs.
+
 ---
 
 ## Quickstart
@@ -128,6 +154,21 @@ The gateway will be available at `http://localhost:8000`.
 curl http://localhost:8000/health
 # {"status":"ok","version":"0.2.1","opa":true,"redis":true}
 ```
+
+---
+
+## Showcase (60 Seconds)
+
+Run the narrated showcase and generate stakeholder-ready artifacts in `docs/showcase/`:
+
+```bash
+make showcase
+```
+
+Then open:
+- `docs/showcase/evidence.html` (audit-ready evidence pack)
+- `docs/showcase/metrics.prom` (Prometheus snapshot)
+- `docs/showcase/showcase.log` (narrated terminal run)
 
 ---
 
@@ -198,6 +239,13 @@ Sample outputs: [`examples/sample_evidence.json`](examples/sample_evidence.json)
 
 ## Demo
 
+### Showcase Demo
+
+```bash
+# Runs a narrated showcase and writes artifacts to docs/showcase/
+make showcase
+```
+
 ### Interactive Demo
 
 ```bash
@@ -235,6 +283,9 @@ python -m agentgate --host 0.0.0.0 --port 9000
 
 # Run interactive demo
 python -m agentgate --demo
+
+# Run narrated showcase and generate artifacts
+python -m agentgate --showcase
 
 # Show version
 python -m agentgate --version
@@ -461,6 +512,12 @@ This is a personal, independent project. It is not affiliated with any employer 
 | Resource | Description |
 |----------|-------------|
 | [Understanding AgentGate](docs/UNDERSTANDING_AGENTGATE.md) | Non-technical introduction |
+| [Executive Summary](docs/EXEC_SUMMARY.md) | One-page stakeholder brief |
+| [Demo Script](docs/DEMO_SCRIPT.md) | 60-second live demo |
+| [Architecture](docs/ARCHITECTURE.md) | Data flow + policy decision diagrams |
+| [Threat Model](docs/THREAT_MODEL.md) | Threats, controls, evidence signals |
+| [Showcase Artifacts](docs/showcase/README.md) | Evidence pack, metrics snapshot, logs |
+| [Docs Site](https://jlov7.github.io/agentgate/) | Executive-friendly documentation |
 | [API Documentation](http://localhost:8000/docs) | Interactive OpenAPI docs (when running) |
 | [Contributing Guide](CONTRIBUTING.md) | How to contribute |
 | [Security Policy](SECURITY.md) | Security model and reporting |

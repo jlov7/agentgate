@@ -5,8 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from contextlib import suppress
 from datetime import datetime
 from threading import Lock
+from types import TracebackType
 
 from agentgate.models import TraceEvent
 
@@ -18,7 +20,31 @@ class TraceStore:
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._lock = Lock()
+        self._closed = False
         self._init_schema()
+
+    def close(self) -> None:
+        """Close the underlying SQLite connection."""
+        with self._lock:
+            if self._closed:
+                return
+            self.conn.close()
+            self._closed = True
+
+    def __enter__(self) -> TraceStore:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def __del__(self) -> None:  # pragma: no cover - best-effort cleanup
+        with suppress(Exception):
+            self.close()
 
     def _init_schema(self) -> None:
         """Initialize the trace schema if it does not exist."""
