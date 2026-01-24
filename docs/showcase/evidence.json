@@ -1,20 +1,20 @@
 {
   "anomalies": [],
   "integrity": {
-    "event_count": 25,
-    "hash": "e46ec807fdc67b9fb96b6aeb6cfcc1239faa0c3ef1b4d1d74cbc3d650cd8fee1",
+    "event_count": 50,
+    "hash": "67f5943ca1ab38b7bb12088581c4d61e892c9706c39cd94390df7b0e4d6cd4b0",
     "hash_algorithm": "sha256",
-    "signature": "609127d71115fe3dea634317e2da83a820fe6ca9c3233200e18c9fc98cfead9a",
+    "signature": "bec0b43bdc5951e3da062acd3b88c371b67eef31b298420decc35a16c5ce4411",
     "signature_algorithm": "hmac-sha256",
-    "signed_at": "2026-01-24T17:26:57.110970+00:00"
+    "signed_at": "2026-01-24T23:53:54.595179+00:00"
   },
   "metadata": {
     "agent_id": null,
-    "generated_at": "2026-01-24T17:26:57.063167+00:00",
+    "generated_at": "2026-01-24T23:53:54.560911+00:00",
     "generator": "AgentGate v0.2.1",
     "session_id": "showcase",
     "time_range": {
-      "end": "2026-01-24T17:26:55.045246+00:00",
+      "end": "2026-01-24T23:53:52.053927+00:00",
       "start": "2026-01-24T17:13:54.979948+00:00"
     },
     "user_id": null,
@@ -24,31 +24,31 @@
     "default_denials": 0,
     "rules_triggered": {
       "kill_switch": {
-        "count": 5,
+        "count": 10,
         "decisions": [
           "DENY"
         ]
       },
       "read_only_tools": {
-        "count": 5,
+        "count": 10,
         "decisions": [
           "ALLOW"
         ]
       },
       "unknown_tool": {
-        "count": 5,
+        "count": 10,
         "decisions": [
           "DENY"
         ]
       },
       "write_requires_approval": {
-        "count": 5,
+        "count": 10,
         "decisions": [
           "REQUIRE_APPROVAL"
         ]
       },
       "write_with_approval": {
-        "count": 5,
+        "count": 10,
         "decisions": [
           "ALLOW"
         ]
@@ -63,33 +63,33 @@
   },
   "summary": {
     "by_decision": {
-      "ALLOW": 10,
-      "DENY": 10,
-      "REQUIRE_APPROVAL": 5
+      "ALLOW": 20,
+      "DENY": 20,
+      "REQUIRE_APPROVAL": 10
     },
     "by_tool": {
       "db_insert": {
-        "allowed": 5,
+        "allowed": 10,
         "denied": 0
       },
       "db_query": {
-        "allowed": 5,
-        "denied": 5
+        "allowed": 10,
+        "denied": 10
       },
       "hack_the_planet": {
         "allowed": 0,
-        "denied": 5
+        "denied": 10
       }
     },
-    "kill_switch_activations": 5,
+    "kill_switch_activations": 10,
     "policy_versions_used": [
       "v0"
     ],
-    "total_tool_calls": 25,
+    "total_tool_calls": 50,
     "write_actions": {
       "irreversible": 0,
-      "reversible": 10,
-      "total": 10
+      "reversible": 20,
+      "total": 20
     }
   },
   "timeline": [
@@ -342,6 +342,256 @@
       "reason": "Kill switch: Showcase completed",
       "timestamp": "2026-01-24T17:26:55.045246+00:00",
       "tool_name": "db_query"
+    },
+    {
+      "decision": "ALLOW",
+      "duration_ms": 0,
+      "error": null,
+      "event_id": "8d6e606d-93ab-4f80-a785-0d1080f35c23",
+      "matched_rule": "read_only_tools",
+      "reason": "Read-only tool",
+      "timestamp": "2026-01-24T23:40:55.376858+00:00",
+      "tool_name": "db_query"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
+      "error": "Policy denied: Tool not in allowlist",
+      "event_id": "8f8058c1-6c0e-472b-afb4-95f209fe92ed",
+      "matched_rule": "unknown_tool",
+      "reason": "Tool not in allowlist",
+      "timestamp": "2026-01-24T23:40:57.400794+00:00",
+      "tool_name": "hack_the_planet"
+    },
+    {
+      "decision": "REQUIRE_APPROVAL",
+      "duration_ms": null,
+      "error": "Approval required: Write action requires human approval",
+      "event_id": "6c9200b4-8314-4b8f-ba7f-ac78303d8082",
+      "matched_rule": "write_requires_approval",
+      "reason": "Write action requires human approval",
+      "timestamp": "2026-01-24T23:40:59.413726+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "decision": "ALLOW",
+      "duration_ms": 0,
+      "error": null,
+      "event_id": "bc6ba2db-52cd-4642-8277-63a5f90c4fa3",
+      "matched_rule": "write_with_approval",
+      "reason": "Write action approved",
+      "timestamp": "2026-01-24T23:41:01.426475+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
+      "error": "Policy denied: Kill switch: Showcase completed",
+      "event_id": "ac226580-fbb0-4058-bb1e-0041f5e6b115",
+      "matched_rule": "kill_switch",
+      "reason": "Kill switch: Showcase completed",
+      "timestamp": "2026-01-24T23:41:05.443104+00:00",
+      "tool_name": "db_query"
+    },
+    {
+      "decision": "ALLOW",
+      "duration_ms": 0,
+      "error": null,
+      "event_id": "1757d426-aa99-4798-bda3-998b59ea05b9",
+      "matched_rule": "read_only_tools",
+      "reason": "Read-only tool",
+      "timestamp": "2026-01-24T23:50:52.637905+00:00",
+      "tool_name": "db_query"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
+      "error": "Policy denied: Tool not in allowlist",
+      "event_id": "2d2da07a-405c-47fc-b5fc-287c2bbd8075",
+      "matched_rule": "unknown_tool",
+      "reason": "Tool not in allowlist",
+      "timestamp": "2026-01-24T23:50:52.660937+00:00",
+      "tool_name": "hack_the_planet"
+    },
+    {
+      "decision": "REQUIRE_APPROVAL",
+      "duration_ms": null,
+      "error": "Approval required: Write action requires human approval",
+      "event_id": "788f1b94-71cd-4995-b5f2-f907ea10a87a",
+      "matched_rule": "write_requires_approval",
+      "reason": "Write action requires human approval",
+      "timestamp": "2026-01-24T23:50:52.672975+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "decision": "ALLOW",
+      "duration_ms": 0,
+      "error": null,
+      "event_id": "043790c2-22cd-49e8-aca6-6ea3450e4c02",
+      "matched_rule": "write_with_approval",
+      "reason": "Write action approved",
+      "timestamp": "2026-01-24T23:50:52.686381+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
+      "error": "Policy denied: Kill switch: Showcase completed",
+      "event_id": "380601b9-776a-4fa8-8f92-2e30a18bd736",
+      "matched_rule": "kill_switch",
+      "reason": "Kill switch: Showcase completed",
+      "timestamp": "2026-01-24T23:50:52.702325+00:00",
+      "tool_name": "db_query"
+    },
+    {
+      "decision": "ALLOW",
+      "duration_ms": 0,
+      "error": null,
+      "event_id": "0521dac7-9c85-4a07-98b9-80380b0bf95d",
+      "matched_rule": "read_only_tools",
+      "reason": "Read-only tool",
+      "timestamp": "2026-01-24T23:51:15.455990+00:00",
+      "tool_name": "db_query"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
+      "error": "Policy denied: Tool not in allowlist",
+      "event_id": "c40998fd-b415-4d81-b275-12a3b2d924a3",
+      "matched_rule": "unknown_tool",
+      "reason": "Tool not in allowlist",
+      "timestamp": "2026-01-24T23:51:17.475221+00:00",
+      "tool_name": "hack_the_planet"
+    },
+    {
+      "decision": "REQUIRE_APPROVAL",
+      "duration_ms": null,
+      "error": "Approval required: Write action requires human approval",
+      "event_id": "aa18cff0-bc26-45a6-a99f-965a117b7747",
+      "matched_rule": "write_requires_approval",
+      "reason": "Write action requires human approval",
+      "timestamp": "2026-01-24T23:51:19.488820+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "decision": "ALLOW",
+      "duration_ms": 0,
+      "error": null,
+      "event_id": "6cf3a51e-bfc8-42e6-b5e4-38f0984809f5",
+      "matched_rule": "write_with_approval",
+      "reason": "Write action approved",
+      "timestamp": "2026-01-24T23:51:21.503631+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
+      "error": "Policy denied: Kill switch: Showcase completed",
+      "event_id": "8b02eef1-d99d-44be-996e-483003d57088",
+      "matched_rule": "kill_switch",
+      "reason": "Kill switch: Showcase completed",
+      "timestamp": "2026-01-24T23:51:25.531485+00:00",
+      "tool_name": "db_query"
+    },
+    {
+      "decision": "ALLOW",
+      "duration_ms": 0,
+      "error": null,
+      "event_id": "a7a09acf-5b1b-481c-bc1c-f5c727c62f72",
+      "matched_rule": "read_only_tools",
+      "reason": "Read-only tool",
+      "timestamp": "2026-01-24T23:52:03.860756+00:00",
+      "tool_name": "db_query"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
+      "error": "Policy denied: Tool not in allowlist",
+      "event_id": "7d8906ea-457d-4d8d-9351-5753601ea345",
+      "matched_rule": "unknown_tool",
+      "reason": "Tool not in allowlist",
+      "timestamp": "2026-01-24T23:52:05.885063+00:00",
+      "tool_name": "hack_the_planet"
+    },
+    {
+      "decision": "REQUIRE_APPROVAL",
+      "duration_ms": null,
+      "error": "Approval required: Write action requires human approval",
+      "event_id": "65f25b1d-4a20-4657-8de0-662bd85a8880",
+      "matched_rule": "write_requires_approval",
+      "reason": "Write action requires human approval",
+      "timestamp": "2026-01-24T23:52:07.901284+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "decision": "ALLOW",
+      "duration_ms": 0,
+      "error": null,
+      "event_id": "3f6893df-87ef-4a41-a484-026d196bd7da",
+      "matched_rule": "write_with_approval",
+      "reason": "Write action approved",
+      "timestamp": "2026-01-24T23:52:09.918254+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
+      "error": "Policy denied: Kill switch: Showcase completed",
+      "event_id": "29f5e106-3bc9-407c-a07c-abb0d222798c",
+      "matched_rule": "kill_switch",
+      "reason": "Kill switch: Showcase completed",
+      "timestamp": "2026-01-24T23:52:13.939867+00:00",
+      "tool_name": "db_query"
+    },
+    {
+      "decision": "ALLOW",
+      "duration_ms": 0,
+      "error": null,
+      "event_id": "f20e6ff0-f5d9-46f6-a88b-31569dd1a675",
+      "matched_rule": "read_only_tools",
+      "reason": "Read-only tool",
+      "timestamp": "2026-01-24T23:53:39.463971+00:00",
+      "tool_name": "db_query"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
+      "error": "Policy denied: Tool not in allowlist",
+      "event_id": "bf3e987b-4c8a-45bf-8f8e-6f1ebd64b9d6",
+      "matched_rule": "unknown_tool",
+      "reason": "Tool not in allowlist",
+      "timestamp": "2026-01-24T23:53:41.993012+00:00",
+      "tool_name": "hack_the_planet"
+    },
+    {
+      "decision": "REQUIRE_APPROVAL",
+      "duration_ms": null,
+      "error": "Approval required: Write action requires human approval",
+      "event_id": "97e25db5-1fb1-405c-8d48-94841d59240a",
+      "matched_rule": "write_requires_approval",
+      "reason": "Write action requires human approval",
+      "timestamp": "2026-01-24T23:53:44.512928+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "decision": "ALLOW",
+      "duration_ms": 0,
+      "error": null,
+      "event_id": "567aa809-085a-4e10-a7c3-10dd539ccddc",
+      "matched_rule": "write_with_approval",
+      "reason": "Write action approved",
+      "timestamp": "2026-01-24T23:53:47.030681+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
+      "error": "Policy denied: Kill switch: Showcase completed",
+      "event_id": "8c694867-9ee0-47e7-9d55-091fa1aaaaad",
+      "matched_rule": "kill_switch",
+      "reason": "Kill switch: Showcase completed",
+      "timestamp": "2026-01-24T23:53:52.053927+00:00",
+      "tool_name": "db_query"
     }
   ],
   "write_action_log": [
@@ -383,6 +633,46 @@
       "pre_state_ref": null,
       "reversible": true,
       "timestamp": "2026-01-24T17:26:51.019837+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "approved_by": "token",
+      "event_id": "bc6ba2db-52cd-4642-8277-63a5f90c4fa3",
+      "pre_state_ref": null,
+      "reversible": true,
+      "timestamp": "2026-01-24T23:41:01.426475+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "approved_by": "token",
+      "event_id": "043790c2-22cd-49e8-aca6-6ea3450e4c02",
+      "pre_state_ref": null,
+      "reversible": true,
+      "timestamp": "2026-01-24T23:50:52.686381+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "approved_by": "token",
+      "event_id": "6cf3a51e-bfc8-42e6-b5e4-38f0984809f5",
+      "pre_state_ref": null,
+      "reversible": true,
+      "timestamp": "2026-01-24T23:51:21.503631+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "approved_by": "token",
+      "event_id": "3f6893df-87ef-4a41-a484-026d196bd7da",
+      "pre_state_ref": null,
+      "reversible": true,
+      "timestamp": "2026-01-24T23:52:09.918254+00:00",
+      "tool_name": "db_insert"
+    },
+    {
+      "approved_by": "token",
+      "event_id": "567aa809-085a-4e10-a7c3-10dd539ccddc",
+      "pre_state_ref": null,
+      "reversible": true,
+      "timestamp": "2026-01-24T23:53:47.030681+00:00",
       "tool_name": "db_insert"
     }
   ]

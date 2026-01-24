@@ -66,6 +66,55 @@ _KNOWN_RULES = {
 
 _REVERSIBLE_TOOLS = {"db_insert", "db_update", "file_write"}
 
+_THEMES: dict[str, dict[str, str]] = {
+    "studio": {
+        "--bg": "#f6f4ef",
+        "--card": "#ffffff",
+        "--text": "#1a1a1a",
+        "--muted": "#5c5c5c",
+        "--accent": "#006b5f",
+        "--deny": "#b00020",
+        "--allow": "#0a7a32",
+        "--pending": "#7a5f00",
+        "--border": "#e4e0d8",
+        "--header-start": "#fef5e6",
+        "--header-end": "#f6f4ef",
+        "--table-head": "#fbfaf7",
+        "--code-bg": "#111111",
+        "--code-text": "#e6e6e6",
+    },
+    "light": {
+        "--bg": "#ffffff",
+        "--card": "#f8fafc",
+        "--text": "#0f172a",
+        "--muted": "#475569",
+        "--accent": "#1d4ed8",
+        "--deny": "#b91c1c",
+        "--allow": "#15803d",
+        "--pending": "#a16207",
+        "--border": "#e2e8f0",
+        "--header-start": "#eef2ff",
+        "--header-end": "#ffffff",
+        "--table-head": "#f1f5f9",
+        "--code-bg": "#0b1120",
+        "--code-text": "#e2e8f0",
+    },
+}
+
+
+def _resolve_theme(theme: str | None) -> str:
+    """Normalize and validate the requested theme."""
+    if not theme:
+        return "studio"
+    normalized = theme.strip().lower()
+    return normalized if normalized in _THEMES else "studio"
+
+
+def _format_theme_vars(theme: str) -> str:
+    """Format theme tokens as CSS variable declarations."""
+    tokens = _THEMES[_resolve_theme(theme)]
+    return "\n".join(f"      {name}: {value};" for name, value in tokens.items())
+
 
 @dataclass
 class EvidencePack:
@@ -122,7 +171,7 @@ class EvidenceExporter:
         }
         return json.dumps(payload, indent=2)
 
-    def to_pdf(self, pack: EvidencePack) -> bytes:
+    def to_pdf(self, pack: EvidencePack, theme: str = "studio") -> bytes:
         """Export as a PDF report.
 
         Requires the 'weasyprint' package to be installed.
@@ -142,11 +191,11 @@ class EvidenceExporter:
                 "PDF export requires weasyprint. Install with: pip install weasyprint"
             ) from exc
 
-        html_content = self.to_html(pack)
+        html_content = self.to_html(pack, theme=theme)
         pdf_bytes: bytes = HTML(string=html_content).write_pdf()
         return pdf_bytes
 
-    def to_html(self, pack: EvidencePack) -> str:
+    def to_html(self, pack: EvidencePack, theme: str = "studio") -> str:
         """Export as a self-contained HTML report."""
         json_payload = html.escape(self.to_json(pack))
         summary = pack.summary
@@ -169,24 +218,19 @@ class EvidenceExporter:
             _format_rule_row(name, data)
             for name, data in pack.policy_analysis["rules_triggered"].items()
         )
+        theme_name = _resolve_theme(theme)
+        theme_vars = _format_theme_vars(theme_name)
 
         return f"""<!doctype html>
-<html lang="en">
+<html lang="en" data-theme="{theme_name}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AgentGate Evidence Pack</title>
   <style>
     :root {{
-      --bg: #f6f4ef;
-      --card: #ffffff;
-      --text: #1a1a1a;
-      --muted: #5c5c5c;
-      --accent: #006b5f;
-      --deny: #b00020;
-      --allow: #0a7a32;
-      --pending: #7a5f00;
-      --border: #e4e0d8;
+{theme_vars}
+      color-scheme: light;
     }}
     * {{ box-sizing: border-box; }}
     body {{
@@ -197,7 +241,7 @@ class EvidenceExporter:
     }}
     header {{
       padding: 32px;
-      background: linear-gradient(120deg, #fef5e6, #f6f4ef 60%);
+      background: linear-gradient(120deg, var(--header-start), var(--header-end) 60%);
       border-bottom: 1px solid var(--border);
     }}
     header h1 {{ margin: 0 0 8px 0; font-size: 28px; }}
@@ -212,11 +256,12 @@ class EvidenceExporter:
     table {{ width: 100%; border-collapse: collapse; }}
     th, td {{ text-align: left; padding: 8px;
       border-bottom: 1px solid var(--border); font-size: 13px; }}
-    th {{ background: #fbfaf7; position: sticky; top: 0; }}
+    th {{ background: var(--table-head); position: sticky; top: 0; }}
     .decision-ALLOW {{ color: var(--allow); font-weight: 600; }}
     .decision-DENY {{ color: var(--deny); font-weight: 600; }}
     .decision-REQUIRE_APPROVAL {{ color: var(--pending); font-weight: 600; }}
-    pre {{ background: #111; color: #e6e6e6; padding: 16px; overflow: auto;
+    pre {{ background: var(--code-bg); color: var(--code-text);
+      padding: 16px; overflow: auto;
       border-radius: 12px; font-size: 12px; }}
     details summary {{ cursor: pointer; font-weight: 600; }}
     @media print {{

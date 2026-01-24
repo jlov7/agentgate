@@ -1,8 +1,10 @@
 {
   "artifacts": {
     "evidence_html": "docs/showcase/evidence.html",
+    "evidence_html_light": "docs/showcase/evidence-light.html",
     "evidence_json": "docs/showcase/evidence.json",
     "evidence_pdf": "docs/showcase/evidence.pdf",
+    "evidence_pdf_light": "docs/showcase/evidence-light.pdf",
     "metrics": "docs/showcase/metrics.prom",
     "summary": "docs/showcase/summary.json"
   },
@@ -21,5 +23,5 @@
     "pending": "REQUIRE_APPROVAL"
   },
   "session_id": "showcase",
-  "timestamp": "2026-01-24T17:26:40.831429+00:00"
+  "timestamp": "2026-01-24T23:53:34.384019+00:00"
 }

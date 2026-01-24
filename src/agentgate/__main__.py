@@ -205,6 +205,16 @@ def main() -> None:
         help="Seconds to pause between showcase steps (default: 0)",
     )
     parser.add_argument(
+        "--showcase-theme",
+        default=os.getenv("AGENTGATE_SHOWCASE_THEME", "studio"),
+        help="Theme for evidence HTML/PDF (default: studio)",
+    )
+    parser.add_argument(
+        "--showcase-light-theme",
+        default=os.getenv("AGENTGATE_SHOWCASE_LIGHT_THEME", "light"),
+        help="Alternate light theme name for evidence export (default: light)",
+    )
+    parser.add_argument(
         "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"  # nosec B104
     )
     parser.add_argument(
@@ -224,6 +234,8 @@ def main() -> None:
             session_id=args.showcase_session,
             approval_token=os.getenv("AGENTGATE_APPROVAL_TOKEN", "approved"),
             step_delay=args.showcase_delay,
+            evidence_theme=args.showcase_theme,
+            light_theme=args.showcase_light_theme,
         )
         sys.exit(asyncio.run(run_showcase(config)))
     else:

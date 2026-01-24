@@ -36,6 +36,8 @@ class ShowcaseConfig:
     session_id: str
     approval_token: str
     step_delay: float
+    evidence_theme: str
+    light_theme: str
 
 
 def _write_text(path: Path, content: str) -> None:
@@ -177,7 +179,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
             async with httpx.AsyncClient(base_url=config.base_url, timeout=20.0) as http:
                 html_resp = await http.get(
                     f"/sessions/{config.session_id}/evidence",
-                    params={"format": "html"},
+                    params={"format": "html", "theme": config.evidence_theme},
                 )
                 html_resp.raise_for_status()
                 html_path = output_dir / "evidence.html"
@@ -188,7 +190,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
                 pdf_path = output_dir / "evidence.pdf"
                 pdf_resp = await http.get(
                     f"/sessions/{config.session_id}/evidence",
-                    params={"format": "pdf"},
+                    params={"format": "pdf", "theme": config.evidence_theme},
                 )
                 if pdf_resp.status_code == 200:
                     pdf_path.write_bytes(pdf_resp.content)
@@ -196,6 +198,27 @@ async def run_showcase(config: ShowcaseConfig) -> int:
                     console.print(f"Evidence PDF saved: {pdf_path}")
                 else:
                     console.print("Evidence PDF skipped (install agentgate[pdf] to enable)")
+
+                if config.light_theme and config.light_theme != config.evidence_theme:
+                    light_html_resp = await http.get(
+                        f"/sessions/{config.session_id}/evidence",
+                        params={"format": "html", "theme": config.light_theme},
+                    )
+                    light_html_resp.raise_for_status()
+                    light_html_path = output_dir / "evidence-light.html"
+                    _write_text(light_html_path, light_html_resp.text)
+                    summary["artifacts"]["evidence_html_light"] = str(light_html_path)
+                    console.print(f"Evidence HTML (light) saved: {light_html_path}")
+
+                    light_pdf_resp = await http.get(
+                        f"/sessions/{config.session_id}/evidence",
+                        params={"format": "pdf", "theme": config.light_theme},
+                    )
+                    if light_pdf_resp.status_code == 200:
+                        light_pdf_path = output_dir / "evidence-light.pdf"
+                        light_pdf_path.write_bytes(light_pdf_resp.content)
+                        summary["artifacts"]["evidence_pdf_light"] = str(light_pdf_path)
+                        console.print(f"Evidence PDF (light) saved: {light_pdf_path}")
 
                 metrics_resp = await http.get("/metrics")
                 metrics_resp.raise_for_status()

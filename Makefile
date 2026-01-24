@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint test-adversarial demo showcase showcase-record clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke verify verify-strict
+.PHONY: setup dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke verify verify-strict
 
 # ============================================================================
 # Development
@@ -27,6 +27,12 @@ showcase:
 
 showcase-record:
 	bash demo/record_demo.sh docs/showcase/showcase.log demo/run_showcase.sh
+
+showcase-video:
+	bash demo/record_screen_demo.sh
+
+showcase-video-silent:
+	VOICEOVER=0 bash demo/record_screen_demo.sh
 
 # ============================================================================
 # Testing
@@ -194,6 +200,8 @@ help:
 	@echo "  make demo-interactive Run interactive demo"
 	@echo "  make showcase        Run showcase demo + generate artifacts"
 	@echo "  make showcase-record Record showcase output to docs/showcase/showcase.log"
+	@echo "  make showcase-video  Record a polished MP4 (voiceover + teaser GIF)"
+	@echo "  make showcase-video-silent Record MP4 without voiceover"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test            Run unit tests"

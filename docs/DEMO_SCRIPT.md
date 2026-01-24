@@ -6,6 +6,7 @@ Show containment in action: policy enforcement, approvals, kill switch, and evid
 ## Prep (one time)
 - `make setup`
 - `make showcase`
+- `make showcase-video` (optional: record polished MP4 + teaser GIF)
 
 ## Live Script (60 seconds)
 1) "AgentGate sits between the agent runtime and tools. Every call is evaluated in real time."
@@ -18,6 +19,7 @@ Show containment in action: policy enforcement, approvals, kill switch, and evid
 - Show `docs/showcase/showcase.log` for the narrated run.
 - Point to `docs/showcase/summary.json` for the structured results.
 - Use `make showcase-record` to capture a fresh terminal log.
+- Show `docs/showcase/agentgate-screen-demo.mp4` if you need a pre-recorded demo.
 
 ## Troubleshooting
 - If the showcase cannot connect, run `make dev` first.

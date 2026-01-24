@@ -45,6 +45,8 @@ Step 9/9: Export evidence pack
 Evidence JSON saved: docs/showcase/evidence.json
 Evidence HTML saved: docs/showcase/evidence.html
 Evidence PDF saved: docs/showcase/evidence.pdf
+Evidence HTML (light) saved: docs/showcase/evidence-light.html
+Evidence PDF (light) saved: docs/showcase/evidence-light.pdf
 Metrics snapshot saved: docs/showcase/metrics.prom
 
 Showcase complete. Share these artifacts with stakeholders:

@@ -400,7 +400,9 @@ def create_app(
         return JSONResponse({"status": "resumed"})
 
     @app.get("/sessions/{session_id}/evidence")
-    async def export_evidence(session_id: str, format: str = "json") -> Response:
+    async def export_evidence(
+        session_id: str, format: str = "json", theme: str = "studio"
+    ) -> Response:
         """Export an evidence pack for a session.
 
         Args:
@@ -414,13 +416,13 @@ def create_app(
         if format == "html":
             metrics.evidence_exports_total.inc("html")
             return Response(
-                content=exporter.to_html(pack),
+                content=exporter.to_html(pack, theme=theme),
                 media_type="text/html",
             )
         elif format == "pdf":
             metrics.evidence_exports_total.inc("pdf")
             try:
-                pdf_content = exporter.to_pdf(pack)
+                pdf_content = exporter.to_pdf(pack, theme=theme)
                 return Response(
                     content=pdf_content,
                     media_type="application/pdf",

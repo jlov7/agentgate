@@ -1,0 +1,4 @@
+AgentGate sits between agents and tools, enforcing policy in real time.
+We allow a safe read, deny an unknown tool, and require approval for a write.
+With an approval token, the write succeeds.
+We trigger the kill switch, block further access, and export a full evidence pack with HTML, PDF, and metrics.
