@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -34,6 +35,7 @@ class ShowcaseConfig:
     output_dir: Path
     session_id: str
     approval_token: str
+    step_delay: float
 
 
 def _write_text(path: Path, content: str) -> None:
@@ -52,6 +54,11 @@ def _render_banner(console: Console) -> None:
         box=box.ASCII,
     )
     console.print(panel)
+
+
+async def _pause(step_delay: float) -> None:
+    if step_delay > 0:
+        await asyncio.sleep(step_delay)
 
 
 async def run_showcase(config: ShowcaseConfig) -> int:
@@ -90,6 +97,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
             health_table.add_row("Redis", "OK" if health.get("redis") else "DOWN")
             console.print(health_table)
             console.print("")
+            await _pause(config.step_delay)
 
             console.print("Step 2/9: Listing tools allowed by policy")
             tools_resp = await http.get("/tools/list", params={"session_id": config.session_id})
@@ -97,6 +105,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
             tools = tools_resp.json().get("tools", [])
             console.print(f"Allowed tools: {', '.join(tools)}")
             console.print("")
+            await _pause(config.step_delay)
 
         async with AgentGateClient(config.base_url) as client:
             console.print("Step 3/9: Allowed read (db_query)")
@@ -107,6 +116,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
             )
             console.print(f"Decision: {'ALLOW' if allow_result.get('success') else 'DENY'}")
             console.print("")
+            await _pause(config.step_delay)
 
             console.print("Step 4/9: Denied unknown tool")
             deny_result = await client.call_tool(
@@ -116,6 +126,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
             )
             console.print(f"Decision: {'ALLOW' if deny_result.get('success') else 'DENY'}")
             console.print("")
+            await _pause(config.step_delay)
 
             console.print("Step 5/9: Write without approval")
             pending_result = await client.call_tool(
@@ -127,6 +138,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
             pending_state = "REQUIRE_APPROVAL" if "approval" in pending_error else "DENY"
             console.print(f"Decision: {pending_state}")
             console.print("")
+            await _pause(config.step_delay)
 
             console.print("Step 6/9: Write with approval token")
             approve_result = await client.call_tool(
@@ -137,11 +149,13 @@ async def run_showcase(config: ShowcaseConfig) -> int:
             )
             console.print(f"Decision: {'ALLOW' if approve_result.get('success') else 'DENY'}")
             console.print("")
+            await _pause(config.step_delay)
 
             console.print("Step 7/9: Activate kill switch")
             await client.kill_session(config.session_id, reason="Showcase completed")
             console.print("Kill switch activated")
             console.print("")
+            await _pause(config.step_delay)
 
             console.print("Step 8/9: Confirm blocked after kill switch")
             blocked_result = await client.call_tool(
@@ -151,6 +165,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
             )
             console.print(f"Decision: {'ALLOW' if blocked_result.get('success') else 'DENY'}")
             console.print("")
+            await _pause(config.step_delay)
 
             console.print("Step 9/9: Export evidence pack")
             evidence = await client.export_evidence(config.session_id)
@@ -188,6 +203,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
                 _write_text(metrics_path, metrics_resp.text)
                 summary["artifacts"]["metrics"] = str(metrics_path)
                 console.print(f"Metrics snapshot saved: {metrics_path}")
+                await _pause(config.step_delay)
 
             summary["results"] = {
                 "allow": bool(allow_result.get("success")),
@@ -202,6 +218,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
         console.print(f"- {output_dir}/showcase.log")
         console.print(f"- {output_dir}/evidence.html")
         console.print(f"- {output_dir}/metrics.prom")
+        await _pause(config.step_delay)
 
         summary_path = output_dir / "summary.json"
         summary["artifacts"]["summary"] = str(summary_path)

@@ -8,19 +8,19 @@ agentgate_tool_calls_total{tool="hack_the_planet",decision="DENY"} 1.0
 
 # HELP agentgate_request_duration_seconds Request processing duration in seconds
 # TYPE agentgate_request_duration_seconds histogram
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.005"} 1
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.01"} 4
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.025"} 9
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.05"} 14
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.1"} 19
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.25"} 24
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.5"} 29
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="1.0"} 34
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="2.5"} 39
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="5.0"} 44
-agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="10.0"} 49
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.005"} 0
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.01"} 1
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.025"} 5
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.05"} 10
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.1"} 15
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.25"} 20
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="0.5"} 25
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="1.0"} 30
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="2.5"} 35
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="5.0"} 40
+agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="10.0"} 45
 agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="+Inf"} 5
-agentgate_request_duration_seconds_sum{endpoint="tools_call"} 0.05152741610072553
+agentgate_request_duration_seconds_sum{endpoint="tools_call"} 0.09077000082470477
 agentgate_request_duration_seconds_count{endpoint="tools_call"} 5
 
 # HELP agentgate_kill_switch_activations_total Total number of kill switch activations

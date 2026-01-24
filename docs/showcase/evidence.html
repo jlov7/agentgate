@@ -57,24 +57,24 @@
 <body>
   <header>
     <h1>AgentGate Evidence Pack</h1>
-    <p>Session showcase, generated 2026-01-24T17:18:26.921730+00:00</p>
+    <p>Session showcase, generated 2026-01-24T17:26:57.119541+00:00</p>
   </header>
   <main>
     <section class="grid">
       <div class="card">
-        <div class="stat">10</div>
+        <div class="stat">25</div>
         <div class="muted">Total tool calls</div>
       </div>
       <div class="card">
-        <div class="stat">4</div>
+        <div class="stat">10</div>
         <div class="muted">Allowed</div>
       </div>
       <div class="card">
-        <div class="stat">4</div>
+        <div class="stat">10</div>
         <div class="muted">Denied</div>
       </div>
       <div class="card">
-        <div class="stat">2</div>
+        <div class="stat">5</div>
         <div class="muted">Requires approval</div>
       </div>
     </section>
@@ -103,6 +103,21 @@
 <tr><td>2026-01-24T17:18:26.849186+00:00</td><td>db_insert</td><td class="decision-REQUIRE_APPROVAL">REQUIRE_APPROVAL</td><td>Write action requires human approval</td><td>None</td></tr>
 <tr><td>2026-01-24T17:18:26.862091+00:00</td><td>db_insert</td><td class="decision-ALLOW">ALLOW</td><td>Write action approved</td><td>0</td></tr>
 <tr><td>2026-01-24T17:18:26.875803+00:00</td><td>db_query</td><td class="decision-DENY">DENY</td><td>Kill switch: Showcase completed</td><td>None</td></tr>
+<tr><td>2026-01-24T17:21:37.291532+00:00</td><td>db_query</td><td class="decision-ALLOW">ALLOW</td><td>Read-only tool</td><td>0</td></tr>
+<tr><td>2026-01-24T17:21:37.312820+00:00</td><td>hack_the_planet</td><td class="decision-DENY">DENY</td><td>Tool not in allowlist</td><td>None</td></tr>
+<tr><td>2026-01-24T17:21:37.323734+00:00</td><td>db_insert</td><td class="decision-REQUIRE_APPROVAL">REQUIRE_APPROVAL</td><td>Write action requires human approval</td><td>None</td></tr>
+<tr><td>2026-01-24T17:21:37.338256+00:00</td><td>db_insert</td><td class="decision-ALLOW">ALLOW</td><td>Write action approved</td><td>0</td></tr>
+<tr><td>2026-01-24T17:21:37.353228+00:00</td><td>db_query</td><td class="decision-DENY">DENY</td><td>Kill switch: Showcase completed</td><td>None</td></tr>
+<tr><td>2026-01-24T17:24:39.775540+00:00</td><td>db_query</td><td class="decision-ALLOW">ALLOW</td><td>Read-only tool</td><td>0</td></tr>
+<tr><td>2026-01-24T17:24:39.803273+00:00</td><td>hack_the_planet</td><td class="decision-DENY">DENY</td><td>Tool not in allowlist</td><td>None</td></tr>
+<tr><td>2026-01-24T17:24:39.814629+00:00</td><td>db_insert</td><td class="decision-REQUIRE_APPROVAL">REQUIRE_APPROVAL</td><td>Write action requires human approval</td><td>None</td></tr>
+<tr><td>2026-01-24T17:24:39.828222+00:00</td><td>db_insert</td><td class="decision-ALLOW">ALLOW</td><td>Write action approved</td><td>0</td></tr>
+<tr><td>2026-01-24T17:24:39.843759+00:00</td><td>db_query</td><td class="decision-DENY">DENY</td><td>Kill switch: Showcase completed</td><td>None</td></tr>
+<tr><td>2026-01-24T17:26:44.919174+00:00</td><td>db_query</td><td class="decision-ALLOW">ALLOW</td><td>Read-only tool</td><td>0</td></tr>
+<tr><td>2026-01-24T17:26:46.960881+00:00</td><td>hack_the_planet</td><td class="decision-DENY">DENY</td><td>Tool not in allowlist</td><td>None</td></tr>
+<tr><td>2026-01-24T17:26:48.992946+00:00</td><td>db_insert</td><td class="decision-REQUIRE_APPROVAL">REQUIRE_APPROVAL</td><td>Write action requires human approval</td><td>None</td></tr>
+<tr><td>2026-01-24T17:26:51.019837+00:00</td><td>db_insert</td><td class="decision-ALLOW">ALLOW</td><td>Write action approved</td><td>0</td></tr>
+<tr><td>2026-01-24T17:26:55.045246+00:00</td><td>db_query</td><td class="decision-DENY">DENY</td><td>Kill switch: Showcase completed</td><td>None</td></tr>
           </tbody>
         </table>
       </div>
@@ -119,11 +134,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>read_only_tools</td><td>2</td><td>ALLOW</td></tr>
-<tr><td>unknown_tool</td><td>2</td><td>DENY</td></tr>
-<tr><td>write_requires_approval</td><td>2</td><td>REQUIRE_APPROVAL</td></tr>
-<tr><td>write_with_approval</td><td>2</td><td>ALLOW</td></tr>
-<tr><td>kill_switch</td><td>2</td><td>DENY</td></tr>
+          <tr><td>read_only_tools</td><td>5</td><td>ALLOW</td></tr>
+<tr><td>unknown_tool</td><td>5</td><td>DENY</td></tr>
+<tr><td>write_requires_approval</td><td>5</td><td>REQUIRE_APPROVAL</td></tr>
+<tr><td>write_with_approval</td><td>5</td><td>ALLOW</td></tr>
+<tr><td>kill_switch</td><td>5</td><td>DENY</td></tr>
         </tbody>
       </table>
     </section>
@@ -142,6 +157,9 @@
         <tbody>
           <tr><td>2026-01-24T17:13:55.019102+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
 <tr><td>2026-01-24T17:18:26.862091+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
+<tr><td>2026-01-24T17:21:37.338256+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
+<tr><td>2026-01-24T17:24:39.828222+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
+<tr><td>2026-01-24T17:26:51.019837+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
         </tbody>
       </table>
     </section>
@@ -169,46 +187,46 @@
   &quot;$schema&quot;: &quot;https://agentgate.dev/schemas/evidence-pack-v1.json&quot;,
   &quot;metadata&quot;: {
     &quot;version&quot;: &quot;1.0.0&quot;,
-    &quot;generated_at&quot;: &quot;2026-01-24T17:18:26.921730+00:00&quot;,
+    &quot;generated_at&quot;: &quot;2026-01-24T17:26:57.119541+00:00&quot;,
     &quot;generator&quot;: &quot;AgentGate v0.2.1&quot;,
     &quot;session_id&quot;: &quot;showcase&quot;,
     &quot;user_id&quot;: null,
     &quot;agent_id&quot;: null,
     &quot;time_range&quot;: {
       &quot;start&quot;: &quot;2026-01-24T17:13:54.979948+00:00&quot;,
-      &quot;end&quot;: &quot;2026-01-24T17:18:26.875803+00:00&quot;
+      &quot;end&quot;: &quot;2026-01-24T17:26:55.045246+00:00&quot;
     }
   },
   &quot;summary&quot;: {
-    &quot;total_tool_calls&quot;: 10,
+    &quot;total_tool_calls&quot;: 25,
     &quot;by_decision&quot;: {
-      &quot;ALLOW&quot;: 4,
-      &quot;DENY&quot;: 4,
-      &quot;REQUIRE_APPROVAL&quot;: 2
+      &quot;ALLOW&quot;: 10,
+      &quot;DENY&quot;: 10,
+      &quot;REQUIRE_APPROVAL&quot;: 5
     },
     &quot;by_tool&quot;: {
       &quot;db_query&quot;: {
-        &quot;allowed&quot;: 2,
-        &quot;denied&quot;: 2
+        &quot;allowed&quot;: 5,
+        &quot;denied&quot;: 5
       },
       &quot;hack_the_planet&quot;: {
         &quot;allowed&quot;: 0,
-        &quot;denied&quot;: 2
+        &quot;denied&quot;: 5
       },
       &quot;db_insert&quot;: {
-        &quot;allowed&quot;: 2,
+        &quot;allowed&quot;: 5,
         &quot;denied&quot;: 0
       }
     },
     &quot;write_actions&quot;: {
-      &quot;total&quot;: 4,
-      &quot;reversible&quot;: 4,
+      &quot;total&quot;: 10,
+      &quot;reversible&quot;: 10,
       &quot;irreversible&quot;: 0
     },
     &quot;policy_versions_used&quot;: [
       &quot;v0&quot;
     ],
-    &quot;kill_switch_activations&quot;: 2
+    &quot;kill_switch_activations&quot;: 5
   },
   &quot;timeline&quot;: [
     {
@@ -310,36 +328,186 @@
       &quot;matched_rule&quot;: &quot;kill_switch&quot;,
       &quot;duration_ms&quot;: null,
       &quot;error&quot;: &quot;Policy denied: Kill switch: Showcase completed&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;f23179f0-a7cc-4ce4-adf3-5463c8dee64a&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:21:37.291532+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_query&quot;,
+      &quot;decision&quot;: &quot;ALLOW&quot;,
+      &quot;reason&quot;: &quot;Read-only tool&quot;,
+      &quot;matched_rule&quot;: &quot;read_only_tools&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;error&quot;: null
+    },
+    {
+      &quot;event_id&quot;: &quot;9121a50c-7c97-4bd1-b4f8-a197c7c6f6d4&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:21:37.312820+00:00&quot;,
+      &quot;tool_name&quot;: &quot;hack_the_planet&quot;,
+      &quot;decision&quot;: &quot;DENY&quot;,
+      &quot;reason&quot;: &quot;Tool not in allowlist&quot;,
+      &quot;matched_rule&quot;: &quot;unknown_tool&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Policy denied: Tool not in allowlist&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;1b8a51bb-3c09-4133-a2a0-f8cceffe59db&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:21:37.323734+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;decision&quot;: &quot;REQUIRE_APPROVAL&quot;,
+      &quot;reason&quot;: &quot;Write action requires human approval&quot;,
+      &quot;matched_rule&quot;: &quot;write_requires_approval&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Approval required: Write action requires human approval&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;897e558f-6963-4cfb-afef-0473e88bc17c&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:21:37.338256+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;decision&quot;: &quot;ALLOW&quot;,
+      &quot;reason&quot;: &quot;Write action approved&quot;,
+      &quot;matched_rule&quot;: &quot;write_with_approval&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;error&quot;: null
+    },
+    {
+      &quot;event_id&quot;: &quot;68140173-c172-4a44-9453-bf6e3fec6d1a&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:21:37.353228+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_query&quot;,
+      &quot;decision&quot;: &quot;DENY&quot;,
+      &quot;reason&quot;: &quot;Kill switch: Showcase completed&quot;,
+      &quot;matched_rule&quot;: &quot;kill_switch&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Policy denied: Kill switch: Showcase completed&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;1c2e3e26-5d44-4c6b-803f-e3bb8d78f1d3&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:24:39.775540+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_query&quot;,
+      &quot;decision&quot;: &quot;ALLOW&quot;,
+      &quot;reason&quot;: &quot;Read-only tool&quot;,
+      &quot;matched_rule&quot;: &quot;read_only_tools&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;error&quot;: null
+    },
+    {
+      &quot;event_id&quot;: &quot;3abd7d98-544d-45e2-b602-43f35773caec&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:24:39.803273+00:00&quot;,
+      &quot;tool_name&quot;: &quot;hack_the_planet&quot;,
+      &quot;decision&quot;: &quot;DENY&quot;,
+      &quot;reason&quot;: &quot;Tool not in allowlist&quot;,
+      &quot;matched_rule&quot;: &quot;unknown_tool&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Policy denied: Tool not in allowlist&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;a8c694a6-3daf-426e-abdb-b7309dcc8075&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:24:39.814629+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;decision&quot;: &quot;REQUIRE_APPROVAL&quot;,
+      &quot;reason&quot;: &quot;Write action requires human approval&quot;,
+      &quot;matched_rule&quot;: &quot;write_requires_approval&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Approval required: Write action requires human approval&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;9c8dc62e-d2db-4fdc-95c3-7fe0aa1acef9&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:24:39.828222+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;decision&quot;: &quot;ALLOW&quot;,
+      &quot;reason&quot;: &quot;Write action approved&quot;,
+      &quot;matched_rule&quot;: &quot;write_with_approval&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;error&quot;: null
+    },
+    {
+      &quot;event_id&quot;: &quot;72d36240-5b87-4545-a9e2-5c9502a29bf1&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:24:39.843759+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_query&quot;,
+      &quot;decision&quot;: &quot;DENY&quot;,
+      &quot;reason&quot;: &quot;Kill switch: Showcase completed&quot;,
+      &quot;matched_rule&quot;: &quot;kill_switch&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Policy denied: Kill switch: Showcase completed&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;99844706-a7f1-4a93-b6af-16e52ea9910e&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:26:44.919174+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_query&quot;,
+      &quot;decision&quot;: &quot;ALLOW&quot;,
+      &quot;reason&quot;: &quot;Read-only tool&quot;,
+      &quot;matched_rule&quot;: &quot;read_only_tools&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;error&quot;: null
+    },
+    {
+      &quot;event_id&quot;: &quot;a90f2181-4f86-41e4-a059-c8858a071100&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:26:46.960881+00:00&quot;,
+      &quot;tool_name&quot;: &quot;hack_the_planet&quot;,
+      &quot;decision&quot;: &quot;DENY&quot;,
+      &quot;reason&quot;: &quot;Tool not in allowlist&quot;,
+      &quot;matched_rule&quot;: &quot;unknown_tool&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Policy denied: Tool not in allowlist&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;c591f0d3-4b97-4f2a-9f6a-b5b389a65a16&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:26:48.992946+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;decision&quot;: &quot;REQUIRE_APPROVAL&quot;,
+      &quot;reason&quot;: &quot;Write action requires human approval&quot;,
+      &quot;matched_rule&quot;: &quot;write_requires_approval&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Approval required: Write action requires human approval&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;007ea749-dcc5-4bb9-a1aa-bdeb398f75ed&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:26:51.019837+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;decision&quot;: &quot;ALLOW&quot;,
+      &quot;reason&quot;: &quot;Write action approved&quot;,
+      &quot;matched_rule&quot;: &quot;write_with_approval&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;error&quot;: null
+    },
+    {
+      &quot;event_id&quot;: &quot;348803a0-f54a-4a5b-ac93-0fd5946f2a26&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:26:55.045246+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_query&quot;,
+      &quot;decision&quot;: &quot;DENY&quot;,
+      &quot;reason&quot;: &quot;Kill switch: Showcase completed&quot;,
+      &quot;matched_rule&quot;: &quot;kill_switch&quot;,
+      &quot;duration_ms&quot;: null,
+      &quot;error&quot;: &quot;Policy denied: Kill switch: Showcase completed&quot;
     }
   ],
   &quot;policy_analysis&quot;: {
     &quot;rules_triggered&quot;: {
       &quot;read_only_tools&quot;: {
-        &quot;count&quot;: 2,
+        &quot;count&quot;: 5,
         &quot;decisions&quot;: [
           &quot;ALLOW&quot;
         ]
       },
       &quot;unknown_tool&quot;: {
-        &quot;count&quot;: 2,
+        &quot;count&quot;: 5,
         &quot;decisions&quot;: [
           &quot;DENY&quot;
         ]
       },
       &quot;write_requires_approval&quot;: {
-        &quot;count&quot;: 2,
+        &quot;count&quot;: 5,
         &quot;decisions&quot;: [
           &quot;REQUIRE_APPROVAL&quot;
         ]
       },
       &quot;write_with_approval&quot;: {
-        &quot;count&quot;: 2,
+        &quot;count&quot;: 5,
         &quot;decisions&quot;: [
           &quot;ALLOW&quot;
         ]
       },
       &quot;kill_switch&quot;: {
-        &quot;count&quot;: 2,
+        &quot;count&quot;: 5,
         &quot;decisions&quot;: [
           &quot;DENY&quot;
         ]
@@ -369,16 +537,40 @@
       &quot;reversible&quot;: true,
       &quot;pre_state_ref&quot;: null,
       &quot;approved_by&quot;: &quot;token&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;897e558f-6963-4cfb-afef-0473e88bc17c&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:21:37.338256+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;reversible&quot;: true,
+      &quot;pre_state_ref&quot;: null,
+      &quot;approved_by&quot;: &quot;token&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;9c8dc62e-d2db-4fdc-95c3-7fe0aa1acef9&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:24:39.828222+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;reversible&quot;: true,
+      &quot;pre_state_ref&quot;: null,
+      &quot;approved_by&quot;: &quot;token&quot;
+    },
+    {
+      &quot;event_id&quot;: &quot;007ea749-dcc5-4bb9-a1aa-bdeb398f75ed&quot;,
+      &quot;timestamp&quot;: &quot;2026-01-24T17:26:51.019837+00:00&quot;,
+      &quot;tool_name&quot;: &quot;db_insert&quot;,
+      &quot;reversible&quot;: true,
+      &quot;pre_state_ref&quot;: null,
+      &quot;approved_by&quot;: &quot;token&quot;
     }
   ],
   &quot;anomalies&quot;: [],
   &quot;integrity&quot;: {
-    &quot;event_count&quot;: 10,
-    &quot;hash&quot;: &quot;cda2a3ca4491d8d47c2f57bf8b8d3390d412498910f77e5e751ca2de352f66c5&quot;,
+    &quot;event_count&quot;: 25,
+    &quot;hash&quot;: &quot;e46ec807fdc67b9fb96b6aeb6cfcc1239faa0c3ef1b4d1d74cbc3d650cd8fee1&quot;,
     &quot;hash_algorithm&quot;: &quot;sha256&quot;,
-    &quot;signature&quot;: &quot;6f77b1f3149505a533d9584c8f6cd01326940347e280122a57ebf428bb1f9c02&quot;,
+    &quot;signature&quot;: &quot;609127d71115fe3dea634317e2da83a820fe6ca9c3233200e18c9fc98cfead9a&quot;,
     &quot;signature_algorithm&quot;: &quot;hmac-sha256&quot;,
-    &quot;signed_at&quot;: &quot;2026-01-24T17:18:26.947372+00:00&quot;
+    &quot;signed_at&quot;: &quot;2026-01-24T17:26:57.146104+00:00&quot;
   }
 }</pre>
       </details>

@@ -199,6 +199,12 @@ def main() -> None:
         help="Session ID for showcase run (default: showcase)",
     )
     parser.add_argument(
+        "--showcase-delay",
+        type=float,
+        default=float(os.getenv("AGENTGATE_SHOWCASE_DELAY", "0")),
+        help="Seconds to pause between showcase steps (default: 0)",
+    )
+    parser.add_argument(
         "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"  # nosec B104
     )
     parser.add_argument(
@@ -217,6 +223,7 @@ def main() -> None:
             output_dir=Path(args.showcase_output),
             session_id=args.showcase_session,
             approval_token=os.getenv("AGENTGATE_APPROVAL_TOKEN", "approved"),
+            step_delay=args.showcase_delay,
         )
         sys.exit(asyncio.run(run_showcase(config)))
     else:
