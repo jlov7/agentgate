@@ -13,7 +13,7 @@ Key endpoints:
     - GET /metrics: Prometheus metrics endpoint
     - POST /admin/policies/reload: Hot-reload policy data
 
-New in v0.2.0:
+Key capabilities in v0.2.x:
     - Prometheus metrics at /metrics
     - Rate limit headers (X-RateLimit-*)
     - Webhook notifications for critical events

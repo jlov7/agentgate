@@ -28,7 +28,7 @@ class FakeAsyncClient:
     async def get(self, url: str, params: dict[str, str] | None = None) -> FakeResponse:
         if "health" in url:
             return FakeResponse(
-                {"status": "ok", "version": "0.2.0", "opa": True, "redis": True}
+                {"status": "ok", "version": "0.2.1", "opa": True, "redis": True}
             )
         if "tools/list" in url:
             return FakeResponse({"tools": ["db_query", "db_insert"]})

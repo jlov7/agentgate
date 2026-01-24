@@ -52,7 +52,7 @@ AgentGate implements a containment-first model with four control layers:
 
 **Current release:** v0.2.1 (patch: docs/example version alignment)
 
-### What's New in v0.2.0
+### What's New in v0.2.x
 
 - **Prometheus Metrics** — Full observability at `/metrics`
 - **Webhook Notifications** — Real-time alerts for kill switch activations
