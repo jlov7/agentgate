@@ -14,7 +14,7 @@ from agentgate.main import (
 def test_request_size_middleware_rejects_large_payload(client) -> None:
     response = client.post(
         "/tools/call",
-        data="{}",
+        content=b"{}",
         headers={"content-length": str(MAX_REQUEST_SIZE + 1)},
     )
     assert response.status_code == 413
