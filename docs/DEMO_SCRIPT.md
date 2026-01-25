@@ -19,7 +19,6 @@ Show containment in action: policy enforcement, approvals, kill switch, and evid
 - Show `docs/showcase/showcase.log` for the narrated run.
 - Point to `docs/showcase/summary.json` for the structured results.
 - Use `make showcase-record` to capture a fresh terminal log.
-- Show `docs/showcase/agentgate-screen-demo.mp4` if you need a pre-recorded demo.
 
 ## Troubleshooting
 - If the showcase cannot connect, run `make dev` first.

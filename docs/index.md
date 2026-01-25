@@ -23,7 +23,7 @@
     </div>
   </div>
   <div class="ag-hero__media">
-    <img src="assets/demo.gif" alt="AgentGate showcase demo" loading="lazy" />
+    <img src="assets/architecture-flow.svg" alt="AgentGate architecture flow" loading="lazy" />
   </div>
 </div>
 

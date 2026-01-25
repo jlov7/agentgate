@@ -11,14 +11,9 @@ This folder contains the output of `python -m agentgate --showcase`.
 - `evidence-light.html` - light theme evidence variant
 - `evidence-light.pdf` - light theme PDF variant
 - `metrics.prom` - Prometheus metrics snapshot
-- `agentgate-screen-demo.mp4` - polished screen recording (voiceover-ready)
-- `../assets/demo.gif` - 12-second teaser GIF for docs site
 
 ## Regenerate
 Run:
 - `make showcase`
 - `make showcase-record` (record terminal output)
-- `make showcase-video` (record screen + polish + teaser GIF)
 - or `python -m agentgate --showcase --showcase-output docs/showcase`
-
-Set `VOICEOVER=0` to disable the baked-in narration for the MP4.
