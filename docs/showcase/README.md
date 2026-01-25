@@ -17,3 +17,6 @@ Run:
 - `make showcase`
 - `make showcase-record` (record terminal output)
 - or `python -m agentgate --showcase --showcase-output docs/showcase`
+
+Generate screenshots for README/docs:
+- `node scripts/generate_showcase_screenshots.js`

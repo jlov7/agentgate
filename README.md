@@ -172,6 +172,16 @@ Then open:
 
 ---
 
+## UX Snapshots
+
+<img src="docs/assets/showcase-terminal.png" alt="AgentGate showcase terminal run" width="860" />
+
+<img src="docs/assets/showcase-evidence.png" alt="AgentGate evidence pack preview" width="860" />
+
+<img src="docs/assets/showcase-evidence-light.png" alt="AgentGate evidence pack preview (light theme)" width="860" />
+
+---
+
 ## API Reference
 
 ### Core Endpoints
