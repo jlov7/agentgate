@@ -75,7 +75,7 @@ def test_export_evidence_formats(client) -> None:
 
 
 def test_export_evidence_pdf_missing_dependency(client, monkeypatch) -> None:
-    def fake_to_pdf(self, pack):
+    def fake_to_pdf(self, pack, **_kwargs):
         raise ImportError("no weasyprint")
 
     monkeypatch.setattr(
@@ -87,7 +87,7 @@ def test_export_evidence_pdf_missing_dependency(client, monkeypatch) -> None:
 
 
 def test_export_evidence_pdf_success(client, monkeypatch) -> None:
-    def fake_to_pdf(pack):
+    def fake_to_pdf(pack, **_kwargs):
         return b"%PDF-1.4 test"
 
     monkeypatch.setattr(client.app.state.evidence_exporter, "to_pdf", fake_to_pdf)
