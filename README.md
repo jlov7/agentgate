@@ -38,6 +38,28 @@
 
 ---
 
+## 1-Minute Tour
+
+1) Run `make showcase` to generate the full evidence pack in `docs/showcase/`.
+2) Open `docs/showcase/showcase.log` for the narrated policy decisions.
+3) Open `docs/showcase/evidence.html` to review the audit-ready report.
+4) Open `docs/showcase/metrics.prom` to see live Prometheus counters.
+
+---
+
+## What This Is / Isn't
+
+**This is:**
+- A containment-first gateway for MCP tool calls with real-time policy enforcement.
+- An evidence engine that produces signed JSON/HTML/PDF audit packs.
+- A reference implementation you can integrate into agent runtimes.
+
+**This isn’t:**
+- A model, agent framework, or autonomous system by itself.
+- A turnkey production product (see the R&D note above).
+
+---
+
 ## The Problem
 
 Most platforms can **observe** what agents do, but few can **stop** them in real time.

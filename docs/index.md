@@ -32,6 +32,11 @@
 - AI agents need policy enforcement at the tool boundary, not after the fact.
 - Audit teams need evidence packs, not screenshots and log fragments.
 
+## Key Proof Points
+- **Real-time decisions**: ALLOW / DENY / REQUIRE_APPROVAL on every tool call.
+- **Immediate containment**: kill switch stops sessions, tools, or the system globally.
+- **Audit-ready evidence**: signed JSON, HTML, and PDF with full timelines.
+
 ## Showcase Output
 ```text
 +--------------------------------------------------------------------------------+
