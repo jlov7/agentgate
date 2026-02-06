@@ -108,7 +108,7 @@ jobs:
 
       - name: Upload Playwright artifacts (failure only)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-artifacts
           path: |
@@ -166,7 +166,7 @@ jobs:
           .venv/bin/cyclonedx-py environment -o reports/sbom.json
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: sbom
           path: reports/sbom.json
@@ -233,7 +233,7 @@ jobs:
 
       - name: Upload load test summary artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: load-test-summary
           path: reports/load-test-summary.json
