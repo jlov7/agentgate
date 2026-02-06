@@ -224,13 +224,21 @@ jobs:
         run: |
           scripts/load_server.sh scripts/run_load_test.sh
 
-      - name: Upload load test summary
+      - name: Validate load test summary file
         if: always()
+        run: |
+          if [[ ! -s reports/load-test-summary.json ]]; then
+            echo "Expected reports/load-test-summary.json to exist and be non-empty." >&2
+            exit 1
+          fi
+
+      - name: Upload load test summary
+        if: always() && hashFiles('reports/load-test-summary.json') != ''
         run: |
           .venv/bin/python scripts/render_load_test_summary.py reports/load-test-summary.json >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload load test summary artifact
-        if: always()
+        if: always() && hashFiles('reports/load-test-summary.json') != ''
         uses: actions/upload-artifact@v6
         with:
           name: load-test-summary

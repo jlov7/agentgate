@@ -64,12 +64,23 @@ def test_load_test_p95_budget_is_not_too_strict() -> None:
     assert load_test_env["LOAD_TEST_SUMMARY"] == "reports/load-test-summary.json"
     assert "continue-on-error" not in run_load_test_step
 
+    validate_summary_step = next(
+        step for step in load_test_steps if step["name"] == "Validate load test summary file"
+    )
+    assert validate_summary_step["if"] == "always()"
+    assert "reports/load-test-summary.json" in validate_summary_step["run"]
+
     upload_summary_step = next(
         step for step in load_test_steps if step["name"] == "Upload load test summary"
     )
-    assert upload_summary_step["if"] == "always()"
+    assert (
+        upload_summary_step["if"] == "always() && hashFiles('reports/load-test-summary.json') != ''"
+    )
 
     upload_summary_artifact_step = next(
         step for step in load_test_steps if step["name"] == "Upload load test summary artifact"
     )
-    assert upload_summary_artifact_step["if"] == "always()"
+    assert (
+        upload_summary_artifact_step["if"]
+        == "always() && hashFiles('reports/load-test-summary.json') != ''"
+    )

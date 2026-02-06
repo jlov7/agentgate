@@ -27,28 +27,31 @@ fi
 
 if command -v docker >/dev/null 2>&1; then
   docker_base_url="${BASE_URL}"
-  docker_network_opt=""
+  docker_cmd=(docker run --rm)
   if [[ "${BASE_URL}" == http://127.0.0.1:* || "${BASE_URL}" == http://localhost:* ]]; then
     if [[ "${CI:-}" == "true" ]]; then
-      docker_network_opt="--network host"
+      docker_cmd+=(--network host)
     else
       port="${BASE_URL##*:}"
       docker_base_url="http://host.docker.internal:${port}"
     fi
   fi
 
-  # shellcheck disable=SC2086
-  exec docker run --rm ${docker_network_opt} \
-    -e "BASE_URL=${docker_base_url}" \
-    -e "LOAD_VUS=${LOAD_VUS}" \
-    -e "LOAD_DURATION=${LOAD_DURATION}" \
-    -e "LOAD_RAMP_UP=${LOAD_RAMP_UP}" \
-    -e "LOAD_RAMP_DOWN=${LOAD_RAMP_DOWN}" \
-    -e "LOAD_P95=${LOAD_P95}" \
-    -e "LOAD_TEST_SUMMARY=${SUMMARY_EXPORT}" \
-    -v "${PWD}:/work" \
-    -w /work \
-    grafana/k6 "${run_args[@]}"
+  docker_cmd+=(
+    --user "$(id -u):$(id -g)"
+    -e "BASE_URL=${docker_base_url}"
+    -e "LOAD_VUS=${LOAD_VUS}"
+    -e "LOAD_DURATION=${LOAD_DURATION}"
+    -e "LOAD_RAMP_UP=${LOAD_RAMP_UP}"
+    -e "LOAD_RAMP_DOWN=${LOAD_RAMP_DOWN}"
+    -e "LOAD_P95=${LOAD_P95}"
+    -e "LOAD_TEST_SUMMARY=${SUMMARY_EXPORT}"
+    -v "${PWD}:/work"
+    -w /work
+    grafana/k6
+  )
+
+  exec "${docker_cmd[@]}" "${run_args[@]}"
 fi
 
 echo "k6 is not installed and docker is unavailable." >&2
