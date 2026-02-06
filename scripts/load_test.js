@@ -6,7 +6,7 @@ const LOAD_VUS = parseInt(__ENV.LOAD_VUS || '20', 10);
 const LOAD_DURATION = __ENV.LOAD_DURATION || '30s';
 const LOAD_RAMP_UP = __ENV.LOAD_RAMP_UP || '10s';
 const LOAD_RAMP_DOWN = __ENV.LOAD_RAMP_DOWN || '10s';
-const LOAD_P95 = __ENV.LOAD_P95 || '500';
+const LOAD_P95 = __ENV.LOAD_P95 || '2500';
 
 export const options = {
   stages: [

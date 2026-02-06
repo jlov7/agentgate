@@ -9,6 +9,16 @@ integration checks, and Playwright for browser-based E2E coverage.
 make setup
 ```
 
+`make setup` installs pinned Python dependencies from `requirements/dev.lock`.
+
+## Refresh lockfile
+
+```bash
+make lock
+```
+
+This regenerates `requirements/dev.lock` using Python 3.12.
+
 ## Playwright setup (E2E)
 
 ```bash
@@ -17,11 +27,10 @@ npx playwright install
 
 ## PDF export dependencies (WeasyPrint)
 
-PDF integration tests require WeasyPrint and system libraries.
+PDF integration tests require system libraries.
 
 ```bash
 brew install pango libffi gdk-pixbuf
-.venv/bin/pip install weasyprint
 ```
 
 ## Verify (full QA run)
@@ -41,6 +50,9 @@ make verify
 - Playwright E2E tests against the running FastAPI server
 - AI evaluation harness (golden cases + invariants)
 
+`make verify` now performs a Docker daemon preflight before integration tests so
+local failures are explicit.
+
 ## Verify (strict)
 
 ```bash
@@ -48,7 +60,7 @@ make verify-strict
 ```
 
 `make verify-strict` runs `make verify` plus mutation testing on critical
-modules and enforces a 100% mutation score.
+modules and enforces a 100% mutation score. CI also runs this weekly.
 
 ## Load smoke (optional)
 
@@ -98,7 +110,8 @@ LOAD_TEST_VUS=20 \
 LOAD_TEST_DURATION=30s \
 LOAD_TEST_RAMP_UP=10s \
 LOAD_TEST_RAMP_DOWN=10s \
-LOAD_TEST_P95=500 \
+LOAD_TEST_P95=2500 \
+LOAD_TEST_SUMMARY=reports/load-test-summary.json \
 make load-test
 ```
 

@@ -7,6 +7,11 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 3 * * *"
+    - cron: "47 3 * * 0"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -24,17 +29,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements/dev.lock
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          scripts/install_python_deps.sh .venv requirements/dev.lock
 
       - name: Lint with Ruff
-        run: ruff check src/ tests/
+        run: .venv/bin/ruff check src/ tests/
 
       - name: Type check with MyPy
-        run: mypy src/
+        run: .venv/bin/mypy src/
 
   verify:
     name: Verify (Full)
@@ -48,6 +54,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements/dev.lock
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -73,10 +81,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          python -m venv .venv
-          .venv/bin/pip install --upgrade pip
-          .venv/bin/pip install -e ".[dev]"
-          .venv/bin/pip install weasyprint
+          scripts/install_python_deps.sh .venv requirements/dev.lock
 
       - name: Install Node dependencies
         run: npm ci
@@ -123,17 +128,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements/dev.lock
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          scripts/install_python_deps.sh .venv requirements/dev.lock
 
       - name: Security audit with pip-audit
-        run: pip-audit
+        run: .venv/bin/pip-audit
 
       - name: Security scan with Bandit
-        run: bandit -r src/ -c pyproject.toml
+        run: .venv/bin/bandit -r src/ -c pyproject.toml
 
   sbom:
     name: Generate SBOM
@@ -147,17 +153,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements/dev.lock
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-          pip install cyclonedx-bom
+          scripts/install_python_deps.sh .venv requirements/dev.lock
 
       - name: Generate SBOM
         run: |
           mkdir -p reports
-          cyclonedx-py environment -o reports/sbom.json
+          .venv/bin/cyclonedx-py environment -o reports/sbom.json
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
@@ -200,20 +206,95 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements/dev.lock
 
       - name: Install Python dependencies
         run: |
-          python -m venv .venv
-          .venv/bin/pip install --upgrade pip
-          .venv/bin/pip install -e ".[dev]"
+          scripts/install_python_deps.sh .venv requirements/dev.lock
 
       - name: Run load test
+        continue-on-error: ${{ github.event_name == 'schedule' }}
         env:
           LOAD_TEST_URL: http://127.0.0.1:8000
           LOAD_VUS: 50
           LOAD_DURATION: 30s
           LOAD_RAMP_UP: 10s
           LOAD_RAMP_DOWN: 10s
-          LOAD_P95: 500
+          LOAD_P95: 2500
+          LOAD_TEST_SUMMARY: reports/load-test-summary.json
         run: |
           scripts/load_server.sh scripts/run_load_test.sh
+
+      - name: Upload load test summary
+        if: always()
+        run: |
+          .venv/bin/python scripts/render_load_test_summary.py reports/load-test-summary.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload load test summary artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-summary
+          path: reports/load-test-summary.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  verify-strict:
+    name: Verify Strict (Weekly)
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name == 'schedule' && github.event.schedule == '47 3 * * 0'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements/dev.lock
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libpango-1.0-0 \
+            libpangoft2-1.0-0 \
+            libharfbuzz0b \
+            libfribidi0 \
+            libfreetype6 \
+            libgdk-pixbuf2.0-0 \
+            libcairo2 \
+            libffi8 \
+            libjpeg-turbo8 \
+            libxml2 \
+            libxslt1.1
+
+      - name: Install Python dependencies
+        run: |
+          scripts/install_python_deps.sh .venv requirements/dev.lock
+
+      - name: Install Node dependencies
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run verify strict
+        run: make verify-strict

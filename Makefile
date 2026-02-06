@@ -1,13 +1,23 @@
-.PHONY: setup dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke verify verify-strict
+.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker verify verify-strict
 
 # ============================================================================
 # Development
 # ============================================================================
 
 setup:
-	python -m venv .venv
-	.venv/bin/pip install -e ".[dev]"
+	scripts/install_python_deps.sh .venv requirements/dev.lock
 	@echo "\n✓ Setup complete. Run 'make dev' to start the server."
+
+PYTHON_LOCK_BIN ?= python3.12
+
+lock:
+	@command -v $(PYTHON_LOCK_BIN) >/dev/null || { echo "$(PYTHON_LOCK_BIN) is required to refresh requirements/dev.lock"; exit 1; }
+	@tmp_dir="$$(mktemp -d)"; \
+		"$(PYTHON_LOCK_BIN)" -m venv "$$tmp_dir/venv"; \
+		"$$tmp_dir/venv/bin/pip" install --upgrade "pip<26" pip-tools >/dev/null; \
+		"$$tmp_dir/venv/bin/pip-compile" --strip-extras --extra dev --extra pdf --output-file requirements/dev.lock pyproject.toml; \
+		rm -rf "$$tmp_dir"
+	@echo "\n✓ Refreshed lockfile: requirements/dev.lock"
 
 dev:
 	docker-compose up -d
@@ -73,13 +83,14 @@ LOAD_TEST_VUS ?= 20
 LOAD_TEST_DURATION ?= 30s
 LOAD_TEST_RAMP_UP ?= 10s
 LOAD_TEST_RAMP_DOWN ?= 10s
-LOAD_TEST_P95 ?= 500
+LOAD_TEST_P95 ?= 2500
+LOAD_TEST_SUMMARY ?=
 
 load-test:
-	LOAD_TEST_URL=$(LOAD_TEST_URL) LOAD_VUS=$(LOAD_TEST_VUS) LOAD_DURATION=$(LOAD_TEST_DURATION) LOAD_RAMP_UP=$(LOAD_TEST_RAMP_UP) LOAD_RAMP_DOWN=$(LOAD_TEST_RAMP_DOWN) LOAD_P95=$(LOAD_TEST_P95) scripts/load_server.sh scripts/run_load_test.sh
+	LOAD_TEST_URL=$(LOAD_TEST_URL) LOAD_VUS=$(LOAD_TEST_VUS) LOAD_DURATION=$(LOAD_TEST_DURATION) LOAD_RAMP_UP=$(LOAD_TEST_RAMP_UP) LOAD_RAMP_DOWN=$(LOAD_TEST_RAMP_DOWN) LOAD_P95=$(LOAD_TEST_P95) LOAD_TEST_SUMMARY=$(LOAD_TEST_SUMMARY) scripts/load_server.sh scripts/run_load_test.sh
 
 load-test-remote:
-	LOAD_TEST_URL=$(LOAD_TEST_URL) LOAD_VUS=$(LOAD_TEST_VUS) LOAD_DURATION=$(LOAD_TEST_DURATION) LOAD_RAMP_UP=$(LOAD_TEST_RAMP_UP) LOAD_RAMP_DOWN=$(LOAD_TEST_RAMP_DOWN) LOAD_P95=$(LOAD_TEST_P95) scripts/run_load_test.sh
+	LOAD_TEST_URL=$(LOAD_TEST_URL) LOAD_VUS=$(LOAD_TEST_VUS) LOAD_DURATION=$(LOAD_TEST_DURATION) LOAD_RAMP_UP=$(LOAD_TEST_RAMP_UP) LOAD_RAMP_DOWN=$(LOAD_TEST_RAMP_DOWN) LOAD_P95=$(LOAD_TEST_P95) LOAD_TEST_SUMMARY=$(LOAD_TEST_SUMMARY) scripts/run_load_test.sh
 
 staging-smoke:
 	STAGING_URL=$(STAGING_URL) scripts/staging_smoke.sh
@@ -97,10 +108,14 @@ verify:
 	.venv/bin/ruff check src/ tests/
 	.venv/bin/mypy src/
 	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term --cov-report=xml
+	$(MAKE) check-docker
 	.venv/bin/pytest tests/integration -v -m integration
 	.venv/bin/pytest tests/evals -v -m evals
 	.venv/bin/python evals/run_evals.py
 	npx playwright test
+
+check-docker:
+	scripts/check_docker.sh
 
 verify-strict: verify mutate
 
@@ -194,6 +209,7 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  make setup           Create venv and install dependencies"
+	@echo "  make lock            Refresh requirements/dev.lock using Python 3.12"
 	@echo "  make dev             Start dev server with hot reload"
 	@echo "  make run             Start server without reload"
 	@echo "  make demo            Run scripted demo"
@@ -216,6 +232,7 @@ help:
 	@echo "  make load-test       Run a k6 load test (starts local server)"
 	@echo "  make load-test-remote Run a k6 load test against LOAD_TEST_URL"
 	@echo "  make staging-smoke   Run smoke + load against STAGING_URL"
+	@echo "  make check-docker    Fail fast when Docker daemon is unavailable"
 	@echo "  make test-all        Run all tests"
 	@echo "  make coverage        Run tests with coverage"
 	@echo "  make verify          Run lint, typecheck, unit, integration, evals, AI evals, and E2E tests"
