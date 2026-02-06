@@ -67,8 +67,13 @@ e2e:
 	npx playwright test
 
 mutate:
-	.venv/bin/mutmut run
-	.venv/bin/python scripts/check_mutmut.py
+	@if [ "$$(uname -s)" != "Linux" ]; then \
+		echo "Skipping mutmut on non-Linux host. Mutation gating is enforced in Linux CI."; \
+	else \
+		rm -rf mutants/; \
+		.venv/bin/mutmut run; \
+		.venv/bin/python scripts/check_mutmut.py; \
+	fi
 
 LOAD_SMOKE_URL ?= http://127.0.0.1:8000/health
 LOAD_SMOKE_TOTAL ?= 200
@@ -236,7 +241,7 @@ help:
 	@echo "  make test-all        Run all tests"
 	@echo "  make coverage        Run tests with coverage"
 	@echo "  make verify          Run lint, typecheck, unit, integration, evals, AI evals, and E2E tests"
-	@echo "  make verify-strict   Run verify plus mutation testing (nightly)"
+	@echo "  make verify-strict   Run verify plus mutation testing"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint            Run linter and type checker"

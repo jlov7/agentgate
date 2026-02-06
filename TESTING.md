@@ -10,6 +10,7 @@ make setup
 ```
 
 `make setup` installs pinned Python dependencies from `requirements/dev.lock`.
+Setup requires Python 3.12 and prefers `python3.12` automatically.
 
 ## Refresh lockfile
 
@@ -60,7 +61,12 @@ make verify-strict
 ```
 
 `make verify-strict` runs `make verify` plus mutation testing on critical
-modules and enforces a 100% mutation score. CI also runs this weekly.
+modules and enforces a 100% mutation score. CI runs mutation gating on each
+PR/push and also runs strict scheduled coverage weekly.
+The mutation target clears previous local `mutmut` artifacts before running to
+avoid stale-cache contamination.
+On non-Linux hosts, mutation execution is skipped locally to avoid platform
+instability in `mutmut` forking; Linux CI remains the enforcement point.
 
 ## Load smoke (optional)
 
@@ -95,7 +101,7 @@ make coverage
 make verify-strict
 ```
 
-## Load test (k6, optional/nightly)
+## Load test (k6)
 
 `make load-test` starts the local stack and runs a k6 test with thresholds.
 
@@ -121,6 +127,9 @@ Run against a remote target:
 LOAD_TEST_URL=https://staging.example.com \
 make load-test-remote
 ```
+
+CI runs a blocking load test in the main workflow and publishes a markdown
+summary plus JSON artifact for every run.
 
 ## Staging smoke + load (optional)
 

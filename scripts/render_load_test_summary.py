@@ -20,10 +20,19 @@ def _metric_value(metrics: dict[str, Any], metric_name: str, value_name: str) ->
     metric = metrics.get(metric_name)
     if not isinstance(metric, dict):
         return None
+    value: Any = None
+
+    # k6 has shipped both nested {"values": {...}} and flat metric payloads.
     values = metric.get("values")
-    if not isinstance(values, dict):
-        return None
-    value = values.get(value_name)
+    if isinstance(values, dict):
+        value = values.get(value_name)
+    if value is None:
+        value = metric.get(value_name)
+
+    # Flat k6 format reports failure rate as "value" on http_req_failed.
+    if value is None and metric_name == "http_req_failed" and value_name == "rate":
+        value = metric.get("value")
+
     if value is None:
         return None
     try:
@@ -57,8 +66,15 @@ def _duration_threshold_status(metrics: dict[str, Any]) -> str:
 
     states: list[bool] = []
     for data in thresholds.values():
-        if isinstance(data, dict) and "ok" in data:
-            states.append(bool(data["ok"]))
+        if isinstance(data, dict):
+            if "ok" in data:
+                states.append(bool(data["ok"]))
+            elif "passed" in data:
+                states.append(bool(data["passed"]))
+            continue
+        if isinstance(data, bool):
+            # Flat k6 format encodes threshold breach as boolean.
+            states.append(not data)
 
     if not states:
         return "unknown"
@@ -81,7 +97,7 @@ def render_markdown(path: Path, summary: dict[str, Any] | None) -> str:
     threshold_status = _duration_threshold_status(metrics)
 
     def format_int(value: float | None) -> str:
-        return "n/a" if value is None else f"{int(round(value))}"
+        return "n/a" if value is None else f"{round(value)}"
 
     def format_ms(value: float | None) -> str:
         return "n/a" if value is None else f"{value:.2f}"

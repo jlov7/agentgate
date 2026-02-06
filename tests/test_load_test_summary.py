@@ -50,3 +50,48 @@ def test_render_summary_formats_key_metrics(tmp_path: Path) -> None:
     assert "| p95 Duration (ms) | 1730.44 |" in output
     assert "| Threshold Target (ms) | 2500.00 |" in output
     assert "| Threshold Status | pass |" in output
+
+
+def test_render_summary_supports_flat_k6_metrics_format(tmp_path: Path) -> None:
+    summary_path = tmp_path / "summary-flat.json"
+    summary_path.write_text(
+        json.dumps(
+            {
+                "metrics": {
+                    "http_reqs": {"count": 8223, "rate": 273.3},
+                    "http_req_failed": {"value": 0.0, "thresholds": {"rate<0.01": False}},
+                    "http_req_duration": {
+                        "p(95)": 119.94,
+                        "thresholds": {"p(95)<2500": False},
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    output = _run(summary_path)
+    assert "| Requests | 8223 |" in output
+    assert "| Error Rate | 0.00% |" in output
+    assert "| p95 Duration (ms) | 119.94 |" in output
+    assert "| Threshold Target (ms) | 2500.00 |" in output
+    assert "| Threshold Status | pass |" in output
+
+
+def test_render_summary_marks_threshold_failure_for_flat_k6_metrics(tmp_path: Path) -> None:
+    summary_path = tmp_path / "summary-flat-fail.json"
+    summary_path.write_text(
+        json.dumps(
+            {
+                "metrics": {
+                    "http_req_duration": {"p(95)": 19.14, "thresholds": {"p(95)<1": True}},
+                    "http_req_failed": {"value": 0.0, "thresholds": {"rate<0.01": False}},
+                    "http_reqs": {"count": 33},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    output = _run(summary_path)
+    assert "| Threshold Status | fail |" in output
