@@ -37,8 +37,8 @@
     header h1 { margin: 0 0 8px 0; font-size: 28px; }
     header p { margin: 0; color: var(--muted); }
     main { padding: 24px; display: grid; gap: 20px; }
-    .grid { display: grid; gap: 16px;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .grid { display: flex; flex-wrap: wrap; gap: 16px; }
+    .grid > .card { flex: 1 1 220px; min-width: 220px; }
     .card { background: var(--card); border: 1px solid var(--border);
       border-radius: 12px; padding: 16px; }
     .stat { font-size: 26px; font-weight: 600; }
@@ -46,7 +46,7 @@
     table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: 8px;
       border-bottom: 1px solid var(--border); font-size: 13px; }
-    th { background: var(--table-head); position: sticky; top: 0; }
+    th { background: var(--table-head); }
     .decision-ALLOW { color: var(--allow); font-weight: 600; }
     .decision-DENY { color: var(--deny); font-weight: 600; }
     .decision-REQUIRE_APPROVAL { color: var(--pending); font-weight: 600; }
@@ -64,7 +64,7 @@
 <body>
   <header>
     <h1>AgentGate Evidence Pack</h1>
-    <p>Session showcase, generated 2026-02-14T16:43:04.838267+00:00</p>
+    <p>Session showcase, generated 2026-02-14T16:52:41.171252+00:00</p>
   </header>
   <main>
     <section class="grid">
@@ -100,11 +100,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>2026-02-14T16:43:04.338405+00:00</td><td>db_query</td><td class="decision-ALLOW">ALLOW</td><td>Read-only tool</td><td>0</td></tr>
-<tr><td>2026-02-14T16:43:04.354478+00:00</td><td>hack_the_planet</td><td class="decision-DENY">DENY</td><td>Tool not in allowlist</td><td>None</td></tr>
-<tr><td>2026-02-14T16:43:04.364184+00:00</td><td>db_insert</td><td class="decision-REQUIRE_APPROVAL">REQUIRE_APPROVAL</td><td>Write action requires human approval</td><td>None</td></tr>
-<tr><td>2026-02-14T16:43:04.373753+00:00</td><td>db_insert</td><td class="decision-ALLOW">ALLOW</td><td>Write action approved</td><td>0</td></tr>
-<tr><td>2026-02-14T16:43:04.386706+00:00</td><td>db_query</td><td class="decision-DENY">DENY</td><td>Kill switch: Showcase completed</td><td>None</td></tr>
+            <tr><td>2026-02-14T16:52:40.705780+00:00</td><td>db_query</td><td class="decision-ALLOW">ALLOW</td><td>Read-only tool</td><td>0</td></tr>
+<tr><td>2026-02-14T16:52:40.722038+00:00</td><td>hack_the_planet</td><td class="decision-DENY">DENY</td><td>Tool not in allowlist</td><td>None</td></tr>
+<tr><td>2026-02-14T16:52:40.730795+00:00</td><td>db_insert</td><td class="decision-REQUIRE_APPROVAL">REQUIRE_APPROVAL</td><td>Write action requires human approval</td><td>None</td></tr>
+<tr><td>2026-02-14T16:52:40.738680+00:00</td><td>db_insert</td><td class="decision-ALLOW">ALLOW</td><td>Write action approved</td><td>0</td></tr>
+<tr><td>2026-02-14T16:52:40.749339+00:00</td><td>db_query</td><td class="decision-DENY">DENY</td><td>Kill switch: Showcase completed</td><td>None</td></tr>
           </tbody>
         </table>
       </div>
@@ -142,7 +142,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>2026-02-14T16:43:04.373753+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
+          <tr><td>2026-02-14T16:52:40.738680+00:00</td><td>db_insert</td><td>yes</td><td>token</td></tr>
         </tbody>
       </table>
     </section>
@@ -158,7 +158,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>unusual_tool</td><td>Tool used only once across all sessions</td><td>a99d1cee-122c-4a9e-8e2c-4f85c2237d5e</td></tr>
+          <tr><td>unusual_tool</td><td>Tool used only once across all sessions</td><td>039d66bd-83b2-4c52-977c-7d4e045a8f25</td></tr>
         </tbody>
       </table>
     </section>
@@ -170,14 +170,14 @@
   &quot;$schema&quot;: &quot;https://agentgate.dev/schemas/evidence-pack-v1.json&quot;,
   &quot;metadata&quot;: {
     &quot;version&quot;: &quot;1.0.0&quot;,
-    &quot;generated_at&quot;: &quot;2026-02-14T16:43:04.838267+00:00&quot;,
+    &quot;generated_at&quot;: &quot;2026-02-14T16:52:41.171252+00:00&quot;,
     &quot;generator&quot;: &quot;AgentGate v0.2.1&quot;,
     &quot;session_id&quot;: &quot;showcase&quot;,
     &quot;user_id&quot;: null,
     &quot;agent_id&quot;: null,
     &quot;time_range&quot;: {
-      &quot;start&quot;: &quot;2026-02-14T16:43:04.338405+00:00&quot;,
-      &quot;end&quot;: &quot;2026-02-14T16:43:04.386706+00:00&quot;
+      &quot;start&quot;: &quot;2026-02-14T16:52:40.705780+00:00&quot;,
+      &quot;end&quot;: &quot;2026-02-14T16:52:40.749339+00:00&quot;
     }
   },
   &quot;summary&quot;: {
@@ -213,8 +213,8 @@
   },
   &quot;timeline&quot;: [
     {
-      &quot;event_id&quot;: &quot;798807a0-f323-441e-b6ec-5d5d339ac3fa&quot;,
-      &quot;timestamp&quot;: &quot;2026-02-14T16:43:04.338405+00:00&quot;,
+      &quot;event_id&quot;: &quot;f6e45ede-8a7a-4a01-9468-74c6f422533a&quot;,
+      &quot;timestamp&quot;: &quot;2026-02-14T16:52:40.705780+00:00&quot;,
       &quot;tool_name&quot;: &quot;db_query&quot;,
       &quot;decision&quot;: &quot;ALLOW&quot;,
       &quot;reason&quot;: &quot;Read-only tool&quot;,
@@ -223,8 +223,8 @@
       &quot;error&quot;: null
     },
     {
-      &quot;event_id&quot;: &quot;a99d1cee-122c-4a9e-8e2c-4f85c2237d5e&quot;,
-      &quot;timestamp&quot;: &quot;2026-02-14T16:43:04.354478+00:00&quot;,
+      &quot;event_id&quot;: &quot;039d66bd-83b2-4c52-977c-7d4e045a8f25&quot;,
+      &quot;timestamp&quot;: &quot;2026-02-14T16:52:40.722038+00:00&quot;,
       &quot;tool_name&quot;: &quot;hack_the_planet&quot;,
       &quot;decision&quot;: &quot;DENY&quot;,
       &quot;reason&quot;: &quot;Tool not in allowlist&quot;,
@@ -233,8 +233,8 @@
       &quot;error&quot;: &quot;Policy denied: Tool not in allowlist&quot;
     },
     {
-      &quot;event_id&quot;: &quot;7043e9f4-e2bd-4493-a04e-c16a0230a616&quot;,
-      &quot;timestamp&quot;: &quot;2026-02-14T16:43:04.364184+00:00&quot;,
+      &quot;event_id&quot;: &quot;9b992fb9-8364-46a6-ba2f-9183c5efe1ff&quot;,
+      &quot;timestamp&quot;: &quot;2026-02-14T16:52:40.730795+00:00&quot;,
       &quot;tool_name&quot;: &quot;db_insert&quot;,
       &quot;decision&quot;: &quot;REQUIRE_APPROVAL&quot;,
       &quot;reason&quot;: &quot;Write action requires human approval&quot;,
@@ -243,8 +243,8 @@
       &quot;error&quot;: &quot;Approval required: Write action requires human approval&quot;
     },
     {
-      &quot;event_id&quot;: &quot;e2acef81-5887-41d4-bf50-7bb8e7c98ce8&quot;,
-      &quot;timestamp&quot;: &quot;2026-02-14T16:43:04.373753+00:00&quot;,
+      &quot;event_id&quot;: &quot;41c327a2-45ff-42c2-ae8b-fc4e36525c45&quot;,
+      &quot;timestamp&quot;: &quot;2026-02-14T16:52:40.738680+00:00&quot;,
       &quot;tool_name&quot;: &quot;db_insert&quot;,
       &quot;decision&quot;: &quot;ALLOW&quot;,
       &quot;reason&quot;: &quot;Write action approved&quot;,
@@ -253,8 +253,8 @@
       &quot;error&quot;: null
     },
     {
-      &quot;event_id&quot;: &quot;cfeb1457-3097-44ac-8eda-97b0782baf48&quot;,
-      &quot;timestamp&quot;: &quot;2026-02-14T16:43:04.386706+00:00&quot;,
+      &quot;event_id&quot;: &quot;ab0e3b9c-18ad-45b7-97cf-7ca63c74b996&quot;,
+      &quot;timestamp&quot;: &quot;2026-02-14T16:52:40.749339+00:00&quot;,
       &quot;tool_name&quot;: &quot;db_query&quot;,
       &quot;decision&quot;: &quot;DENY&quot;,
       &quot;reason&quot;: &quot;Kill switch: Showcase completed&quot;,
@@ -306,8 +306,8 @@
   },
   &quot;write_action_log&quot;: [
     {
-      &quot;event_id&quot;: &quot;e2acef81-5887-41d4-bf50-7bb8e7c98ce8&quot;,
-      &quot;timestamp&quot;: &quot;2026-02-14T16:43:04.373753+00:00&quot;,
+      &quot;event_id&quot;: &quot;41c327a2-45ff-42c2-ae8b-fc4e36525c45&quot;,
+      &quot;timestamp&quot;: &quot;2026-02-14T16:52:40.738680+00:00&quot;,
       &quot;tool_name&quot;: &quot;db_insert&quot;,
       &quot;reversible&quot;: true,
       &quot;pre_state_ref&quot;: null,
@@ -319,17 +319,17 @@
       &quot;type&quot;: &quot;unusual_tool&quot;,
       &quot;description&quot;: &quot;Tool used only once across all sessions&quot;,
       &quot;event_ids&quot;: [
-        &quot;a99d1cee-122c-4a9e-8e2c-4f85c2237d5e&quot;
+        &quot;039d66bd-83b2-4c52-977c-7d4e045a8f25&quot;
       ]
     }
   ],
   &quot;integrity&quot;: {
     &quot;event_count&quot;: 5,
-    &quot;hash&quot;: &quot;0c809e651795a5db6b1dcc252ac0930d16a20c816f26974fd8d271bbcd0ad327&quot;,
+    &quot;hash&quot;: &quot;bef886185e0adcea17aca08147f400b1bdc65b69fabcd9dcdf1a4a97eb785bf9&quot;,
     &quot;hash_algorithm&quot;: &quot;sha256&quot;,
-    &quot;signature&quot;: &quot;b20d39a3404cb92995bfe53443deef0859ffff1442df8cb01dcd139c56249313&quot;,
+    &quot;signature&quot;: &quot;cbea498bd53f3efe511b6317fa70e66ea3ee27e66064421112c3a1355c26bcbd&quot;,
     &quot;signature_algorithm&quot;: &quot;hmac-sha256&quot;,
-    &quot;signed_at&quot;: &quot;2026-02-14T16:43:04.838350+00:00&quot;
+    &quot;signed_at&quot;: &quot;2026-02-14T16:52:41.171329+00:00&quot;
   }
 }</pre>
       </details>

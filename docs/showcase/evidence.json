@@ -3,27 +3,27 @@
     {
       "description": "Tool used only once across all sessions",
       "event_ids": [
-        "a99d1cee-122c-4a9e-8e2c-4f85c2237d5e"
+        "039d66bd-83b2-4c52-977c-7d4e045a8f25"
       ],
       "type": "unusual_tool"
     }
   ],
   "integrity": {
     "event_count": 5,
-    "hash": "0c809e651795a5db6b1dcc252ac0930d16a20c816f26974fd8d271bbcd0ad327",
+    "hash": "bef886185e0adcea17aca08147f400b1bdc65b69fabcd9dcdf1a4a97eb785bf9",
     "hash_algorithm": "sha256",
-    "signature": "b20d39a3404cb92995bfe53443deef0859ffff1442df8cb01dcd139c56249313",
+    "signature": "cbea498bd53f3efe511b6317fa70e66ea3ee27e66064421112c3a1355c26bcbd",
     "signature_algorithm": "hmac-sha256",
-    "signed_at": "2026-02-14T16:43:04.390046+00:00"
+    "signed_at": "2026-02-14T16:52:40.752099+00:00"
   },
   "metadata": {
     "agent_id": null,
-    "generated_at": "2026-02-14T16:43:04.389941+00:00",
+    "generated_at": "2026-02-14T16:52:40.752008+00:00",
     "generator": "AgentGate v0.2.1",
     "session_id": "showcase",
     "time_range": {
-      "end": "2026-02-14T16:43:04.386706+00:00",
-      "start": "2026-02-14T16:43:04.338405+00:00"
+      "end": "2026-02-14T16:52:40.749339+00:00",
+      "start": "2026-02-14T16:52:40.705780+00:00"
     },
     "user_id": null,
     "version": "1.0.0"
@@ -105,60 +105,60 @@
       "decision": "ALLOW",
       "duration_ms": 0,
       "error": null,
-      "event_id": "798807a0-f323-441e-b6ec-5d5d339ac3fa",
+      "event_id": "f6e45ede-8a7a-4a01-9468-74c6f422533a",
       "matched_rule": "read_only_tools",
       "reason": "Read-only tool",
-      "timestamp": "2026-02-14T16:43:04.338405+00:00",
+      "timestamp": "2026-02-14T16:52:40.705780+00:00",
       "tool_name": "db_query"
     },
     {
       "decision": "DENY",
       "duration_ms": null,
       "error": "Policy denied: Tool not in allowlist",
-      "event_id": "a99d1cee-122c-4a9e-8e2c-4f85c2237d5e",
+      "event_id": "039d66bd-83b2-4c52-977c-7d4e045a8f25",
       "matched_rule": "unknown_tool",
       "reason": "Tool not in allowlist",
-      "timestamp": "2026-02-14T16:43:04.354478+00:00",
+      "timestamp": "2026-02-14T16:52:40.722038+00:00",
       "tool_name": "hack_the_planet"
     },
     {
       "decision": "REQUIRE_APPROVAL",
       "duration_ms": null,
       "error": "Approval required: Write action requires human approval",
-      "event_id": "7043e9f4-e2bd-4493-a04e-c16a0230a616",
+      "event_id": "9b992fb9-8364-46a6-ba2f-9183c5efe1ff",
       "matched_rule": "write_requires_approval",
       "reason": "Write action requires human approval",
-      "timestamp": "2026-02-14T16:43:04.364184+00:00",
+      "timestamp": "2026-02-14T16:52:40.730795+00:00",
       "tool_name": "db_insert"
     },
     {
       "decision": "ALLOW",
       "duration_ms": 0,
       "error": null,
-      "event_id": "e2acef81-5887-41d4-bf50-7bb8e7c98ce8",
+      "event_id": "41c327a2-45ff-42c2-ae8b-fc4e36525c45",
       "matched_rule": "write_with_approval",
       "reason": "Write action approved",
-      "timestamp": "2026-02-14T16:43:04.373753+00:00",
+      "timestamp": "2026-02-14T16:52:40.738680+00:00",
       "tool_name": "db_insert"
     },
     {
       "decision": "DENY",
       "duration_ms": null,
       "error": "Policy denied: Kill switch: Showcase completed",
-      "event_id": "cfeb1457-3097-44ac-8eda-97b0782baf48",
+      "event_id": "ab0e3b9c-18ad-45b7-97cf-7ca63c74b996",
       "matched_rule": "kill_switch",
       "reason": "Kill switch: Showcase completed",
-      "timestamp": "2026-02-14T16:43:04.386706+00:00",
+      "timestamp": "2026-02-14T16:52:40.749339+00:00",
       "tool_name": "db_query"
     }
   ],
   "write_action_log": [
     {
       "approved_by": "token",
-      "event_id": "e2acef81-5887-41d4-bf50-7bb8e7c98ce8",
+      "event_id": "41c327a2-45ff-42c2-ae8b-fc4e36525c45",
       "pre_state_ref": null,
       "reversible": true,
-      "timestamp": "2026-02-14T16:43:04.373753+00:00",
+      "timestamp": "2026-02-14T16:52:40.738680+00:00",
       "tool_name": "db_insert"
     }
   ]

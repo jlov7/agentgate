@@ -20,7 +20,7 @@ agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="2.5"} 40
 agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="5.0"} 45
 agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="10.0"} 50
 agentgate_request_duration_seconds_bucket{endpoint="tools_call",le="+Inf"} 5
-agentgate_request_duration_seconds_sum{endpoint="tools_call"} 0.03809141798410565
+agentgate_request_duration_seconds_sum{endpoint="tools_call"} 0.03531446005217731
 agentgate_request_duration_seconds_count{endpoint="tools_call"} 5
 
 # HELP agentgate_kill_switch_activations_total Total number of kill switch activations
