@@ -7,7 +7,6 @@ import sys
 from collections import Counter
 from collections.abc import Mapping
 
-
 THRESHOLD = 1.0
 ALLOWED_STATUSES = {"killed", "survived"}
 
@@ -37,7 +36,11 @@ def main() -> int:
         [".venv/bin/mutmut", "results", "--all", "true"], text=True
     )
     counts = parse_status_counts(output)
-    unexpected = {status: count for status, count in counts.items() if status not in ALLOWED_STATUSES}
+    unexpected = {
+        status: count
+        for status, count in counts.items()
+        if status not in ALLOWED_STATUSES
+    }
     if unexpected:
         print(
             f"unexpected mutmut statuses: {unexpected}. "

@@ -82,6 +82,18 @@ def test_exporter_json_and_html(tmp_path) -> None:
         assert "Timeline" in html_output
 
 
+def test_exporter_html_avoids_unsupported_pdf_css(tmp_path) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
+
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-1")
+        html_output = exporter.to_html(pack)
+
+        assert "auto-fit" not in html_output
+        assert "position: sticky" not in html_output
+
+
 def test_exporter_pdf_with_stub(tmp_path, monkeypatch) -> None:
     with TraceStore(str(tmp_path / "traces.db")) as trace_store:
         trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))

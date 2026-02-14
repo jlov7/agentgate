@@ -110,7 +110,7 @@ coverage:
 	@echo "\n✓ Coverage report: htmlcov/index.html"
 
 verify:
-	.venv/bin/ruff check src/ tests/
+	.venv/bin/ruff check src/ tests/ scripts/
 	.venv/bin/mypy src/
 	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term --cov-report=xml
 	$(MAKE) check-docker
@@ -129,12 +129,12 @@ verify-strict: verify mutate
 # ============================================================================
 
 lint:
-	.venv/bin/ruff check src/
+	.venv/bin/ruff check src/ tests/ scripts/
 	.venv/bin/mypy src/
 
 format:
-	.venv/bin/ruff format src/ tests/
-	.venv/bin/ruff check --fix src/ tests/
+	.venv/bin/ruff format src/ tests/ scripts/
+	.venv/bin/ruff check --fix src/ tests/ scripts/
 
 install-hooks:
 	.venv/bin/pip install pre-commit

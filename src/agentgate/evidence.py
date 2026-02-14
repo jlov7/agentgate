@@ -247,8 +247,8 @@ class EvidenceExporter:
     header h1 {{ margin: 0 0 8px 0; font-size: 28px; }}
     header p {{ margin: 0; color: var(--muted); }}
     main {{ padding: 24px; display: grid; gap: 20px; }}
-    .grid {{ display: grid; gap: 16px;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }}
+    .grid {{ display: flex; flex-wrap: wrap; gap: 16px; }}
+    .grid > .card {{ flex: 1 1 220px; min-width: 220px; }}
     .card {{ background: var(--card); border: 1px solid var(--border);
       border-radius: 12px; padding: 16px; }}
     .stat {{ font-size: 26px; font-weight: 600; }}
@@ -256,7 +256,7 @@ class EvidenceExporter:
     table {{ width: 100%; border-collapse: collapse; }}
     th, td {{ text-align: left; padding: 8px;
       border-bottom: 1px solid var(--border); font-size: 13px; }}
-    th {{ background: var(--table-head); position: sticky; top: 0; }}
+    th {{ background: var(--table-head); }}
     .decision-ALLOW {{ color: var(--allow); font-weight: 600; }}
     .decision-DENY {{ color: var(--deny); font-weight: 600; }}
     .decision-REQUIRE_APPROVAL {{ color: var(--pending); font-weight: 600; }}

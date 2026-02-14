@@ -39,7 +39,10 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         name="ux",
         gate="RG-03",
         description="Critical UX journeys",
-        command="npx playwright test tests/e2e/api-happy.spec.ts tests/e2e/api-negative.spec.ts tests/e2e/docs-ui.spec.ts",
+        command=(
+            "npx playwright test tests/e2e/api-happy.spec.ts "
+            "tests/e2e/api-negative.spec.ts tests/e2e/docs-ui.spec.ts"
+        ),
     ),
     CheckSpec(
         name="a11y",
@@ -62,6 +65,12 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         gate="RG-06",
         description="Docs build integrity",
         command=".venv/bin/mkdocs build --strict --site-dir artifacts/site",
+    ),
+    CheckSpec(
+        name="scripts",
+        gate="RG-07",
+        description="Automation script lint hygiene",
+        command=".venv/bin/ruff check scripts/",
     ),
 )
 
@@ -178,7 +187,9 @@ def run() -> int:
 
     results = [_run_check(check, root, logs_dir, args.dry_run) for check in checks]
     required_results = [result for result in results if result["required"]]
-    required_passed = sum(1 for result in required_results if result["status"] in {"pass", "dry-run"})
+    required_passed = sum(
+        1 for result in required_results if result["status"] in {"pass", "dry-run"}
+    )
     required_total = len(required_results)
 
     overall_status = "pass" if required_passed == required_total else "fail"

@@ -7,7 +7,6 @@ import argparse
 import asyncio
 import statistics
 import time
-from typing import List
 
 import httpx
 
@@ -17,8 +16,8 @@ async def _worker(
     client: httpx.AsyncClient,
     url: str,
     timeout: float,
-    latencies: List[float],
-    errors: List[str],
+    latencies: list[float],
+    errors: list[str],
 ) -> None:
     while True:
         item = await queue.get()
@@ -44,8 +43,8 @@ async def _run(url: str, total: int, concurrency: int, timeout: float) -> int:
     for _ in range(concurrency):
         queue.put_nowait(None)
 
-    latencies: List[float] = []
-    errors: List[str] = []
+    latencies: list[float] = []
+    errors: list[str] = []
 
     async with httpx.AsyncClient() as client:
         tasks = [
