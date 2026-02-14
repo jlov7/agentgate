@@ -67,6 +67,74 @@ def test_cli_runs_uvicorn(monkeypatch) -> None:
     }
 
 
+def test_cli_showcase_uses_timestamped_default_session(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeDateTime:
+        @classmethod
+        def now(cls, tz=None):
+            return cls()
+
+        def strftime(self, fmt: str) -> str:
+            return "20260214T000000Z"
+
+    async def fake_showcase(config) -> int:
+        captured["session_id"] = config.session_id
+        return 0
+
+    monkeypatch.setattr("agentgate.__main__.datetime", FakeDateTime)
+    monkeypatch.setattr("agentgate.showcase.run_showcase", fake_showcase)
+    monkeypatch.setattr(sys, "argv", ["agentgate", "--showcase"])
+
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+
+    assert excinfo.value.code == 0
+    assert captured["session_id"] == "showcase-20260214T000000Z"
+
+
+def test_cli_showcase_respects_explicit_session(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_showcase(config) -> int:
+        captured["session_id"] = config.session_id
+        return 0
+
+    monkeypatch.setattr("agentgate.showcase.run_showcase", fake_showcase)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["agentgate", "--showcase", "--showcase-session", "showcase-explicit"],
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+
+    assert excinfo.value.code == 0
+    assert captured["session_id"] == "showcase-explicit"
+
+
+def test_cli_showcase_respects_explicit_showcase_session(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_showcase(config) -> int:
+        captured["session_id"] = config.session_id
+        return 0
+
+    monkeypatch.setattr("agentgate.showcase.run_showcase", fake_showcase)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["agentgate", "--showcase", "--showcase-session", "showcase"],
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+
+    assert excinfo.value.code == 0
+    assert captured["session_id"] == "showcase"
+
+
 def test_main_module_runs(monkeypatch) -> None:
     captured: dict[str, object] = {}
 

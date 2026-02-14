@@ -14,6 +14,7 @@ import argparse
 import asyncio
 import os
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 DEMO_BASE_URL = "http://localhost:8000"
@@ -161,8 +162,9 @@ async def run_demo(base_url: str | None = None) -> None:
             print("  • Export HTML evidence: http://localhost:8000/sessions/interactive_demo/evidence?format=html")
 
     except Exception as exc:
-        print(f"\n✗ Demo failed: {exc}")
-        print("\nMake sure the server is running: make dev")
+        print("\n✗ Demo failed: AgentGate server is not reachable.")
+        print("Fix: start the server with `make dev`.")
+        print(f"Details: {exc}")
         sys.exit(1)
 
 
@@ -195,8 +197,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--showcase-session",
-        default="showcase",
-        help="Session ID for showcase run (default: showcase)",
+        default=None,
+        help="Session ID for showcase run (default: auto-generated timestamp)",
     )
     parser.add_argument(
         "--showcase-delay",
@@ -228,10 +230,14 @@ def main() -> None:
         DEMO_BASE_URL = args.base_url
         asyncio.run(run_demo())
     elif args.showcase:
+        session_id = args.showcase_session
+        if session_id is None:
+            stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+            session_id = f"showcase-{stamp}"
         config = ShowcaseConfig(
             base_url=args.base_url,
             output_dir=Path(args.showcase_output),
-            session_id=args.showcase_session,
+            session_id=session_id,
             approval_token=os.getenv("AGENTGATE_APPROVAL_TOKEN", "approved"),
             step_delay=args.showcase_delay,
             evidence_theme=args.showcase_theme,

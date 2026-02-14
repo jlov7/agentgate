@@ -7,6 +7,7 @@ cd "$ROOT_DIR"
 OUTPUT_DIR=${1:-docs/showcase}
 BASE_URL=${BASE_URL:-http://localhost:8000}
 SIGNING_KEY=${AGENTGATE_SIGNING_KEY:-showcase-signing-key}
+TRACE_DB="$OUTPUT_DIR/showcase_traces.db"
 
 if [[ ! -x ".venv/bin/uvicorn" ]]; then
   echo "Missing .venv; run 'make setup' first." >&2
@@ -23,6 +24,9 @@ else
 fi
 
 mkdir -p "$OUTPUT_DIR"
+rm -f "$TRACE_DB"
+export AGENTGATE_SIGNING_KEY="$SIGNING_KEY"
+export AGENTGATE_TRACE_DB="$TRACE_DB"
 
 "${COMPOSE_CMD[@]}" up -d
 
@@ -35,13 +39,14 @@ cleanup() {
     wait "$UVICORN_PID" 2>/dev/null || true
   fi
   "${COMPOSE_CMD[@]}" down
+  rm -f "$TRACE_DB"
 }
 trap cleanup EXIT
 
 sleep 2
 
-AGENTGATE_SIGNING_KEY="$SIGNING_KEY" \
-  .venv/bin/python -m agentgate \
+.venv/bin/python -m agentgate \
   --showcase \
   --showcase-output "$OUTPUT_DIR" \
+  --showcase-session showcase \
   --base-url "$BASE_URL"

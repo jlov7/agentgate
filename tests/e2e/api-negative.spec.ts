@@ -181,4 +181,13 @@ test.describe('Negative & Edge Scenarios', () => {
     await expect(badContext.get('/health')).rejects.toThrow();
     await badContext.dispose();
   });
+
+  test('Invalid evidence format returns 400', async ({ request }) => {
+    await waitForHealthy(request);
+    const response = await request.get('/sessions/e2e-invalid-format/evidence?format=htm');
+
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.error).toContain('Invalid format');
+  });
 });

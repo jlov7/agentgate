@@ -11,6 +11,7 @@ nav:
   - Demo Script: DEMO_SCRIPT.md
   - Architecture: ARCHITECTURE.md
   - Threat Model: THREAT_MODEL.md
+  - UX Audit: UX_AUDIT.md
   - Showcase Artifacts: showcase/README.md
   - Understanding AgentGate: UNDERSTANDING_AGENTGATE.md
   - Docs Hub: DOCS_HUB.md

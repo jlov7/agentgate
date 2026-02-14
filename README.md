@@ -2,12 +2,12 @@
 
 [![CI](https://github.com/jlov7/agentgate/actions/workflows/ci.yml/badge.svg)](https://github.com/jlov7/agentgate/actions)
 [![CodeQL](https://github.com/jlov7/agentgate/actions/workflows/codeql.yml/badge.svg)](https://github.com/jlov7/agentgate/actions/workflows/codeql.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jlov7/agentgate/badge)](https://securityscorecards.dev/viewer/?uri=github.com/jlov7/agentgate)
+[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/jlov7/agentgate?label=OpenSSF%20Scorecard&style=flat)](https://securityscorecards.dev/viewer/?uri=github.com/jlov7/agentgate)
 [![Docs](https://github.com/jlov7/agentgate/actions/workflows/docs.yml/badge.svg)](https://jlov7.github.io/agentgate/)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Mutation Score](docs/assets/mutation-score.svg)](docs/assets/mutation-score.svg)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
-[![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-brightgreen.svg)](http://localhost:8000/docs)
+[![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-brightgreen.svg)](https://jlov7.github.io/agentgate/DOCS_HUB/)
 
 **AgentGate** is a containment-first security gateway for AI agents using MCP (Model Context Protocol) tools. It sits between agents and tools, enforces policy-as-code on every call, and produces evidence-grade audit trails.
 
@@ -196,11 +196,11 @@ Then open:
 
 ## UX Snapshots
 
-<img src="docs/assets/showcase-terminal.png" alt="AgentGate showcase terminal run" width="860" />
+<img src="https://raw.githubusercontent.com/jlov7/agentgate/main/docs/assets/showcase-terminal.png" alt="AgentGate showcase terminal run" width="860" />
 
-<img src="docs/assets/showcase-evidence.png" alt="AgentGate evidence pack preview" width="860" />
+<img src="https://raw.githubusercontent.com/jlov7/agentgate/main/docs/assets/showcase-evidence.png" alt="AgentGate evidence pack preview" width="860" />
 
-<img src="docs/assets/showcase-evidence-light.png" alt="AgentGate evidence pack preview (light theme)" width="860" />
+<img src="https://raw.githubusercontent.com/jlov7/agentgate/main/docs/assets/showcase-evidence-light.png" alt="AgentGate evidence pack preview (light theme)" width="860" />
 
 ---
 

@@ -25,15 +25,22 @@ Key capabilities in v0.2.x:
 from __future__ import annotations
 
 import inspect
+import json
 import os
 import secrets
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import Body, FastAPI, Header, HTTPException, Request, Response
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.openapi.docs import (
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from redis.asyncio import Redis
 
 from agentgate.credentials import CredentialBroker
@@ -184,7 +191,7 @@ def create_app(
         title="AgentGate",
         version="0.2.1",
         description="Containment-first security gateway for AI agents using MCP tools",
-        docs_url="/docs",
+        docs_url=None,
         redoc_url="/redoc",
         openapi_url="/openapi.json",
         lifespan=lifespan,
@@ -227,6 +234,9 @@ def create_app(
     app.state.webhook_notifier = webhook_notifier
     app.state.policy_path = policy_path
     app.state.policy_data_path = policy_data_path
+    swagger_oauth2_redirect_url = (
+        app.swagger_ui_oauth2_redirect_url or "/docs/oauth2-redirect"
+    )
 
     @app.middleware("http")
     async def request_size_middleware(
@@ -252,6 +262,73 @@ def create_app(
         response.headers["X-Correlation-ID"] = correlation_id
         clear_logging_context()
         return response
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        """Return validation errors with actionable guidance."""
+        hint = "Review request payload and required fields."
+        example: dict[str, Any] | None = None
+
+        if request.url.path == "/tools/call":
+            hint = "Include session_id, tool_name, and arguments."
+            example = {
+                "session_id": "demo",
+                "tool_name": "db_query",
+                "arguments": {"query": "SELECT 1"},
+            }
+        elif request.url.path == "/admin/policies/reload":
+            hint = "Provide the X-API-Key header for admin endpoints."
+            example = {"headers": {"X-API-Key": "<admin-key>"}}
+
+        detail = json.loads(json.dumps(exc.errors(), default=str))
+        payload: dict[str, Any] = {
+            "error": "Invalid request",
+            "message": "Request validation failed.",
+            "hint": hint,
+            "detail": detail,
+        }
+        if example is not None:
+            payload["example"] = example
+        return JSONResponse(payload, status_code=422)
+
+    @app.get("/docs", include_in_schema=False)
+    async def swagger_ui() -> HTMLResponse:
+        """Serve Swagger UI with an explicit navigation landmark."""
+        swagger = get_swagger_ui_html(
+            openapi_url=app.openapi_url or "/openapi.json",
+            title=f"{app.title} - Swagger UI",
+            oauth2_redirect_url=swagger_oauth2_redirect_url,
+        )
+        content = bytes(swagger.body).decode("utf-8")
+        nav_block = (
+            '<nav class="ag-docs-nav" aria-label="API documentation navigation">'
+            '<a href="#swagger-ui">Skip to API operations</a>'
+            "</nav>"
+            "<style>"
+            ".ag-docs-nav{padding:.5rem 1rem;background:#f6f6f6;border-bottom:1px solid #ddd;"
+            "font-family:sans-serif;font-size:14px}"
+            ".ag-docs-nav a{color:#0b57d0;text-decoration:none}"
+            ".ag-docs-nav a:focus,.ag-docs-nav a:hover{text-decoration:underline}"
+            "</style>"
+        )
+        content = content.replace("<body>", f"<body>{nav_block}", 1)
+        safe_headers = {
+            key: value
+            for key, value in swagger.headers.items()
+            if key.lower() != "content-length"
+        }
+        return HTMLResponse(
+            content=content,
+            status_code=swagger.status_code,
+            headers=safe_headers,
+        )
+
+    @app.get(swagger_oauth2_redirect_url, include_in_schema=False)
+    async def swagger_ui_redirect() -> HTMLResponse:
+        """OAuth2 redirect endpoint for Swagger UI."""
+        return get_swagger_ui_oauth2_redirect_html()
 
     @app.get("/health")
     async def health() -> JSONResponse:
@@ -413,13 +490,25 @@ def create_app(
         exporter = app.state.evidence_exporter
         pack = exporter.export_session(session_id)
 
-        if format == "html":
+        requested_format = format.lower()
+        allowed_formats = {"json", "html", "pdf"}
+        if requested_format not in allowed_formats:
+            return JSONResponse(
+                {
+                    "error": "Invalid format",
+                    "hint": "Use one of: json, html, pdf.",
+                    "received": format,
+                },
+                status_code=400,
+            )
+
+        if requested_format == "html":
             metrics.evidence_exports_total.inc("html")
             return Response(
                 content=exporter.to_html(pack, theme=theme),
                 media_type="text/html",
             )
-        elif format == "pdf":
+        if requested_format == "pdf":
             metrics.evidence_exports_total.inc("pdf")
             try:
                 pdf_content = exporter.to_pdf(pack, theme=theme)
@@ -435,18 +524,17 @@ def create_app(
                     {"error": "PDF export requires weasyprint: pip install weasyprint"},
                     status_code=501,
                 )
-        else:
-            metrics.evidence_exports_total.inc("json")
-            payload = {
-                "metadata": pack.metadata,
-                "summary": pack.summary,
-                "timeline": pack.timeline,
-                "policy_analysis": pack.policy_analysis,
-                "write_action_log": pack.write_action_log,
-                "anomalies": pack.anomalies,
-                "integrity": pack.integrity,
-            }
-            return JSONResponse(payload)
+        metrics.evidence_exports_total.inc("json")
+        payload = {
+            "metadata": pack.metadata,
+            "summary": pack.summary,
+            "timeline": pack.timeline,
+            "policy_analysis": pack.policy_analysis,
+            "write_action_log": pack.write_action_log,
+            "anomalies": pack.anomalies,
+            "integrity": pack.integrity,
+        }
+        return JSONResponse(payload)
 
     @app.post("/admin/policies/reload")
     async def reload_policies(

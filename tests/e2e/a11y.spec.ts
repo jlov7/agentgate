@@ -8,7 +8,7 @@ test.describe('Accessibility Smoke', () => {
 
     await expect(page).toHaveTitle(/AgentGate/i);
     await expect(page.locator('main, [role="main"], #swagger-ui').first()).toBeVisible();
-    await expect(page.getByRole('heading', { name: /AgentGate/i }).first()).toBeVisible();
+    await expect(page.locator('nav, [role="navigation"], .ag-docs-nav').first()).toBeVisible();
   });
 
   test('ReDoc exposes basic title and landmarks', async ({ page, request }) => {

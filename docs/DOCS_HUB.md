@@ -14,6 +14,7 @@ Welcome to the AgentGate documentation. Choose your path based on your role and 
 | **Get up and running quickly** | [Main README](https://github.com/jlov7/agentgate/blob/main/README.md#quickstart) |
 | **Review architecture diagrams** | [Architecture](ARCHITECTURE.md) |
 | **Review threat model** | [Threat Model](THREAT_MODEL.md) |
+| **Review UX audit** | [UX Audit](UX_AUDIT.md) |
 | **Review the security model** | [Security Policy](https://github.com/jlov7/agentgate/blob/main/SECURITY.md) |
 | **Contribute to the project** | [Contributing Guide](https://github.com/jlov7/agentgate/blob/main/CONTRIBUTING.md) |
 | **See what's changed** | [Changelog](https://github.com/jlov7/agentgate/blob/main/CHANGELOG.md) |
@@ -30,7 +31,7 @@ Welcome to the AgentGate documentation. Choose your path based on your role and 
 
 ### For Technical Teams
 - **[Main README](https://github.com/jlov7/agentgate/blob/main/README.md)** — Technical overview, architecture, API reference, and quickstart guide
-- **[API Documentation](http://localhost:8000/docs)** — Interactive OpenAPI documentation (when running)
+- **API Documentation (local runtime)** — Run AgentGate locally, then open `http://localhost:8000/docs`
 - **[Architecture](ARCHITECTURE.md)** — Data flow and policy decision diagrams
 - **[Showcase Artifacts](showcase/README.md)** — Evidence pack, metrics snapshot, and logs
 - **[Sample Evidence Pack](showcase/evidence.html)** — Example of evidence export output

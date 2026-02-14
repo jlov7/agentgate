@@ -80,6 +80,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
         _render_banner(console)
         console.print("")
         console.print("This run will create demo artifacts in:", output_dir)
+        console.print("Session ID:", config.session_id)
         console.print("Ensure the AgentGate server is running before continuing.")
         console.print("")
 

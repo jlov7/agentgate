@@ -37,6 +37,13 @@ def test_metrics_endpoint(client) -> None:
     assert "agentgate_tool_calls_total" in response.text
 
 
+def test_docs_endpoint_renders_swagger_with_nav_landmark(client) -> None:
+    response = client.get("/docs")
+    assert response.status_code == 200
+    assert "swagger-ui" in response.text
+    assert 'class="ag-docs-nav"' in response.text
+
+
 def test_rate_limit_headers_present(client) -> None:
     response = client.post(
         "/tools/call",
@@ -72,6 +79,14 @@ def test_export_evidence_formats(client) -> None:
     assert json_response.status_code == 200
     payload = json_response.json()
     assert payload["metadata"]["session_id"] == session_id
+
+
+def test_export_evidence_invalid_format_returns_400(client) -> None:
+    response = client.get("/sessions/evidence-formats/evidence?format=htm")
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["error"] == "Invalid format"
+    assert "json, html, pdf" in payload["hint"]
 
 
 def test_export_evidence_pdf_missing_dependency(client, monkeypatch) -> None:
@@ -318,6 +333,38 @@ def test_reload_policies_invalid_key(client, monkeypatch) -> None:
         "/admin/policies/reload", headers={"X-API-Key": "wrong"}
     )
     assert response.status_code == 403
+
+
+def test_validation_error_payload_for_tools_call(client) -> None:
+    response = client.post("/tools/call", json={})
+    assert response.status_code == 422
+    payload = response.json()
+    assert payload["error"] == "Invalid request"
+    assert "session_id" in payload["hint"]
+    assert "example" in payload
+
+
+def test_validation_error_payload_serializes_ctx_values(client) -> None:
+    response = client.post(
+        "/tools/call",
+        json={
+            "session_id": "",
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+        },
+    )
+    assert response.status_code == 422
+    payload = response.json()
+    assert isinstance(payload["detail"][0]["ctx"]["error"], str)
+
+
+def test_validation_error_payload_for_admin_reload(client) -> None:
+    response = client.post("/admin/policies/reload")
+    assert response.status_code == 422
+    payload = response.json()
+    assert payload["error"] == "Invalid request"
+    assert "X-API-Key" in payload["hint"]
+    assert payload["example"]["headers"]["X-API-Key"] == "<admin-key>"
 
 
 def test_reload_policies_failure(client, monkeypatch) -> None:
