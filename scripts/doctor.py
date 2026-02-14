@@ -61,7 +61,7 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         name="docs",
         gate="RG-06",
         description="Docs build integrity",
-        command=".venv/bin/mkdocs build --strict",
+        command=".venv/bin/mkdocs build --strict --site-dir artifacts/site",
     ),
 )
 
