@@ -59,4 +59,4 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - 2026-02-14T16:15:42Z: Doctor run passed all required gates (`RG-01` through `RG-06`).
 - 2026-02-14T16:35:08Z: UX hardening pass uncovered `/docs` response framing regression in E2E; fixed custom Swagger route header handling and added regression tests.
 - 2026-02-14T16:43:04Z: Showcase generation hardened with isolated trace DB and explicit showcase session; regenerated evidence artifacts now represent a single clean run.
-- 2026-02-14T16:41:09Z and 2026-02-14T16:42:59Z: Full `make verify` and `scripts/doctor.sh` passed after UX/docs fixes (`RG-01`..`RG-07` pass).
+- 2026-02-14T16:41:09Z and 2026-02-14T16:42:59Z: Full `make verify` and `scripts/doctor.sh` passed after UX/docs fixes (`RG-01`..`RG-06` pass, `overall_status: pass`).
