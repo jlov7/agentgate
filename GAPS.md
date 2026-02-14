@@ -43,6 +43,20 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - Fix strategy: Add `QUESTIONS.md` and update when/if blocked.
 - Status: Done
 
+### GAP-P1-003 — Evidence PDF export emitted renderer warnings
+- Priority: P1
+- Evidence: WeasyPrint logs reported unsupported `auto-fit/auto-fill` and `position: sticky` in evidence CSS.
+- Impacted journey: Compliance evidence export confidence and deterministic CI/demo output.
+- Fix strategy: Replace unsupported CSS with responsive but renderer-safe layout rules and add regression test.
+- Status: Done
+
+### GAP-P1-004 — Script quality was outside release gating
+- Priority: P1
+- Evidence: `ruff check scripts` reported style/type-modernization issues while release gates still passed.
+- Impacted journey: Reliability of automation scripts that drive verification and release checks.
+- Fix strategy: Fix lint debt in scripts and add script hygiene as an explicit release gate.
+- Status: Done
+
 ## P2
 
 ### GAP-P2-001 — Gap loop evidence not linked to per-iteration history
@@ -50,6 +64,13 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - Evidence: No iteration history section for executed loops.
 - Impacted journey: Auditability of release hardening work.
 - Fix strategy: Record each loop pass/fail summary with timestamp and gate deltas.
+- Status: Done
+
+### GAP-P2-002 — Missing explicit 10/10 journey/backend scorecards
+- Priority: P2
+- Evidence: No normalized scorecard artifact tied to release evidence.
+- Impacted journey: Stakeholder confidence in UX and backend quality claims.
+- Fix strategy: Create a scored artifact with category-level evidence references and objective gate links.
 - Status: Done
 
 ## Iteration History
@@ -60,3 +81,6 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - 2026-02-14T16:35:08Z: UX hardening pass uncovered `/docs` response framing regression in E2E; fixed custom Swagger route header handling and added regression tests.
 - 2026-02-14T16:43:04Z: Showcase generation hardened with isolated trace DB and explicit showcase session; regenerated evidence artifacts now represent a single clean run.
 - 2026-02-14T16:41:09Z and 2026-02-14T16:42:59Z: Full `make verify` and `scripts/doctor.sh` passed after UX/docs fixes (`RG-01`..`RG-06` pass, `overall_status: pass`).
+- 2026-02-14T16:47:46Z: Re-ran doctor baseline; all required gates passed before secondary hardening pass.
+- 2026-02-14T16:52:40Z: Closed CSS/PDF renderer warnings, tightened script lint standards, and promoted script hygiene into release gates (`RG-07`).
+- 2026-02-14T16:53:18Z: Full `scripts/doctor.sh` pass with `RG-01`..`RG-07` and `overall_status: pass`.
