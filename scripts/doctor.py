@@ -72,6 +72,15 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         description="Automation script lint hygiene",
         command=".venv/bin/ruff check scripts/",
     ),
+    CheckSpec(
+        name="scorecard",
+        gate="RG-08",
+        description="10/10 scorecard and critical-gap closure enforcement",
+        command=(
+            ".venv/bin/python scripts/scorecard.py --skip-doctor "
+            "--output artifacts/scorecard.json"
+        ),
+    ),
 )
 
 

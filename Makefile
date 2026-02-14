@@ -1,4 +1,4 @@
-.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker verify verify-strict
+.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker verify verify-strict doctor scorecard
 
 # ============================================================================
 # Development
@@ -124,6 +124,12 @@ check-docker:
 
 verify-strict: verify mutate
 
+doctor:
+	scripts/doctor.sh
+
+scorecard:
+	.venv/bin/python scripts/scorecard.py --output artifacts/scorecard.json
+
 # ============================================================================
 # Code Quality
 # ============================================================================
@@ -242,6 +248,8 @@ help:
 	@echo "  make coverage        Run tests with coverage"
 	@echo "  make verify          Run lint, typecheck, unit, integration, evals, AI evals, and E2E tests"
 	@echo "  make verify-strict   Run verify plus mutation testing"
+	@echo "  make doctor          Run release gates and emit artifacts/doctor.json"
+	@echo "  make scorecard       Validate 10/10 scorecards and emit artifacts/scorecard.json"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint            Run linter and type checker"

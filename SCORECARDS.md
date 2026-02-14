@@ -38,6 +38,7 @@ Backend overall: **10/10**
 ## Evidence Snapshot
 
 - `artifacts/doctor.json`: `overall_status: pass`
-- Required gates: `RG-01`..`RG-07` all pass (`required_checks_passed: 7/7`)
+- Required gates: `RG-01`..`RG-08` all pass (`required_checks_passed: 8/8`)
+- `artifacts/scorecard.json`: `status: pass` with `scores_all_ten`, `critical_gaps_closed`, and `doctor_passed` all `pass`
 - `docs/showcase/evidence.json`: deterministic showcase summary and signed integrity block
 - `make verify-strict`: pass (mutation gate skipped on non-Linux host by design)

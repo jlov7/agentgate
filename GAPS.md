@@ -57,6 +57,13 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - Fix strategy: Fix lint debt in scripts and add script hygiene as an explicit release gate.
 - Status: Done
 
+### GAP-P1-005 — Scorecard quality claim was not machine-enforced
+- Priority: P1
+- Evidence: `SCORECARDS.md` was static; no command failed the release loop when any score drifted from `10/10` or when P0/P1 gaps reopened.
+- Impacted journey: Stakeholder trust in "10/10" release claims and autonomous release-loop correctness.
+- Fix strategy: Add `scripts/scorecard.py`, gate it as `RG-08`, and provide `make scorecard` artifact output.
+- Status: Done
+
 ## P2
 
 ### GAP-P2-001 — Gap loop evidence not linked to per-iteration history
@@ -85,3 +92,7 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - 2026-02-14T16:52:40Z: Closed CSS/PDF renderer warnings, tightened script lint standards, and promoted script hygiene into release gates (`RG-07`).
 - 2026-02-14T16:53:18Z: Full `scripts/doctor.sh` pass with `RG-01`..`RG-07` and `overall_status: pass`.
 - 2026-02-14T16:56:00Z: `make verify-strict` passed (mutation gate intentionally skipped on non-Linux host per Makefile policy).
+- 2026-02-14T22:38:43Z: Added automated scorecard validator (`scripts/scorecard.py`) and promoted scorecard enforcement into release gates (`RG-08`).
+- 2026-02-14T22:38:48Z: `make doctor` passed with `RG-01`..`RG-08` and refreshed `artifacts/doctor.json`.
+- 2026-02-14T22:38:50Z: `make scorecard` passed and emitted `artifacts/scorecard.json` (`status: pass`).
+- 2026-02-14T22:39:13Z: `make verify-strict` passed after scorecard automation changes (mutation gate skipped on non-Linux host by policy).
