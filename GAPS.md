@@ -84,3 +84,4 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - 2026-02-14T16:47:46Z: Re-ran doctor baseline; all required gates passed before secondary hardening pass.
 - 2026-02-14T16:52:40Z: Closed CSS/PDF renderer warnings, tightened script lint standards, and promoted script hygiene into release gates (`RG-07`).
 - 2026-02-14T16:53:18Z: Full `scripts/doctor.sh` pass with `RG-01`..`RG-07` and `overall_status: pass`.
+- 2026-02-14T16:56:00Z: `make verify-strict` passed (mutation gate intentionally skipped on non-Linux host per Makefile policy).
