@@ -58,6 +58,8 @@ dev = [
   "pip-audit>=2.7",
   "bandit>=1.7",
   "cyclonedx-bom>=4.0",
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
 ]
 pdf = [
   "weasyprint>=61.0",
