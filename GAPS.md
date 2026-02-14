@@ -25,7 +25,7 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - Evidence: No `scripts/doctor.*`; no `artifacts/doctor.json`.
 - Impacted journey: Release readiness verification and CI reproducibility.
 - Fix strategy: Implement `scripts/doctor.sh` + `scripts/doctor.py`, then run it.
-- Status: In Progress
+- Status: Done
 
 ## P1
 
@@ -34,14 +34,14 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - Evidence: No `tests/e2e/a11y.spec.ts`.
 - Impacted journey: Docs/API UI accessibility confidence.
 - Fix strategy: Add Playwright a11y smoke test and include gate in doctor.
-- Status: Ready
+- Status: Done
 
 ### GAP-P1-002 — Missing structured blocked-decision ledger
 - Priority: P1
 - Evidence: No `QUESTIONS.md`.
 - Impacted journey: Progress continuation when product decisions are pending.
 - Fix strategy: Add `QUESTIONS.md` and update when/if blocked.
-- Status: Ready
+- Status: Done
 
 ## P2
 
@@ -50,8 +50,10 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - Evidence: No iteration history section for executed loops.
 - Impacted journey: Auditability of release hardening work.
 - Fix strategy: Record each loop pass/fail summary with timestamp and gate deltas.
-- Status: Ready
+- Status: Done
 
 ## Iteration History
 
 - 2026-02-14T00:00:00Z (bootstrap): Created gate policy, loop policy, and initial prioritized backlog.
+- 2026-02-14T16:08:50Z: Doctor run failed (`RG-02` security vulnerabilities, `RG-04` missing a11y spec, `RG-06` missing mkdocs in dev env).
+- 2026-02-14T16:15:42Z: Doctor run passed all required gates (`RG-01` through `RG-06`).
