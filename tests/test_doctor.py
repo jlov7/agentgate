@@ -1,0 +1,40 @@
+"""Tests for release doctor orchestration script."""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "doctor.py"
+
+
+def _run(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        [sys.executable, str(SCRIPT_PATH), *args],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_doctor_dry_run_writes_doctor_json(tmp_path: Path) -> None:
+    output_path = tmp_path / "doctor.json"
+    result = _run("--dry-run", "--output", str(output_path))
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert payload["overall_status"] == "pass"
+    assert payload["checks"]
+    assert all(check["status"] == "dry-run" for check in payload["checks"])
+
+
+def test_doctor_allows_check_subset(tmp_path: Path) -> None:
+    output_path = tmp_path / "doctor-subset.json"
+    result = _run("--dry-run", "--checks", "verify,docs", "--output", str(output_path))
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    check_names = [check["name"] for check in payload["checks"]]
+    assert check_names == ["verify", "docs"]
