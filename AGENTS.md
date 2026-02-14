@@ -1,26 +1,37 @@
-# AGENTS.md — QA Autopilot Rules
+# AGENTS.md — Release Gap Loop Rules
 
 ## Non-negotiables
-- Always run the full verification command(s) after changes.
-- Never claim something works without executing tests (or explicitly stating what couldn't be run and why).
-- Prefer deterministic tests (no sleeps; use proper waits/mocks).
-- If a test is flaky, fix the flake (stabilize selectors/timeouts/fixtures), don’t just increase retries.
-- Keep changes scoped: smallest diff that gets us to green.
+- Always run full verification after code/doc changes (`make verify` minimum; strict pass includes release gates).
+- Never claim something works without command evidence.
+- Prefer deterministic tests and reproducible scripts.
+- Keep diffs scoped; fix what the current gap requires.
+- Do not stop after planning artifacts are written.
+
+## Gap Loop Algorithm (Strict)
+1) Run `scripts/doctor.sh` to produce `artifacts/doctor.json` and check logs.
+2) Map failing release gates to gap IDs in `GAPS.md`.
+3) Pick the highest-priority `Ready` gap (P0 > P1 > P2).
+4) Implement the smallest fix that closes that gap.
+5) Run targeted checks for changed files, then run full `make verify`.
+6) Re-run `scripts/doctor.sh`.
+7) Update `GAPS.md` with new evidence and status.
+8) Commit.
+9) Repeat from step 1.
+
+## Stop Conditions
+- Stop only when **all release gates in `RELEASE_GATES.md` are satisfied**; or
+- Remaining unsatisfied gates require product decisions:
+  - log each decision in `QUESTIONS.md` with default recommendation, impact, and unblock criteria;
+  - continue working on any other non-blocked gaps.
+- Never stop because “planning is complete.”
 
 ## Project verification contract
-1) Identify how to install & run locally (venv/uv/poetry, node/pnpm if present).
-2) Create a single command that verifies the repo, and keep it fast:
-   - `make verify` (preferred) OR `./scripts/verify.sh`
-3) `verify` must include:
-   - lint (ruff/eslint) + typecheck (mypy/pyright/tsc if relevant)
-   - unit tests (pytest/jest/etc)
-   - integration tests (docker compose/testcontainers if needed)
-   - E2E (Playwright) if there is a UI or web app
-   - AI evals (golden set) if this is an LLM/AI system
-4) Add/maintain `TESTING.md` with exact commands.
-5) Provide optional `make verify-strict` for mutation testing; run before releases or nightly.
+1) Local setup remains documented in `TESTING.md`.
+2) `make verify` remains the baseline quality gate (lint, typecheck, unit/integration/evals/E2E).
+3) Release readiness is evaluated by `scripts/doctor.sh` + `RELEASE_GATES.md`.
+4) `make verify-strict` is required for strict/nightly/release candidate checks.
 
 ## Output expectations for every task
-- A short test plan (what is covered / not covered).
-- The exact commands run and their results.
-- A final summary with remaining risks (if any).
+- Short test plan.
+- Exact commands run and outcomes.
+- Remaining risks and blocked decisions (if any).

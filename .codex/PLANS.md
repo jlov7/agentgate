@@ -1,0 +1,20 @@
+# Release-Ready v1 Gap Loop ExecPlan
+
+## Purpose / Big Picture
+Turn AgentGate into a release-ready v1 by codifying release gates, creating a reproducible doctor command, and running a repeated gap loop until all release gates are satisfied or only blocked product decisions remain.
+
+## Progress
+- [in_progress] Add loop/governance artifacts (`AGENTS.md`, `RELEASE_GATES.md`, `GAPS.md`).
+- [pending] Implement `scripts/doctor.*` with machine-readable output (`artifacts/doctor.json`) using TDD.
+- [pending] Execute doctor loop, fix P0/P1 gaps, and re-run until all release gates pass.
+- [pending] Update gap statuses/evidence and log unresolved product decisions to `QUESTIONS.md` if any.
+
+## Surprises & Discoveries
+- Existing repo already has strong `make verify`, `make verify-strict`, security CI, and load-test tooling. Missing piece is a codified release loop + doctor artifact.
+
+## Decision Log
+- Keep release gates aligned with existing high-signal checks (`make verify`, security scans, Playwright, load test, docs build) to avoid speculative scope.
+- Implement doctor as Python + shell wrapper so it can emit structured JSON reliably and run in CI/local.
+
+## Outcomes & Retrospective
+- In progress.
