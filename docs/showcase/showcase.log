@@ -8,6 +8,7 @@
 +---- Containment-first security in 60 seconds ----+
 
 This run will create demo artifacts in: docs/showcase
+Session ID: showcase
 Ensure the AgentGate server is running before continuing.
 
 Step 1/9: Health check
