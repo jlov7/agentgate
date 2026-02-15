@@ -7,7 +7,7 @@ import argparse
 import json
 import subprocess
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +51,12 @@ def _parse_args() -> argparse.Namespace:
         help="Skip validating doctor overall_status (used when called from doctor itself).",
     )
     parser.add_argument(
+        "--max-artifact-age-hours",
+        type=float,
+        default=24.0,
+        help="Maximum allowed age for doctor/scorecard artifacts.",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=Path("artifacts/product-audit.json"),
@@ -71,28 +77,34 @@ def _load_json(path: Path, label: str) -> tuple[dict[str, Any] | None, str | Non
     return payload, None
 
 
-def _check_doctor(path: Path, findings: list[str], checks: dict[str, str]) -> None:
+def _check_doctor(
+    path: Path, findings: list[str], checks: dict[str, str]
+) -> dict[str, Any] | None:
     payload, error = _load_json(path, "Doctor report")
     if error:
         findings.append(error)
         checks["doctor_passed"] = "fail"
-        return
+        return None
     status = payload.get("overall_status")
     checks["doctor_passed"] = "pass" if status == "pass" else "fail"
     if status != "pass":
         findings.append(f"Doctor overall_status is {status!r}, expected 'pass'.")
+    return payload
 
 
-def _check_scorecard(path: Path, findings: list[str], checks: dict[str, str]) -> None:
+def _check_scorecard(
+    path: Path, findings: list[str], checks: dict[str, str]
+) -> dict[str, Any] | None:
     payload, error = _load_json(path, "Scorecard report")
     if error:
         findings.append(error)
         checks["scorecard_passed"] = "fail"
-        return
+        return None
     status = payload.get("status")
     checks["scorecard_passed"] = "pass" if status == "pass" else "fail"
     if status != "pass":
         findings.append(f"Scorecard status is {status!r}, expected 'pass'.")
+    return payload
 
 
 def _check_readme(path: Path, findings: list[str], checks: dict[str, str]) -> None:
@@ -152,19 +164,75 @@ def _check_self_check(findings: list[str], checks: dict[str, str], skip: bool) -
     checks["self_check_cli"] = "pass"
 
 
+def _parse_timestamp(
+    payload: dict[str, Any], label: str, findings: list[str]
+) -> datetime | None:
+    raw_timestamp = payload.get("generated_at")
+    if not isinstance(raw_timestamp, str):
+        findings.append(f"{label} missing generated_at timestamp.")
+        return None
+    try:
+        timestamp = datetime.fromisoformat(raw_timestamp)
+    except ValueError:
+        findings.append(f"{label} generated_at is not valid ISO-8601: {raw_timestamp!r}.")
+        return None
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=UTC)
+    return timestamp.astimezone(UTC)
+
+
+def _check_artifact_freshness(
+    *,
+    doctor_payload: dict[str, Any] | None,
+    scorecard_payload: dict[str, Any] | None,
+    max_age_hours: float,
+    findings: list[str],
+    checks: dict[str, str],
+) -> None:
+    now = datetime.now(UTC)
+    threshold = timedelta(hours=max_age_hours)
+    stale_labels: list[str] = []
+
+    for label, payload in (
+        ("Doctor report", doctor_payload),
+        ("Scorecard report", scorecard_payload),
+    ):
+        if payload is None:
+            continue
+        timestamp = _parse_timestamp(payload, label, findings)
+        if timestamp is None:
+            continue
+        if now - timestamp > threshold:
+            stale_labels.append(label)
+            findings.append(
+                f"{label} is stale ({timestamp.isoformat()}); "
+                f"max age is {max_age_hours}h."
+            )
+
+    checks["artifact_freshness"] = "pass" if not stale_labels else "fail"
+
+
 def run() -> int:
     args = _parse_args()
     findings: list[str] = []
     checks: dict[str, str] = {}
+    doctor_payload: dict[str, Any] | None = None
 
     if args.skip_doctor:
         checks["doctor_passed"] = "skipped"
     else:
-        _check_doctor(args.doctor, findings, checks)
-    _check_scorecard(args.scorecard, findings, checks)
+        doctor_payload = _check_doctor(args.doctor, findings, checks)
+    scorecard_payload = _check_scorecard(args.scorecard, findings, checks)
     _check_readme(args.readme, findings, checks)
     _check_todo(args.todo, findings, checks)
     _check_self_check(findings, checks, skip=args.skip_self_check)
+    _check_artifact_freshness(
+        doctor_payload=doctor_payload,
+        scorecard_payload=scorecard_payload,
+        max_age_hours=args.max_artifact_age_hours,
+        findings=findings,
+        checks=checks,
+    )
 
     status = "pass" if not findings else "fail"
     payload = {

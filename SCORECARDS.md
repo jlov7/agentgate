@@ -1,6 +1,6 @@
 # Quality Scorecards
 
-Date: 2026-02-14  
+Date: 2026-02-15  
 Scope: Journey quality and backend quality (release-ready v1)
 
 Scoring rule:
@@ -30,6 +30,7 @@ Journey overall: **10/10**
 | Performance budget adherence | 10/10 | `RG-05` pass in `artifacts/logs/perf.log` |
 | Observability and auditability | 10/10 | `/metrics`, evidence export, trace-backed showcase artifacts |
 | Automation reliability | 10/10 | `scripts/doctor.sh` pass + script lint gate (`RG-07`) |
+| Supportability and triage readiness | 10/10 | `RG-10` pass in `artifacts/logs/support.log`, `artifacts/support-bundle.json` |
 | Release automation and documentation | 10/10 | `RELEASE_GATES.md`, `GAPS.md`, `artifacts/doctor.json` |
 | Maintainability/test rigor | 10/10 | Expanded tests (`tests/test_main.py`, `tests/test_cli.py`, `tests/test_evidence.py`, `tests/test_showcase.py`) |
 
@@ -38,7 +39,9 @@ Backend overall: **10/10**
 ## Evidence Snapshot
 
 - `artifacts/doctor.json`: `overall_status: pass`
-- Required gates: `RG-01`..`RG-08` all pass (`required_checks_passed: 8/8`)
+- Required gates: `RG-01`..`RG-10` all pass (`required_checks_passed: 10/10`)
 - `artifacts/scorecard.json`: `status: pass` with `scores_all_ten`, `critical_gaps_closed`, and `doctor_passed` all `pass`
+- `artifacts/product-audit.json`: `status: pass` including `artifact_freshness: pass`
+- `artifacts/support-bundle.json`: `status: pass` with reproducible bundle manifest and file hashes
 - `docs/showcase/evidence.json`: deterministic showcase summary and signed integrity block
-- `make verify-strict`: pass (mutation gate skipped on non-Linux host by design), coverage `98%` total with `src/agentgate/showcase.py` at `97%`
+- `make verify-strict`: pass (mutation gate skipped on non-Linux host by design), coverage `95%` total

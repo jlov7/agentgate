@@ -71,6 +71,20 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - Fix strategy: Add direct showcase success/failure tests and always emit `summary.json` with pass/fail status.
 - Status: Done
 
+### GAP-P1-007 — Missing reproducible support bundle for issue triage
+- Priority: P1
+- Evidence: No scripted way to package release diagnostics and logs into a single attachable bundle.
+- Impacted journey: User support and maintainer triage during issue reporting.
+- Fix strategy: Add `scripts/support_bundle.py`, `make support-bundle`, and enforce via release gate (`RG-10`).
+- Status: Done
+
+### GAP-P1-008 — Product audit accepted stale evidence artifacts
+- Priority: P1
+- Evidence: `scripts/product_audit.py` only validated status fields and did not enforce freshness of doctor/scorecard timestamps.
+- Impacted journey: Trust in release-readiness assertions and reproducibility of evidence.
+- Fix strategy: Add artifact freshness checks (`--max-artifact-age-hours`) and regression coverage.
+- Status: Done
+
 ## P2
 
 ### GAP-P2-001 — Gap loop evidence not linked to per-iteration history
@@ -121,3 +135,6 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - 2026-02-15T01:29:37Z: Normalized Playwright commands with `env -u NO_COLOR` in `Makefile`, doctor checks, and release gate docs to remove warning noise.
 - 2026-02-15T01:35:58Z: Added Docker platform safeguards in `scripts/e2e-server.sh` and `scripts/load_server.sh` (daemon-arch detection + platform-matched OPA pull) with regression tests in `tests/test_compose_platform_defaults.py`.
 - 2026-02-15T01:35:58Z: Re-ran `make doctor`, `make scorecard`, and `make verify-strict`; all passed with improved test coverage (`TOTAL 98%`, `showcase.py 97%`).
+- 2026-02-15T01:52:00Z: Added productization gates (`RG-09`) with self-check CLI, product audit automation, and checklist enforcement.
+- 2026-02-15T01:55:20Z: Added supportability gate (`RG-10`) via `scripts/support_bundle.py` and `make support-bundle`; doctor now enforces 10 required checks.
+- 2026-02-15T01:56:15Z: Added product-audit artifact freshness validation and regression tests; `scripts/doctor.sh`, `make product-audit`, and `make scorecard` all pass.
