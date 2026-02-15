@@ -12,10 +12,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import os
+import shutil
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 DEMO_BASE_URL = "http://localhost:8000"
 
@@ -31,6 +34,116 @@ def print_banner() -> None:
        |___/        Containment-First Security
 """
     print(banner)
+
+
+def run_self_check(base_url: str, output_json: bool = False) -> int:
+    """Run first-run diagnostics and print actionable guidance."""
+    import httpx
+
+    checks: dict[str, dict[str, Any]] = {}
+
+    python_ok = sys.version_info >= (3, 12)
+    checks["python_version"] = {
+        "required": True,
+        "status": "pass" if python_ok else "fail",
+        "detail": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        "hint": "Install Python 3.12+." if not python_ok else "Detected supported Python version.",
+    }
+
+    docker_binary = shutil.which("docker")
+    docker_ok = docker_binary is not None
+    docker_detail = docker_binary or "docker not found"
+    checks["docker_cli"] = {
+        "required": True,
+        "status": "pass" if docker_ok else "fail",
+        "detail": docker_detail,
+        "hint": "Install Docker Desktop and ensure `docker` is on PATH."
+        if not docker_ok
+        else "Docker CLI detected.",
+    }
+
+    docker_compose_binary = shutil.which("docker-compose")
+    compose_ok = docker_ok or docker_compose_binary is not None
+    compose_detail = docker_compose_binary or "docker compose plugin expected via docker CLI"
+    checks["docker_compose"] = {
+        "required": True,
+        "status": "pass" if compose_ok else "fail",
+        "detail": compose_detail,
+        "hint": "Install Docker Compose (plugin or docker-compose binary)."
+        if not compose_ok
+        else "Compose detected.",
+    }
+
+    policy_path = Path(__file__).resolve().parents[2] / "policies" / "data.json"
+    policy_ok = policy_path.exists()
+    checks["policy_data"] = {
+        "required": True,
+        "status": "pass" if policy_ok else "fail",
+        "detail": str(policy_path),
+        "hint": (
+            "Ensure repository includes policies/data.json."
+            if not policy_ok
+            else "Policy data found."
+        ),
+    }
+
+    server_ok = False
+    server_detail = f"Could not reach {base_url}/health"
+    try:
+        with httpx.Client(timeout=2.0) as client:
+            response = client.get(f"{base_url}/health")
+            if response.status_code == 200:
+                payload = response.json()
+                server_ok = True
+                server_detail = (
+                    f"status={payload.get('status')}, "
+                    f"opa={payload.get('opa')}, redis={payload.get('redis')}"
+                )
+            else:
+                server_detail = f"HTTP {response.status_code}"
+    except Exception as exc:
+        server_detail = str(exc)
+
+    checks["server_health"] = {
+        "required": False,
+        "status": "pass" if server_ok else "warn",
+        "detail": server_detail,
+        "hint": "Start the stack with `make dev` and re-run self-check."
+        if not server_ok
+        else "Server health endpoint reachable.",
+    }
+
+    required_failed = [
+        name
+        for name, check in checks.items()
+        if check["required"] and check["status"] != "pass"
+    ]
+    warnings = [name for name, check in checks.items() if check["status"] == "warn"]
+    status = "pass" if not required_failed else "fail"
+
+    payload = {
+        "status": status,
+        "required_failed": required_failed,
+        "warnings": warnings,
+        "checks": checks,
+    }
+
+    if output_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print("AgentGate Self-Check")
+        print("")
+        for name, check in checks.items():
+            print(f"{name}: {check['status']} | {check['detail']}")
+            print(f"  hint: {check['hint']}")
+        print("")
+        print(f"overall: {status}")
+        if required_failed:
+            print(f"required failures: {', '.join(required_failed)}")
+        if warnings:
+            print(f"warnings: {', '.join(warnings)}")
+
+    return 0 if status == "pass" else 1
 
 
 async def run_demo(base_url: str | None = None) -> None:
@@ -185,6 +298,11 @@ def main() -> None:
     mode_group.add_argument(
         "--showcase", action="store_true", help="Run showcase and generate artifacts"
     )
+    mode_group.add_argument(
+        "--self-check",
+        action="store_true",
+        help="Run first-run diagnostics and setup guidance",
+    )
     parser.add_argument(
         "--base-url",
         default="http://localhost:8000",
@@ -217,6 +335,11 @@ def main() -> None:
         help="Alternate light theme name for evidence export (default: light)",
     )
     parser.add_argument(
+        "--self-check-json",
+        action="store_true",
+        help="Emit JSON output for --self-check mode",
+    )
+    parser.add_argument(
         "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"  # nosec B104
     )
     parser.add_argument(
@@ -224,6 +347,9 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    if args.self_check_json and not args.self_check:
+        parser.error("--self-check-json requires --self-check")
 
     if args.demo:
         global DEMO_BASE_URL
@@ -244,6 +370,8 @@ def main() -> None:
             light_theme=args.showcase_light_theme,
         )
         sys.exit(asyncio.run(run_showcase(config)))
+    elif args.self_check:
+        sys.exit(run_self_check(args.base_url, output_json=args.self_check_json))
     else:
         print_banner()
         import uvicorn

@@ -1,4 +1,4 @@
-.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker verify verify-strict doctor scorecard
+.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker verify verify-strict doctor scorecard product-audit support-bundle
 
 # ============================================================================
 # Development
@@ -130,6 +130,12 @@ doctor:
 scorecard:
 	.venv/bin/python scripts/scorecard.py --output artifacts/scorecard.json
 
+product-audit:
+	.venv/bin/python scripts/product_audit.py --output artifacts/product-audit.json
+
+support-bundle:
+	.venv/bin/python scripts/support_bundle.py --output artifacts/support-bundle.tar.gz --manifest artifacts/support-bundle.json
+
 # ============================================================================
 # Code Quality
 # ============================================================================
@@ -250,6 +256,8 @@ help:
 	@echo "  make verify-strict   Run verify plus mutation testing"
 	@echo "  make doctor          Run release gates and emit artifacts/doctor.json"
 	@echo "  make scorecard       Validate 10/10 scorecards and emit artifacts/scorecard.json"
+	@echo "  make product-audit   Validate five-star product checklist and emit artifacts/product-audit.json"
+	@echo "  make support-bundle  Build diagnostics bundle + manifest for issue triage"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint            Run linter and type checker"

@@ -177,6 +177,16 @@ curl http://localhost:8000/health
 # {"status":"ok","version":"0.2.1","opa":true,"redis":true}
 ```
 
+**First-run self-check (recommended):**
+```bash
+python -m agentgate --self-check
+```
+
+For machine-readable output:
+```bash
+python -m agentgate --self-check --self-check-json
+```
+
 ---
 
 ## Showcase (60 Seconds)
@@ -501,6 +511,50 @@ Production features:
 - No privilege escalation
 - Resource limits (CPU/memory)
 - Health checks
+
+---
+
+## Troubleshooting
+
+### `docker` / `docker compose` not found
+
+Run:
+```bash
+python -m agentgate --self-check
+```
+If `docker_cli` or `docker_compose` is `fail`, install Docker Desktop and ensure your shell can run `docker --version`.
+
+### `make dev` starts but `/health` is degraded
+
+- Check Redis/OPA containers: `docker compose ps`
+- Check service logs: `docker compose logs -f redis opa`
+- Re-run diagnostics: `python -m agentgate --self-check`
+
+### Tool calls return `422 Invalid request`
+
+Use the `/docs` request examples for `/tools/call` and include:
+- `session_id`
+- `tool_name`
+- `arguments`
+
+### Evidence export fails for PDF
+
+Install PDF extras and retry:
+```bash
+pip install -e ".[pdf]"
+```
+
+---
+
+## Support
+
+- Product/runtime issues: open a GitHub issue with:
+  - output of `python -m agentgate --self-check --self-check-json`
+  - output of `make doctor`
+  - output of `make support-bundle` (`artifacts/support-bundle.tar.gz` + `artifacts/support-bundle.json`)
+  - relevant log snippet from `artifacts/logs/`
+- Security disclosures: follow `SECURITY.md`
+- Documentation gaps: open a docs issue and include the exact page/section
 
 ---
 

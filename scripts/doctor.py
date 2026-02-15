@@ -81,6 +81,30 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
             "--output artifacts/scorecard.json"
         ),
     ),
+    CheckSpec(
+        name="product",
+        gate="RG-09",
+        description="Five-star product readiness audit",
+        command=(
+            ".venv/bin/python scripts/product_audit.py --skip-doctor "
+            "--output artifacts/product-audit.json"
+        ),
+    ),
+    CheckSpec(
+        name="support",
+        gate="RG-10",
+        description="Support bundle reproducibility and triage readiness",
+        command=(
+            ".venv/bin/python scripts/support_bundle.py "
+            "--output artifacts/support-bundle.tar.gz "
+            "--manifest artifacts/support-bundle.json "
+            "--require README.md "
+            "--require artifacts/scorecard.json "
+            "--require artifacts/product-audit.json "
+            "--require artifacts/logs/verify.log "
+            "--require artifacts/logs/security.log"
+        ),
+    ),
 )
 
 
