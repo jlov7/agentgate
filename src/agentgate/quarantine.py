@@ -28,6 +28,7 @@ class QuarantineCoordinator:
         self.threshold = threshold
         self._risk_scores: dict[str, int] = {}
         self._active_incidents: dict[str, str] = {}
+        self._bootstrap_from_store()
 
     async def observe_tool_outcome(
         self,
@@ -38,16 +39,19 @@ class QuarantineCoordinator:
         error: str | None,
     ) -> str | None:
         """Record a tool outcome and quarantine if risk exceeds threshold."""
+        existing = self._active_incidents.get(session_id)
+        if existing:
+            record = self.trace_store.get_incident(existing)
+            if record is not None and _is_active_status(record.status):
+                return existing
+            self._active_incidents.pop(session_id, None)
+
         score = self._risk_scores.get(session_id, 0) + _score_risk(
             decision_action=decision_action, error=error
         )
         self._risk_scores[session_id] = score
         if score < self.threshold:
             return None
-
-        existing = self._active_incidents.get(session_id)
-        if existing:
-            return existing
 
         incident_id = f"incident-{uuid.uuid4()}"
         now = datetime.now(UTC)
@@ -127,6 +131,22 @@ class QuarantineCoordinator:
         self._active_incidents.pop(record.session_id, None)
         return True
 
+    def _bootstrap_from_store(self) -> None:
+        for record in self.trace_store.list_incidents():
+            if _is_active_status(record.status):
+                existing_id = self._active_incidents.get(record.session_id)
+                if not existing_id:
+                    self._active_incidents[record.session_id] = record.incident_id
+                    self._risk_scores[record.session_id] = record.risk_score
+                    continue
+                existing = self.trace_store.get_incident(existing_id)
+                if (
+                    existing is None
+                    or record.updated_at > existing.updated_at
+                ):
+                    self._active_incidents[record.session_id] = record.incident_id
+                    self._risk_scores[record.session_id] = record.risk_score
+
 
 def _score_risk(*, decision_action: str, error: str | None) -> int:
     if decision_action == "DENY":
@@ -136,3 +156,7 @@ def _score_risk(*, decision_action: str, error: str | None) -> int:
     if error:
         return 1
     return 0
+
+
+def _is_active_status(status: str) -> bool:
+    return status in {"quarantined", "revoked", "failed"}

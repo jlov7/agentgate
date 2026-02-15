@@ -21,6 +21,8 @@ from pathlib import Path
 from typing import Any
 
 from agentgate.client import AgentGateClient
+from agentgate.invariants import evaluate_policy_invariants
+from agentgate.transparency import verify_inclusion_proof
 
 DEMO_BASE_URL = "http://localhost:8000"
 
@@ -326,6 +328,14 @@ def main() -> None:
         help="Release a quarantined incident by ID",
     )
     mode_group.add_argument(
+        "--invariant-check",
+        help="Run local policy invariant checks from a JSON payload or file path",
+    )
+    mode_group.add_argument(
+        "--verify-transparency",
+        help="Verify transparency proof report from JSON payload or file path",
+    )
+    mode_group.add_argument(
         "--rollout-start",
         help="Start a tenant rollout (provide tenant ID)",
     )
@@ -432,6 +442,76 @@ def main() -> None:
             return 0
 
         sys.exit(asyncio.run(run_replay()))
+    elif args.invariant_check:
+        payload = _load_json_payload(args.invariant_check)
+        baseline_policy_data = payload.get("baseline_policy_data")
+        candidate_policy_data = payload.get("candidate_policy_data")
+        selected_invariants = payload.get("invariants")
+        if not isinstance(baseline_policy_data, dict) or not isinstance(
+            candidate_policy_data, dict
+        ):
+            parser.error(
+                "--invariant-check payload must include "
+                "baseline_policy_data and candidate_policy_data objects"
+            )
+        if selected_invariants is not None and (
+            not isinstance(selected_invariants, list)
+            or any(not isinstance(item, str) for item in selected_invariants)
+        ):
+            parser.error("invariants must be a list of strings")
+        report = evaluate_policy_invariants(
+            run_id=str(payload.get("run_id", "cli-invariant-check")),
+            baseline_policy_data=baseline_policy_data,
+            candidate_policy_data=candidate_policy_data,
+            selected_invariants=selected_invariants,
+        )
+        print(json.dumps(report, indent=2))
+        sys.exit(0 if report["status"] == "pass" else 1)
+    elif args.verify_transparency:
+        payload = _load_json_payload(args.verify_transparency)
+        event_count = payload.get("event_count")
+        root_hash = payload.get("root_hash")
+        proofs = payload.get("proofs")
+        if not isinstance(event_count, int) or event_count < 0:
+            parser.error("transparency payload must include integer event_count")
+        if not isinstance(root_hash, str):
+            parser.error("transparency payload must include root_hash")
+        if not isinstance(proofs, list):
+            parser.error("transparency payload must include proofs list")
+        failures: list[str] = []
+        for proof_entry in proofs:
+            if not isinstance(proof_entry, dict):
+                failures.append("invalid-proof-entry")
+                continue
+            event_id = str(proof_entry.get("event_id", "unknown"))
+            leaf_hash = proof_entry.get("leaf_hash")
+            index = proof_entry.get("index")
+            proof = proof_entry.get("proof")
+            if (
+                not isinstance(leaf_hash, str)
+                or not isinstance(index, int)
+                or not isinstance(proof, list)
+                or any(not isinstance(item, str) for item in proof)
+            ):
+                failures.append(event_id)
+                continue
+            ok = verify_inclusion_proof(
+                leaf_hash=leaf_hash,
+                index=index,
+                total_leaves=max(event_count, 1),
+                proof=proof,
+                root_hash=root_hash,
+            )
+            if not ok:
+                failures.append(event_id)
+        result = {
+            "status": "pass" if not failures else "fail",
+            "verified": len(proofs) - len(failures),
+            "total": len(proofs),
+            "failures": failures,
+        }
+        print(json.dumps(result, indent=2))
+        sys.exit(0 if not failures else 1)
     elif args.incident_release:
         if not args.admin_key:
             parser.error("--admin-key required for --incident-release")

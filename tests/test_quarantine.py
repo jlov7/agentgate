@@ -34,6 +34,15 @@ class RecordingBroker(CredentialBroker):
         return True, "revoked"
 
 
+class CountingBroker(CredentialBroker):
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def revoke_credentials(self, session_id: str, reason: str) -> tuple[bool, str]:
+        self.calls += 1
+        return True, "revoked"
+
+
 async def test_risk_score_triggers_quarantine_after_threshold_breach(tmp_path) -> None:
     redis = FakeRedis()
     kill_switch = KillSwitch(redis)
@@ -113,3 +122,42 @@ async def test_quarantine_revokes_active_credentials_for_session(tmp_path) -> No
         record = trace_store.get_incident(incident_id)
         assert record is not None
         assert record.status == "revoked"
+
+
+async def test_quarantine_idempotent_across_restart(tmp_path) -> None:
+    redis = FakeRedis()
+    kill_switch = KillSwitch(redis)
+    broker = CountingBroker()
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        first = QuarantineCoordinator(
+            trace_store=trace_store,
+            kill_switch=kill_switch,
+            credential_broker=broker,
+            threshold=1,
+        )
+        incident_id = await first.observe_tool_outcome(
+            session_id="sess-restart",
+            tool_name="db_insert",
+            decision_action="DENY",
+            error="Policy denied",
+        )
+        assert incident_id is not None
+        assert broker.calls == 1
+
+        second = QuarantineCoordinator(
+            trace_store=trace_store,
+            kill_switch=kill_switch,
+            credential_broker=broker,
+            threshold=1,
+        )
+        repeated = await second.observe_tool_outcome(
+            session_id="sess-restart",
+            tool_name="db_insert",
+            decision_action="DENY",
+            error="Policy denied",
+        )
+
+        assert repeated == incident_id
+        assert broker.calls == 1
+        events = trace_store.list_incident_events(incident_id)
+        assert len(events) == 2

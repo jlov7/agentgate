@@ -371,6 +371,7 @@ def test_admin_replay_run_and_report(client, monkeypatch) -> None:
     assert response.status_code == 200
     run_payload = response.json()
     assert run_payload["status"] == "completed"
+    assert run_payload["invariant_report"]["status"] in {"pass", "fail"}
     run_id = run_payload["run_id"]
 
     report = client.get(
@@ -380,6 +381,35 @@ def test_admin_replay_run_and_report(client, monkeypatch) -> None:
     report_payload = report.json()
     assert report_payload["summary"]["drifted_events"] >= 1
     assert report_payload["deltas"]
+    assert report_payload["invariant_report"]["run_id"] == run_id
+
+
+def test_session_transparency_report_endpoint(client) -> None:
+    session_id = "transparency-session"
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": session_id,
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+        },
+    )
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": session_id,
+            "tool_name": "api_get",
+            "arguments": {"endpoint": "/status"},
+        },
+    )
+
+    response = client.get(f"/sessions/{session_id}/transparency")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["event_count"] == 2
+    assert payload["root_hash"]
+    assert payload["proofs"]
+    assert all(item["verified"] for item in payload["proofs"])
 
 
 def test_admin_replay_run_detail(client, monkeypatch) -> None:
@@ -512,6 +542,43 @@ def test_create_tenant_rollout_returns_canary_plan(client, monkeypatch) -> None:
     payload = response.json()
     assert payload["rollout"]["tenant_id"] == "tenant-a"
     assert payload["rollout"]["status"] == "promoting"
+
+
+def test_admin_shadow_config_and_report(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    config = client.post(
+        "/admin/shadow/config",
+        headers={"X-API-Key": "admin-key"},
+        json={
+            "candidate_policy_version": "shadow-v1",
+            "candidate_policy_data": {
+                "read_only_tools": [],
+                "write_tools": ["db_insert"],
+                "all_known_tools": ["db_query", "db_insert"],
+            },
+        },
+    )
+    assert config.status_code == 200
+
+    call = client.post(
+        "/tools/call",
+        json={
+            "session_id": "shadow-session",
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+        },
+    )
+    assert call.status_code == 200
+
+    report = client.get(
+        "/admin/shadow/report",
+        headers={"X-API-Key": "admin-key"},
+    )
+    assert report.status_code == 200
+    payload = report.json()
+    assert payload["enabled"] is True
+    assert payload["blast_radius"]["drifted_events"] >= 1
+    assert payload["suggested_patches"]
 
 
 def test_validation_error_payload_for_tools_call(client) -> None:

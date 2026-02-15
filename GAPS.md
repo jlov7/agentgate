@@ -149,3 +149,6 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - 2026-02-15T14:03:18Z: `scripts/doctor.sh` blocked by missing `.venv` after `make setup` failed to reach PyPI; logged GAP-P0-004 and opened decision request for dependency access.
 - 2026-02-15T15:10:03Z: Dependency access restored; GAP-P0-004 closed and `scripts/doctor.sh` returned `overall_status: pass` with all 10 gates green.
 - 2026-02-15T15:49:00Z: Fixed lint/mypy/test regression around rollout creation; `make verify`, `scripts/doctor.sh`, and `make verify-strict` all pass with `RG-01`..`RG-11` green.
+- 2026-02-15T17:24:42Z: Doctor failed on `RG-02` due Bandit false-positive (`B105`) introduced by invariant payload field naming.
+- 2026-02-15T17:26:15Z: After security-safe invariant payload fix, `scripts/doctor.sh` returned `overall_status: pass`.
+- 2026-02-15T17:26:29Z: Completed hard-feature quintet verification: `make verify` + `make verify-strict` passed with new invariant, taint/DLP, transparency, and shadow controls.

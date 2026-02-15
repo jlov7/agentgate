@@ -125,3 +125,23 @@ def test_trace_contains_revocation_outcome_metadata(tmp_path) -> None:
     assert events
     assert events[0].event_type == "revoked"
     assert "revoked" in events[0].detail
+
+
+def test_trace_store_persists_replay_invariant_report(tmp_path) -> None:
+    report = {
+        "run_id": "run-1",
+        "status": "pass",
+        "checks": [
+            {
+                "id": "unknown_tools_remain_denied",
+                "description": "Unknown tools remain denied in candidate policy",
+                "passed": True,
+                "counterexamples": [],
+            }
+        ],
+    }
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        store.save_replay_invariant_report("run-1", report)
+        saved = store.get_replay_invariant_report("run-1")
+
+    assert saved == report

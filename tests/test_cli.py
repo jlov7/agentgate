@@ -181,6 +181,41 @@ def test_cli_can_trigger_replay_and_print_summary_json(capsys, monkeypatch, tmp_
     assert "\"run_id\": \"run-cli\"" in output
 
 
+def test_cli_can_run_local_invariant_check(capsys, monkeypatch, tmp_path) -> None:
+    payload = {
+        "baseline_policy_data": {
+            "read_only_tools": ["db_query"],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+        "candidate_policy_data": {
+            "read_only_tools": ["db_query", "db_insert"],
+            "write_tools": [],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+    }
+    path = tmp_path / "invariants.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "agentgate",
+            "--invariant-check",
+            str(path),
+        ],
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+
+    assert excinfo.value.code == 1
+    output = capsys.readouterr().out
+    assert "\"status\": \"fail\"" in output
+    assert "no_write_privilege_escalation" in output
+
+
 def test_cli_can_release_incident_and_show_status(capsys, monkeypatch) -> None:
     class DummyClient:
         def __init__(self, base_url: str) -> None:
@@ -222,6 +257,41 @@ def test_cli_can_release_incident_and_show_status(capsys, monkeypatch) -> None:
     assert excinfo.value.code == 0
     output = capsys.readouterr().out
     assert "\"status\": \"released\"" in output
+
+
+def test_cli_can_verify_transparency_report(capsys, monkeypatch, tmp_path) -> None:
+    leaf_hash = "4b68ab3847feda7d6c62c1fbcbeebfa35eab7351ed5e78f4ddadea5df64b8015"
+    report = {
+        "event_count": 1,
+        "root_hash": leaf_hash,
+        "proofs": [
+            {
+                "event_id": "evt-1",
+                "leaf_hash": leaf_hash,
+                "index": 0,
+                "proof": [],
+            }
+        ],
+    }
+    path = tmp_path / "transparency.json"
+    path.write_text(json.dumps(report), encoding="utf-8")
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "agentgate",
+            "--verify-transparency",
+            str(path),
+        ],
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+
+    assert excinfo.value.code == 0
+    output = capsys.readouterr().out
+    assert "\"status\": \"pass\"" in output
 
 
 def test_main_module_runs(monkeypatch) -> None:

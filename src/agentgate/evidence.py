@@ -28,6 +28,7 @@ from typing import Any
 from agentgate.models import TraceEvent
 from agentgate.replay import summarize_replay_deltas
 from agentgate.traces import TraceStore
+from agentgate.transparency import build_merkle_root, hash_leaf
 
 
 def _get_signing_key() -> bytes | None:
@@ -496,6 +497,9 @@ class EvidenceExporter:
                     "created_at": run.created_at.isoformat(),
                     "completed_at": run.completed_at.isoformat() if run.completed_at else None,
                     "summary": summary.model_dump(mode="json"),
+                    "invariant_report": self.trace_store.get_replay_invariant_report(
+                        run.run_id
+                    ),
                 }
             )
         return {"runs": payload}
@@ -644,6 +648,10 @@ class EvidenceExporter:
             "event_count": len(event_ids),
             "hash": digest,
             "hash_algorithm": "sha256",
+            "transparency_root": build_merkle_root(
+                [hash_leaf(event_id) for event_id in event_ids]
+            ),
+            "transparency_algorithm": "sha256-merkle-v1",
         }
 
         # Add cryptographic signature if signing key is configured

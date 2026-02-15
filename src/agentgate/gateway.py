@@ -27,6 +27,8 @@ from agentgate.models import PolicyDecision, ToolCallRequest, ToolCallResponse
 from agentgate.policy import PolicyClient
 from agentgate.quarantine import QuarantineCoordinator
 from agentgate.rate_limit import RateLimiter
+from agentgate.shadow import ShadowPolicyTwin
+from agentgate.taint import TaintTracker
 from agentgate.traces import TraceStore, build_trace_event, hash_arguments_safe
 
 logger = get_logger(__name__)
@@ -102,6 +104,8 @@ class Gateway:
         rate_limiter: RateLimiter | None = None,
         policy_version: str = "unknown",
         quarantine: QuarantineCoordinator | None = None,
+        taint_tracker: TaintTracker | None = None,
+        shadow_twin: ShadowPolicyTwin | None = None,
     ) -> None:
         self.policy_client = policy_client
         self.kill_switch = kill_switch
@@ -111,6 +115,8 @@ class Gateway:
         self.rate_limiter = rate_limiter
         self.policy_version = policy_version
         self.quarantine = quarantine
+        self.taint_tracker = taint_tracker
+        self.shadow_twin = shadow_twin
 
     async def call_tool(self, request: ToolCallRequest) -> ToolCallResponse:
         """Handle a tool call with policy enforcement and tracing."""
@@ -118,6 +124,10 @@ class Gateway:
         timestamp = datetime.now(UTC)
         arguments_hash = hash_arguments_safe(request.arguments)
         user_id, agent_id = _extract_identity(request.context)
+        if self.taint_tracker:
+            self.taint_tracker.observe_context(
+                session_id=request.session_id, context=request.context
+            )
 
         if not _is_valid_tool_name(request.tool_name):
             return self._deny_request(
@@ -191,7 +201,33 @@ class Gateway:
                     ),
                 )
 
+        if self.taint_tracker:
+            block_reason = self.taint_tracker.block_reason(
+                session_id=request.session_id, tool_name=request.tool_name
+            )
+            if block_reason:
+                response = self._deny_request(
+                    request=request,
+                    event_id=event_id,
+                    timestamp=timestamp,
+                    arguments_hash=arguments_hash,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    decision=PolicyDecision(
+                        action="DENY",
+                        reason=block_reason,
+                        matched_rule="dlp_taint_guard",
+                    ),
+                )
+                await self._notify_quarantine(request, "DENY", response.error)
+                return response
+
         decision = await self.policy_client.evaluate(request)
+        if self.shadow_twin:
+            self.shadow_twin.observe_decision(
+                request=request,
+                baseline_decision=decision,
+            )
         if decision.action == "DENY":
             response = self._deny_request(
                 request=request,

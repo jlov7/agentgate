@@ -48,6 +48,7 @@ from redis.asyncio import Redis
 from agentgate.credentials import CredentialBroker
 from agentgate.evidence import EvidenceExporter
 from agentgate.gateway import Gateway, ToolExecutor
+from agentgate.invariants import evaluate_policy_invariants
 from agentgate.killswitch import KillSwitch
 from agentgate.logging import (
     bind_correlation_id,
@@ -63,7 +64,10 @@ from agentgate.quarantine import QuarantineCoordinator
 from agentgate.rate_limit import RateLimiter
 from agentgate.replay import PolicyReplayEvaluator, summarize_replay_deltas
 from agentgate.rollout import CanaryEvaluator, RolloutController
+from agentgate.shadow import ShadowPolicyTwin
+from agentgate.taint import TaintTracker
 from agentgate.traces import TraceStore
+from agentgate.transparency import TransparencyLog
 from agentgate.webhooks import configure_webhook_notifier, get_webhook_notifier
 
 logger = get_logger(__name__)
@@ -229,6 +233,8 @@ def create_app(
         kill_switch=kill_switch,
         credential_broker=credential_broker,
     )
+    taint_tracker = TaintTracker(trace_store=trace_store)
+    shadow_twin = ShadowPolicyTwin(trace_store=trace_store)
     gateway = Gateway(
         policy_client=policy_client,
         kill_switch=kill_switch,
@@ -238,6 +244,8 @@ def create_app(
         rate_limiter=rate_limiter,
         policy_version=_get_policy_version(),
         quarantine=quarantine,
+        taint_tracker=taint_tracker,
+        shadow_twin=shadow_twin,
     )
     evidence_exporter = EvidenceExporter(trace_store=trace_store, version=app.version)
     replay_evaluator = PolicyReplayEvaluator(trace_store=trace_store)
@@ -246,6 +254,7 @@ def create_app(
         evaluator=CanaryEvaluator(),
         metrics=get_metrics(),
     )
+    transparency_log = TransparencyLog(trace_store=trace_store)
 
     # Store components in app state
     app.state.gateway = gateway
@@ -255,7 +264,10 @@ def create_app(
     app.state.evidence_exporter = evidence_exporter
     app.state.replay_evaluator = replay_evaluator
     app.state.rollout_controller = rollout_controller
+    app.state.transparency_log = transparency_log
     app.state.quarantine = quarantine
+    app.state.taint_tracker = taint_tracker
+    app.state.shadow_twin = shadow_twin
     app.state.rate_limiter = rate_limiter
     app.state.webhook_notifier = webhook_notifier
     app.state.policy_path = policy_path
@@ -562,6 +574,12 @@ def create_app(
         }
         return JSONResponse(payload)
 
+    @app.get("/sessions/{session_id}/transparency")
+    async def get_transparency_report(session_id: str) -> JSONResponse:
+        """Return the transparency proof report for a session."""
+        report = app.state.transparency_log.build_session_report(session_id)
+        return JSONResponse(report)
+
     @app.post("/admin/policies/reload")
     async def reload_policies(
         x_api_key: str = Header(..., alias="X-API-Key")
@@ -597,6 +615,46 @@ def create_app(
             logger.error("policy_reload_failed", error=str(exc))
             raise HTTPException(status_code=500, detail=f"Failed to reload: {exc}") from exc
 
+    @app.post("/admin/shadow/config")
+    async def configure_shadow_policy(
+        payload: dict[str, Any],
+        x_api_key: str = Header(..., alias="X-API-Key"),
+    ) -> JSONResponse:
+        """Configure candidate shadow policy (admin only)."""
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+        candidate_policy_data = payload.get("candidate_policy_data")
+        if not isinstance(candidate_policy_data, dict):
+            raise HTTPException(
+                status_code=400, detail="candidate_policy_data required"
+            )
+        candidate_policy_version = str(
+            payload.get("candidate_policy_version", "shadow-candidate")
+        )
+        app.state.shadow_twin.configure(
+            candidate_policy_data=candidate_policy_data,
+            candidate_version=candidate_policy_version,
+        )
+        return JSONResponse(
+            {
+                "status": "configured",
+                "candidate_policy_version": candidate_policy_version,
+            }
+        )
+
+    @app.get("/admin/shadow/report")
+    async def get_shadow_report(
+        session_id: str | None = None,
+        x_api_key: str = Header(..., alias="X-API-Key"),
+    ) -> JSONResponse:
+        """Return shadow policy drift report and suggestions (admin only)."""
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+        report = app.state.shadow_twin.build_report(session_id=session_id)
+        return JSONResponse(report)
+
     @app.post("/admin/replay/runs")
     async def create_replay_run(
         payload: dict[str, Any],
@@ -610,12 +668,18 @@ def create_app(
         session_id = payload.get("session_id")
         baseline_policy_data = payload.get("baseline_policy_data")
         candidate_policy_data = payload.get("candidate_policy_data")
+        selected_invariants = payload.get("invariants")
         if not isinstance(session_id, str):
             raise HTTPException(status_code=400, detail="session_id required")
         if not isinstance(baseline_policy_data, dict) or not isinstance(
             candidate_policy_data, dict
         ):
             raise HTTPException(status_code=400, detail="policy data required")
+        if selected_invariants is not None and (
+            not isinstance(selected_invariants, list)
+            or any(not isinstance(item, str) for item in selected_invariants)
+        ):
+            raise HTTPException(status_code=400, detail="invariants must be a list[str]")
 
         baseline_version = payload.get("baseline_policy_version", "baseline")
         candidate_version = payload.get("candidate_policy_version", "candidate")
@@ -637,10 +701,18 @@ def create_app(
             candidate_policy_data=candidate_policy_data,
             session_id=session_id,
         )
+        invariant_report = evaluate_policy_invariants(
+            run_id=run_id,
+            baseline_policy_data=baseline_policy_data,
+            candidate_policy_data=candidate_policy_data,
+            selected_invariants=selected_invariants,
+        )
+        app.state.trace_store.save_replay_invariant_report(run_id, invariant_report)
         return JSONResponse({
             "run_id": run_id,
             "status": "completed",
             "summary": summary.model_dump(),
+            "invariant_report": invariant_report,
         })
 
     @app.get("/admin/replay/runs/{run_id}")
@@ -657,9 +729,11 @@ def create_app(
             raise HTTPException(status_code=404, detail="Replay run not found")
         deltas = app.state.trace_store.list_replay_deltas(run_id)
         summary = summarize_replay_deltas(run_id=run_id, deltas=deltas)
+        invariant_report = app.state.trace_store.get_replay_invariant_report(run_id)
         return JSONResponse({
             "run": run.model_dump(mode="json"),
             "summary": summary.model_dump(mode="json"),
+            "invariant_report": invariant_report,
         })
 
     @app.get("/admin/replay/runs/{run_id}/report")
@@ -676,10 +750,12 @@ def create_app(
             raise HTTPException(status_code=404, detail="Replay run not found")
         deltas = app.state.trace_store.list_replay_deltas(run_id)
         summary = summarize_replay_deltas(run_id=run_id, deltas=deltas)
+        invariant_report = app.state.trace_store.get_replay_invariant_report(run_id)
         return JSONResponse({
             "run": run.model_dump(mode="json"),
             "summary": summary.model_dump(mode="json"),
             "deltas": [delta.model_dump(mode="json") for delta in deltas],
+            "invariant_report": invariant_report,
         })
 
     @app.get("/admin/incidents/{incident_id}")

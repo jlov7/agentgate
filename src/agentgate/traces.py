@@ -118,6 +118,42 @@ class TraceStore:
             )
             self.conn.execute(
                 """
+                CREATE TABLE IF NOT EXISTS replay_invariant_reports (
+                    run_id TEXT PRIMARY KEY,
+                    report_json TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS session_taints (
+                    session_id TEXT PRIMARY KEY,
+                    labels_json TEXT NOT NULL,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS shadow_diffs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL,
+                    tool_name TEXT NOT NULL,
+                    baseline_action TEXT NOT NULL,
+                    candidate_action TEXT NOT NULL,
+                    severity TEXT NOT NULL,
+                    baseline_reason TEXT,
+                    candidate_reason TEXT,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            self.conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_shadow_diffs_session ON shadow_diffs(session_id)"
+            )
+            self.conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS incidents (
                     incident_id TEXT PRIMARY KEY,
                     session_id TEXT NOT NULL,
@@ -433,6 +469,128 @@ class TraceStore:
             )
             for row in rows
         ]
+
+    def save_replay_invariant_report(self, run_id: str, report: dict[str, object]) -> None:
+        """Insert or update a replay invariant report."""
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT INTO replay_invariant_reports (
+                    run_id, report_json
+                ) VALUES (?, ?)
+                ON CONFLICT(run_id) DO UPDATE SET
+                    report_json=excluded.report_json
+                """,
+                (run_id, json.dumps(report, sort_keys=True)),
+            )
+            self.conn.commit()
+
+    def get_replay_invariant_report(self, run_id: str) -> dict[str, object] | None:
+        """Fetch invariant report for a replay run."""
+        with self._lock:
+            row = self.conn.execute(
+                """
+                SELECT report_json FROM replay_invariant_reports
+                WHERE run_id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        payload = json.loads(row["report_json"])
+        if not isinstance(payload, dict):
+            return None
+        return payload
+
+    def save_session_taints(self, session_id: str, labels: set[str]) -> None:
+        """Persist taint labels for a session."""
+        ordered = sorted(labels)
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT INTO session_taints (
+                    session_id, labels_json, updated_at
+                ) VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(session_id) DO UPDATE SET
+                    labels_json=excluded.labels_json,
+                    updated_at=CURRENT_TIMESTAMP
+                """,
+                (session_id, json.dumps(ordered)),
+            )
+            self.conn.commit()
+
+    def get_session_taints(self, session_id: str) -> set[str]:
+        """Fetch taint labels for a session."""
+        with self._lock:
+            row = self.conn.execute(
+                "SELECT labels_json FROM session_taints WHERE session_id = ?",
+                (session_id,),
+            ).fetchone()
+        if row is None:
+            return set()
+        payload = json.loads(row["labels_json"])
+        if not isinstance(payload, list):
+            return set()
+        return {item for item in payload if isinstance(item, str)}
+
+    def save_shadow_diff(self, payload: dict[str, object]) -> None:
+        """Append one shadow decision delta event."""
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT INTO shadow_diffs (
+                    session_id, tool_name, baseline_action, candidate_action,
+                    severity, baseline_reason, candidate_reason, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(payload["session_id"]),
+                    str(payload["tool_name"]),
+                    str(payload["baseline_action"]),
+                    str(payload["candidate_action"]),
+                    str(payload["severity"]),
+                    str(payload.get("baseline_reason", "")),
+                    str(payload.get("candidate_reason", "")),
+                    str(payload["created_at"]),
+                ),
+            )
+            self.conn.commit()
+
+    def list_shadow_diffs(self, session_id: str | None = None) -> list[dict[str, object]]:
+        """List stored shadow decision deltas."""
+        query = (
+            "SELECT id, session_id, tool_name, baseline_action, candidate_action, "
+            "severity, baseline_reason, candidate_reason, created_at FROM shadow_diffs"
+        )
+        params: list[str] = []
+        if session_id:
+            query += " WHERE session_id = ?"
+            params.append(session_id)
+        query += " ORDER BY id ASC"
+        with self._lock:
+            rows = self.conn.execute(query, params).fetchall()
+        results: list[dict[str, object]] = []
+        for row in rows:
+            results.append(
+                {
+                    "id": int(row["id"]),
+                    "session_id": row["session_id"],
+                    "tool_name": row["tool_name"],
+                    "baseline_action": row["baseline_action"],
+                    "candidate_action": row["candidate_action"],
+                    "severity": row["severity"],
+                    "baseline_reason": row["baseline_reason"],
+                    "candidate_reason": row["candidate_reason"],
+                    "created_at": row["created_at"],
+                }
+            )
+        return results
+
+    def clear_shadow_diffs(self) -> None:
+        """Delete all shadow diff records."""
+        with self._lock:
+            self.conn.execute("DELETE FROM shadow_diffs")
+            self.conn.commit()
 
     def save_incident(self, record: IncidentRecord) -> None:
         """Insert or update an incident record."""
