@@ -1,35 +1,31 @@
 ## Current Task
 
-Implement the hard-feature quintet overnight to full completion: policy invariants, exactly-once quarantine orchestration, taint+DLP, transparency log, and shadow policy twin with patch suggestions.
+Deliver a world-class adoption and demo experience so people can see, try, trust, and share AgentGate quickly.
 
 ## Status
 
-Complete (make verify, scripts/doctor.sh, make verify-strict passed on 2026-02-15)
+Complete (verified with `make verify` and `scripts/doctor.sh` on 2026-02-15)
 
 ## To-Do (Live)
 
-1. [x] Create exhaustive implementation plan at `docs/plans/2026-02-15-hard-feature-quintet.md`
-2. [x] Feature 1 RED: add failing invariant prover tests
-3. [x] Feature 1 GREEN: implement invariant prover + API/CLI/report hooks
-4. [x] Feature 2 RED: add failing exactly-once orchestration tests
-5. [x] Feature 2 GREEN: persist idempotency/recovery and pass tests
-6. [x] Feature 3 RED: add failing taint/DLP tests
-7. [x] Feature 3 GREEN: implement taint tracker + DLP runtime enforcement
-8. [x] Feature 4 RED: add failing transparency tests
-9. [x] Feature 4 GREEN: implement Merkle log + inclusion proof verification
-10. [x] Feature 5 RED: add failing shadow twin + patch suggestion tests
-11. [x] Feature 5 GREEN: implement shadow diff persistence/reporting
-12. [x] Run targeted test matrix for all new features
-13. [x] Run `make verify`
-14. [x] Run `scripts/doctor.sh`
-15. [x] Run `make verify-strict` if environment permits
-16. [x] Update `.codex/PLANS.md` outcomes and summarize remaining risk
+1. [x] Audit existing demo/docs surfaces and identify leverage points
+2. [x] Capture implementation plan in `.codex/PLANS.md`
+3. [x] Implement `make try` zero-friction entrypoint (setup checks + managed stack + showcase + polished output)
+4. [x] Add proof-bundle generation for shareable artifacts
+5. [x] Build hosted interactive Demo Lab scaffold with three seeded scenarios and artifact export
+6. [x] Add docs: `docs/TRY_NOW.md` and `docs/DEMO_DAY.md`
+7. [x] Wire docs/navigation/README to the new experience ladder
+8. [x] Add/adjust regression tests for new automation/scripts
+9. [x] Run targeted tests for changed modules
+10. [x] Run full `make verify`
+11. [x] Run `scripts/doctor.sh`
+12. [x] Update outcome notes and residual risks
 
 ## Decisions Made
 
-- Use strict TDD per feature (RED -> GREEN -> targeted tests) to avoid broad regressions while adding complex behavior.
-- Integrate new controls through existing system seams (`TraceStore`, gateway, admin APIs, CLI) instead of introducing a second orchestration layer.
+- Reuse existing showcase/evidence pipeline as the core engine to avoid introducing a parallel demo stack.
+- Ship a static hosted Demo Lab in docs (MkDocs/GitHub Pages friendly) with seeded scenarios and downloadable proof bundles.
 
 ## Open Questions
 
-- None blocking execution; proceed through checklist sequentially.
+- None blocking implementation.

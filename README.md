@@ -30,7 +30,11 @@
 
 **For execs and stakeholders**, read **[Executive Summary](docs/EXEC_SUMMARY.md)** — a one-page brief with positioning, differentiators, and the 60-second proof path.
 
-**For a 60-second live demo**, use **[Demo Script](docs/DEMO_SCRIPT.md)** and run `make showcase`.
+**For a 5-minute hands-on trial**, use **[Try in 5 Minutes](docs/TRY_NOW.md)** and run `make try`.
+
+**For a hosted interactive scenario replay**, open **[Interactive Demo Lab](docs/DEMO_LAB.md)**.
+
+**For a 60-second live demo**, use **[Demo Script](docs/DEMO_SCRIPT.md)**.
 
 **For the docs site**, visit **https://jlov7.github.io/agentgate/**.
 
@@ -40,10 +44,11 @@
 
 ## 1-Minute Tour
 
-1) Run `make showcase` to generate the full evidence pack in `docs/showcase/`.
+1) Run `make try` to launch the local stack, execute the showcase, and build a proof bundle.
 2) Open `docs/showcase/showcase.log` for the narrated policy decisions.
 3) Open `docs/showcase/evidence.html` to review the audit-ready report.
 4) Open `docs/showcase/metrics.prom` to see live Prometheus counters.
+5) Share `docs/showcase/proof-bundle-*.zip` with stakeholders.
 
 ---
 
@@ -165,7 +170,13 @@ cd agentgate
 # Create virtual environment and install dependencies
 make setup
 
-# Start Redis + OPA containers, then run the gateway
+# Fastest trial path (starts stack, runs showcase, emits proof bundle)
+make try
+```
+
+Manual runtime path:
+
+```bash
 make dev
 ```
 
@@ -194,13 +205,14 @@ python -m agentgate --self-check --self-check-json
 Run the narrated showcase and generate stakeholder-ready artifacts in `docs/showcase/`:
 
 ```bash
-make showcase
+make try
 ```
 
 Then open:
 - `docs/showcase/evidence.html` (audit-ready evidence pack)
 - `docs/showcase/metrics.prom` (Prometheus snapshot)
 - `docs/showcase/showcase.log` (narrated terminal run)
+- `docs/showcase/proof-bundle-*.zip` (shareable proof bundle)
 
 ---
 
@@ -292,8 +304,8 @@ Sample outputs: [`examples/sample_evidence.json`](examples/sample_evidence.json)
 ### Showcase Demo
 
 ```bash
-# Runs a narrated showcase and writes artifacts to docs/showcase/
-make showcase
+# One-command local trial with showcase + proof bundle
+make try
 ```
 
 ### Interactive Demo
@@ -619,6 +631,9 @@ This is a personal, independent project. It is not affiliated with any employer 
 
 | Resource | Description |
 |----------|-------------|
+| [Try in 5 Minutes](docs/TRY_NOW.md) | One-command setup, showcase, and proof bundle |
+| [Interactive Demo Lab](docs/DEMO_LAB.md) | Hosted scenario replay with blast-radius metrics |
+| [Demo Day Playbook](docs/DEMO_DAY.md) | 10-minute stakeholder + technical demo flow |
 | [Understanding AgentGate](docs/UNDERSTANDING_AGENTGATE.md) | Non-technical introduction |
 | [Executive Summary](docs/EXEC_SUMMARY.md) | One-page stakeholder brief |
 | [Demo Script](docs/DEMO_SCRIPT.md) | 60-second live demo |

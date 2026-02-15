@@ -149,6 +149,135 @@ body {
   }
 }
 
+.ag-lab {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid var(--ag-line);
+  border-radius: 18px;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 14px 34px rgba(11, 29, 26, 0.1);
+}
+
+.ag-lab-controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ag-lab-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ag-lab-chip {
+  border: 1px solid var(--ag-line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  color: var(--ag-ink);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ag-lab-chip--active {
+  background: var(--ag-accent);
+  color: #fff;
+  border-color: var(--ag-accent);
+}
+
+.ag-lab-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ag-lab-detail {
+  display: grid;
+  gap: 1rem;
+}
+
+.ag-lab-signature {
+  display: grid;
+  gap: 0.2rem;
+  border: 1px solid var(--ag-line);
+  border-radius: 10px;
+  padding: 0.8rem;
+  background: rgba(14, 124, 123, 0.08);
+}
+
+.ag-lab-signature span {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--ag-ink-muted);
+}
+
+.ag-lab-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.ag-lab-metrics {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ag-lab-metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--ag-line);
+  background: #fff;
+}
+
+.ag-lab-metric span {
+  color: var(--ag-ink-muted);
+  text-transform: capitalize;
+}
+
+.ag-lab-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ag-lab-timeline__item {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--ag-line);
+  background: rgba(255, 255, 255, 0.72);
+  opacity: 0.42;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.ag-lab-timeline__item--revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ag-lab-timeline__time {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ag-ink-muted);
+}
+
+.ag-lab-timeline__decision {
+  font-weight: 700;
+  color: var(--ag-accent);
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;

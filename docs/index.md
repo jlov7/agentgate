@@ -4,8 +4,10 @@
     <h1>AgentGate</h1>
     <p class="ag-lede">Stop, approve, and evidence every AI tool call in real time.</p>
     <div class="ag-cta">
+      <a class="ag-btn" href="TRY_NOW/">Try in 5 minutes</a>
       <a class="ag-btn" href="EXEC_SUMMARY/">Executive Summary</a>
       <a class="ag-btn ag-btn--ghost" href="DEMO_SCRIPT/">60-second demo</a>
+      <a class="ag-btn ag-btn--ghost" href="DEMO_LAB/">Interactive Demo Lab</a>
     </div>
     <div class="ag-kpis">
       <div class="ag-kpi">
@@ -69,12 +71,14 @@ flowchart LR
 
 ## Quickstart
 ```bash
-make setup
-make dev
+make setup && make try
 ```
 
 ## Proof Paths
 - Executive overview: `EXEC_SUMMARY.md`
+- Guided first run: `TRY_NOW.md`
 - Live demo: `DEMO_SCRIPT.md`
+- Hosted scenario lab: `DEMO_LAB.md`
+- Demo Day flow: `DEMO_DAY.md`
 - Evidence pack: `showcase/evidence.html`
 - Metrics snapshot: `showcase/metrics.prom`

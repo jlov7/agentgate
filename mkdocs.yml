@@ -7,7 +7,10 @@ edit_uri: edit/main/docs/
 
 nav:
   - Home: index.md
+  - Try in 5 Minutes: TRY_NOW.md
   - Executive Summary: EXEC_SUMMARY.md
+  - Interactive Demo Lab: DEMO_LAB.md
+  - Demo Day Playbook: DEMO_DAY.md
   - Demo Script: DEMO_SCRIPT.md
   - Architecture: ARCHITECTURE.md
   - Replay Lab: REPLAY_LAB.md
@@ -57,3 +60,4 @@ extra_css:
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js
   - javascripts/mermaid-init.js
+  - javascripts/demo-lab.js

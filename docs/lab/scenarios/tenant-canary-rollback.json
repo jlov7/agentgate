@@ -1,0 +1,70 @@
+{
+  "id": "tenant-canary-rollback",
+  "title": "Signed Multi-Tenant Canary Rollout",
+  "tagline": "Tenant-specific policy packages roll out with signature and gate checks.",
+  "why_it_matters": "Lets teams ship policy changes safely without cross-tenant blast radius.",
+  "non_technical_script": [
+    "Each tenant gets its own signed policy package.",
+    "Rollout starts with a canary slice and watches guardrail metrics.",
+    "If quality regresses, rollback is automatic and lineage is preserved."
+  ],
+  "technical_script": [
+    "Bundle signature verification runs before activation for each tenant target.",
+    "Canary gate evaluates replay deltas, deny spikes, and incident counters.",
+    "Controller persists rollout lineage for compliance and postmortem traceability."
+  ],
+  "signature": {
+    "algorithm": "HMAC-SHA256",
+    "digest": "sig_rollout_7d1a11"
+  },
+  "blast_radius": {
+    "tenants_targeted": 8,
+    "canary_tenants": 2,
+    "gate_regressions": 1,
+    "auto_rollbacks": 1,
+    "production_tenants_impacted": 0
+  },
+  "timeline": [
+    {
+      "time": "T+00s",
+      "event": "Candidate bundle uploaded",
+      "decision": "VERIFY",
+      "impact": "Signature and digest verified"
+    },
+    {
+      "time": "T+04s",
+      "event": "Canary rollout begins",
+      "decision": "CANARY",
+      "impact": "2 tenants on candidate policy"
+    },
+    {
+      "time": "T+10s",
+      "event": "Regression gate triggers",
+      "decision": "FAIL",
+      "impact": "DENY spike exceeds threshold"
+    },
+    {
+      "time": "T+11s",
+      "event": "Automatic rollback completes",
+      "decision": "ROLLBACK",
+      "impact": "All tenants restored to baseline"
+    }
+  ],
+  "lineage": {
+    "baseline": "tenant-bundle-2026-02-10",
+    "candidate": "tenant-bundle-2026-02-15",
+    "rollback_to": "tenant-bundle-2026-02-10"
+  },
+  "artifacts": [
+    {
+      "label": "Rollout report",
+      "path": "../../../artifacts/rollout-report.json",
+      "type": "json"
+    },
+    {
+      "label": "Replay report",
+      "path": "../../../artifacts/replay-report.json",
+      "type": "json"
+    }
+  ]
+}

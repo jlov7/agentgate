@@ -8,6 +8,9 @@ Welcome to the AgentGate documentation. Choose your path based on your role and 
 
 | I want to... | Start here |
 |--------------|------------|
+| **Try AgentGate in 5 minutes** | [Try in 5 Minutes](TRY_NOW.md) |
+| **Run an interactive hosted scenario replay** | [Interactive Demo Lab](DEMO_LAB.md) |
+| **Run a polished demo-day flow** | [Demo Day Playbook](DEMO_DAY.md) |
 | **Understand what AgentGate is** | [Understanding AgentGate](UNDERSTANDING_AGENTGATE.md) |
 | **Get the executive summary** | [Executive Summary](EXEC_SUMMARY.md) |
 | **Run the 60-second demo** | [Demo Script](DEMO_SCRIPT.md) |
@@ -25,6 +28,9 @@ Welcome to the AgentGate documentation. Choose your path based on your role and 
 ## Documentation by Audience
 
 ### For Everyone
+- **[Try in 5 Minutes](TRY_NOW.md)** — One-command path (`make try`) that boots the stack, runs showcase, and emits a proof bundle.
+- **[Interactive Demo Lab](DEMO_LAB.md)** — Hosted replay of three flagship scenarios with blast-radius and evidence context.
+- **[Demo Day Playbook](DEMO_DAY.md)** — 10-minute agenda and dual talk tracks (non-technical + technical).
 - **[Understanding AgentGate](UNDERSTANDING_AGENTGATE.md)** — A plain-language guide to what AgentGate is, why it matters, and how it works. No technical background required.
 - **[Executive Summary](EXEC_SUMMARY.md)** — The one-page view for stakeholders.
 - **[Demo Script](DEMO_SCRIPT.md)** — 60-second walkthrough and live demo flow.

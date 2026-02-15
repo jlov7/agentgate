@@ -23,7 +23,7 @@ AgentGate is a containment-first security gateway for AI agents. It sits between
 | Provide containment proof | No | Yes (trace + signature) |
 
 ## Proof in 60 Seconds
-1) Run `make showcase` to start the demo and generate evidence.
+1) Run `make try` to start the local stack, execute the demo, and generate evidence.
 2) Open `docs/showcase/evidence.html` for the audit pack.
 3) Open `docs/showcase/metrics.prom` for live controls in Prometheus format.
 

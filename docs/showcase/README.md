@@ -11,9 +11,11 @@ This folder contains the output of `python -m agentgate --showcase`.
 - `evidence-light.html` - light theme evidence variant
 - `evidence-light.pdf` - light theme PDF variant
 - `metrics.prom` - Prometheus metrics snapshot
+- `proof-bundle-*.zip` - shareable stakeholder handoff bundle
 
 ## Regenerate
 Run:
+- `make try` (recommended end-to-end path)
 - `make showcase`
 - `make showcase-record` (record terminal output)
 - or `python -m agentgate --showcase --showcase-output docs/showcase`

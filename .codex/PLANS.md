@@ -112,3 +112,37 @@ Ship a new tier of control maturity in one coordinated pass by implementing five
 - Completed. All five features are implemented with TDD-first coverage and runtime wiring.
 - Full gates are green: `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`), and `make verify-strict` pass.
 - Added new runtime/admin/CLI surfaces without regressions across unit, integration, eval, and E2E suites.
+
+---
+
+# Adoption + Demo Experience ExecPlan
+
+## Purpose / Big Picture
+Make AgentGate dramatically easier to evaluate and demonstrate by introducing a frictionless one-command trial flow, a hosted interactive scenario lab, and audience-specific demo guidance that maps technical rigor to clear stakeholder storytelling.
+
+## Progress
+- [x] Baseline discovery of current README/docs/showcase/make surfaces.
+- [x] Define implementation tracks: `make try`, proof bundle packaging, hosted lab scaffold, docs wiring.
+- [x] Implement `make try` orchestration path with guardrails and polished output.
+- [x] Add deterministic proof-bundle packager for showcase artifacts.
+- [x] Implement hosted demo lab page with seeded scenarios and download exports.
+- [x] Add guidance docs (`TRY_NOW`, `DEMO_DAY`) and wire nav/discovery links.
+- [x] Add regression tests for new script behavior.
+- [x] Run full verification (`make verify`) and release gates (`scripts/doctor.sh`).
+
+## Surprises & Discoveries
+- Existing `showcase` pipeline already emits nearly all stakeholder-grade artifacts; packaging and discoverability are the missing pieces.
+- `scripts/load_server.sh` already provides a reliable lifecycle wrapper for Docker + local Uvicorn, making it ideal for a one-command try flow.
+
+## Decision Log
+- Keep hosted demo lab static-first (docs-native) so it deploys automatically with MkDocs/GitHub Pages and requires no extra backend service.
+- Generate a proof bundle from existing showcase outputs instead of inventing a separate report format.
+
+## Outcomes & Retrospective
+- Completed with a three-tier adoption flow:
+  - `See it`: hosted `DEMO_LAB.md` scenario replays
+  - `Try it`: one-command `make try`
+  - `Trust it`: downloadable proof bundles + demo-day playbook
+- Added `scripts/try_now.py` and `make try` to standardize first-run success and artifact handoff.
+- Added docs site pages (`TRY_NOW`, `DEMO_LAB`, `DEMO_DAY`) plus nav/README wiring for faster discovery.
+- Added regression tests for proof-bundle packaging and Demo Lab seeded assets.

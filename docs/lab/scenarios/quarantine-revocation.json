@@ -1,0 +1,70 @@
+{
+  "id": "quarantine-revocation",
+  "title": "Live Session Quarantine + Credential Revocation",
+  "tagline": "High-risk behavior triggers containment and revocation in one flow.",
+  "why_it_matters": "Cuts incident response from manual minutes to automated seconds.",
+  "non_technical_script": [
+    "When behavior crosses the risk threshold, AgentGate quarantines the active session.",
+    "Scoped credentials are revoked automatically so the agent cannot keep acting.",
+    "An incident report is signed and ready for security review."
+  ],
+  "technical_script": [
+    "Risk score aggregates deterministic signal weights across recent trace events.",
+    "Exactly-once orchestration ensures retries never duplicate kill/revoke actions.",
+    "Incident state transitions and rollback steps are persisted for audit replay."
+  ],
+  "signature": {
+    "algorithm": "HMAC-SHA256",
+    "digest": "sig_quarantine_19bd7c"
+  },
+  "blast_radius": {
+    "incidents_opened": 1,
+    "sessions_quarantined": 1,
+    "credentials_revoked": 3,
+    "blocked_followup_calls": 12,
+    "mean_time_to_contain_seconds": 2
+  },
+  "timeline": [
+    {
+      "time": "T+00s",
+      "event": "Risk signals breach threshold",
+      "decision": "TRIP",
+      "impact": "Incident incident-20260215-01 created"
+    },
+    {
+      "time": "T+01s",
+      "event": "Session quarantine issued",
+      "decision": "KILL",
+      "impact": "All further tool calls blocked"
+    },
+    {
+      "time": "T+01s",
+      "event": "Credential revocation pipeline",
+      "decision": "REVOKE",
+      "impact": "3 scoped tokens invalidated"
+    },
+    {
+      "time": "T+02s",
+      "event": "Signed incident report exported",
+      "decision": "EVIDENCE",
+      "impact": "Rollback checklist attached"
+    }
+  ],
+  "rollback_steps": [
+    "Verify session remains blocked",
+    "Re-issue least-privilege credentials after triage",
+    "Release incident via admin approval"
+  ],
+  "artifacts": [
+    {
+      "label": "Incident report",
+      "path": "../../../artifacts/incident-report.json",
+      "type": "json"
+    },
+    {
+      "label": "Evidence pack",
+      "path": "../../showcase/evidence.html",
+      "type": "html"
+    }
+  ]
+}

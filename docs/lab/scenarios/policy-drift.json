@@ -1,0 +1,70 @@
+{
+  "id": "policy-drift",
+  "title": "Policy Drift Caught Before Release",
+  "tagline": "Counterfactual replay reveals allow/deny deltas before rollout.",
+  "why_it_matters": "Stops silent permission regressions from reaching production agents.",
+  "non_technical_script": [
+    "We replay yesterday's real traffic against tomorrow's policy.",
+    "AgentGate pinpoints exactly which actions would change from allowed to blocked.",
+    "Security and product teams sign off with evidence before rollout."
+  ],
+  "technical_script": [
+    "Trace events are deterministically replayed across baseline and candidate Rego bundles.",
+    "Each decision delta is severity-ranked and grouped into blast-radius metrics.",
+    "Patch suggestions emit Rego snippets plus regression test seeds."
+  ],
+  "signature": {
+    "algorithm": "HMAC-SHA256",
+    "digest": "sig_replay_a4f3e2"
+  },
+  "blast_radius": {
+    "events_replayed": 124,
+    "decision_deltas": 9,
+    "allow_to_deny": 4,
+    "deny_to_allow": 1,
+    "sessions_impacted": 6,
+    "tenants_impacted": 2
+  },
+  "timeline": [
+    {
+      "time": "T+00s",
+      "event": "Replay run starts with baseline v2.1 and candidate v2.2",
+      "decision": "INFO",
+      "impact": "124 historical events queued"
+    },
+    {
+      "time": "T+03s",
+      "event": "Candidate policy blocks db_insert without approval context",
+      "decision": "DELTA",
+      "impact": "4 sessions move ALLOW -> DENY"
+    },
+    {
+      "time": "T+05s",
+      "event": "Blast radius summary emitted",
+      "decision": "REPORT",
+      "impact": "2 tenants require comms before deployment"
+    },
+    {
+      "time": "T+06s",
+      "event": "Patch suggestion generated",
+      "decision": "PATCH",
+      "impact": "Rego fix + regression tests prepared"
+    }
+  ],
+  "patch_suggestion": {
+    "rego": "allow if input.tool == \"db_insert\" and input.context.approval_state == \"approved\"",
+    "regression_test": "assert replay('checkout-write') == 'REQUIRE_APPROVAL'"
+  },
+  "artifacts": [
+    {
+      "label": "Replay report",
+      "path": "../../showcase/summary.json",
+      "type": "json"
+    },
+    {
+      "label": "Evidence pack",
+      "path": "../../showcase/evidence.html",
+      "type": "html"
+    }
+  ]
+}

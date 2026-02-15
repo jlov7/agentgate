@@ -124,17 +124,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
             console.print("")
             await _pause(config.step_delay)
 
-            console.print("Step 4/9: Denied unknown tool")
-            deny_result = await client.call_tool(
-                session_id=config.session_id,
-                tool_name="hack_the_planet",
-                arguments={},
-            )
-            console.print(f"Decision: {'ALLOW' if deny_result.get('success') else 'DENY'}")
-            console.print("")
-            await _pause(config.step_delay)
-
-            console.print("Step 5/9: Write without approval")
+            console.print("Step 4/9: Write without approval")
             pending_result = await client.call_tool(
                 session_id=config.session_id,
                 tool_name="db_insert",
@@ -146,7 +136,7 @@ async def run_showcase(config: ShowcaseConfig) -> int:
             console.print("")
             await _pause(config.step_delay)
 
-            console.print("Step 6/9: Write with approval token")
+            console.print("Step 5/9: Write with approval token")
             approve_result = await client.call_tool(
                 session_id=config.session_id,
                 tool_name="db_insert",
@@ -154,6 +144,16 @@ async def run_showcase(config: ShowcaseConfig) -> int:
                 approval_token=config.approval_token,
             )
             console.print(f"Decision: {'ALLOW' if approve_result.get('success') else 'DENY'}")
+            console.print("")
+            await _pause(config.step_delay)
+
+            console.print("Step 6/9: Denied unknown tool")
+            deny_result = await client.call_tool(
+                session_id=config.session_id,
+                tool_name="hack_the_planet",
+                arguments={},
+            )
+            console.print(f"Decision: {'ALLOW' if deny_result.get('success') else 'DENY'}")
             console.print("")
             await _pause(config.step_delay)
 

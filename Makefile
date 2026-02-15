@@ -1,4 +1,4 @@
-.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker verify verify-strict doctor scorecard product-audit support-bundle
+.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker verify verify-strict doctor scorecard product-audit support-bundle
 
 # ============================================================================
 # Development
@@ -43,6 +43,11 @@ showcase-video:
 
 showcase-video-silent:
 	VOICEOVER=0 bash demo/record_screen_demo.sh
+
+try:
+	$(MAKE) check-docker
+	@test -x .venv/bin/python || { echo "Virtual environment missing. Run 'make setup' first."; exit 1; }
+	AGENTGATE_SIGNING_KEY="$${AGENTGATE_SIGNING_KEY:-try-now-signing-key}" scripts/load_server.sh .venv/bin/python scripts/try_now.py --base-url http://127.0.0.1:8000 --output-dir docs/showcase
 
 # ============================================================================
 # Testing
@@ -236,6 +241,7 @@ help:
 	@echo "  make showcase-record Record showcase output to docs/showcase/showcase.log"
 	@echo "  make showcase-video  Record a polished MP4 (voiceover + teaser GIF)"
 	@echo "  make showcase-video-silent Record MP4 without voiceover"
+	@echo "  make try             One-command local trial: launch stack, run showcase, and build proof bundle"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test            Run unit tests"
