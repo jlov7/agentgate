@@ -27,6 +27,14 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - Fix strategy: Implement `scripts/doctor.sh` + `scripts/doctor.py`, then run it.
 - Status: Done
 
+### GAP-P0-004 — Release gates blocked by missing Python dependencies
+- Priority: P0
+- Evidence: `scripts/doctor.sh` requires `.venv/bin/python`; `make setup` fails to resolve `annotated-doc==0.0.4` due to DNS/PyPI access (`nodename nor servname provided`).
+- Impacted journey: Release readiness verification and local/CI reproducibility.
+- Fix strategy: Provide network access or a mirror for Python dependencies (or vendor the required wheels) so `make setup` can complete.
+- Resolution evidence: Dependency access restored; `.venv` present and `scripts/doctor.sh` + `make verify` ran successfully on 2026-02-15.
+- Status: Done
+
 ## P1
 
 ### GAP-P1-001 — Missing dedicated accessibility smoke gate
@@ -138,3 +146,5 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - 2026-02-15T01:52:00Z: Added productization gates (`RG-09`) with self-check CLI, product audit automation, and checklist enforcement.
 - 2026-02-15T01:55:20Z: Added supportability gate (`RG-10`) via `scripts/support_bundle.py` and `make support-bundle`; doctor now enforces 10 required checks.
 - 2026-02-15T01:56:15Z: Added product-audit artifact freshness validation and regression tests; `scripts/doctor.sh`, `make product-audit`, and `make scorecard` all pass.
+- 2026-02-15T14:03:18Z: `scripts/doctor.sh` blocked by missing `.venv` after `make setup` failed to reach PyPI; logged GAP-P0-004 and opened decision request for dependency access.
+- 2026-02-15T15:10:03Z: Dependency access restored; GAP-P0-004 closed and `scripts/doctor.sh` returned `overall_status: pass` with all 10 gates green.
