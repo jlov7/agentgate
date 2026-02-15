@@ -19,6 +19,9 @@ DEFAULT_REQUIRED_PATTERNS = (
     "PRODUCT_TODO.md",
     "artifacts/scorecard.json",
     "artifacts/product-audit.json",
+    "artifacts/replay-report.json",
+    "artifacts/incident-report.json",
+    "artifacts/rollout-report.json",
 )
 
 DEFAULT_OPTIONAL_PATTERNS = (

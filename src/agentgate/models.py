@@ -240,3 +240,110 @@ class RateLimitInfo(BaseModel):
     remaining: int = Field(..., description="Calls remaining in window")
     reset_at: int = Field(..., description="Unix timestamp of window reset")
     window_seconds: int = Field(..., description="Window duration in seconds")
+
+
+class ReplayRun(BaseModel):
+    """Replay job metadata for counterfactual policy analysis."""
+
+    run_id: str = Field(..., description="Unique replay run identifier")
+    session_id: str | None = Field(
+        default=None, description="Optional session scope for replay"
+    )
+    baseline_policy_version: str = Field(..., description="Baseline policy version")
+    candidate_policy_version: str = Field(..., description="Candidate policy version")
+    status: Literal["queued", "running", "completed", "failed"] = Field(
+        ..., description="Replay run status"
+    )
+    created_at: datetime = Field(..., description="Replay run creation time (UTC)")
+    completed_at: datetime | None = Field(
+        default=None, description="Replay run completion time (UTC)"
+    )
+
+
+class ReplayDelta(BaseModel):
+    """Per-event decision delta between baseline and candidate policies."""
+
+    run_id: str = Field(..., description="Replay run identifier")
+    event_id: str = Field(..., description="Original trace event ID")
+    tool_name: str = Field(..., description="Tool evaluated during replay")
+    baseline_action: Literal["ALLOW", "DENY", "REQUIRE_APPROVAL"] = Field(
+        ..., description="Baseline policy action"
+    )
+    candidate_action: Literal["ALLOW", "DENY", "REQUIRE_APPROVAL"] = Field(
+        ..., description="Candidate policy action"
+    )
+    severity: Literal["critical", "high", "medium", "low"] = Field(
+        ..., description="Normalized policy drift severity"
+    )
+    baseline_reason: str | None = Field(
+        default=None, description="Baseline decision reason"
+    )
+    candidate_reason: str | None = Field(
+        default=None, description="Candidate decision reason"
+    )
+
+
+class ReplaySummary(BaseModel):
+    """Replay aggregate summary across event-level deltas."""
+
+    run_id: str = Field(..., description="Replay run identifier")
+    total_events: int = Field(..., ge=0, description="Total replayed events")
+    drifted_events: int = Field(..., ge=0, description="Events with action changes")
+    by_severity: dict[str, int] = Field(
+        default_factory=dict, description="Delta counts grouped by severity"
+    )
+
+
+class IncidentRecord(BaseModel):
+    """Quarantine incident record."""
+
+    incident_id: str = Field(..., description="Unique incident identifier")
+    session_id: str = Field(..., description="Session under containment")
+    status: Literal["quarantined", "revoked", "released", "failed"] = Field(
+        ..., description="Incident status"
+    )
+    risk_score: int = Field(..., ge=0, description="Risk score at trigger")
+    reason: str = Field(..., description="Trigger reason")
+    created_at: datetime = Field(..., description="Incident creation time")
+    updated_at: datetime = Field(..., description="Incident last update time")
+    released_by: str | None = Field(default=None, description="Release actor")
+    released_at: datetime | None = Field(default=None, description="Release time")
+
+
+class IncidentEvent(BaseModel):
+    """Timeline event for a quarantine incident."""
+
+    incident_id: str = Field(..., description="Incident identifier")
+    event_type: str = Field(..., description="Event type")
+    detail: str = Field(..., description="Event detail")
+    timestamp: datetime = Field(..., description="Event timestamp")
+
+
+class PolicyPackage(BaseModel):
+    """Signed tenant policy package metadata."""
+
+    tenant_id: str = Field(..., description="Tenant identifier")
+    version: str = Field(..., description="Policy package version")
+    signer: str = Field(..., description="Signing actor identifier")
+    bundle_hash: str = Field(..., description="SHA256 hash of policy bundle")
+    bundle: dict[str, Any] = Field(..., description="Policy bundle payload")
+    signature: str = Field(..., description="Package signature")
+
+
+class RolloutRecord(BaseModel):
+    """Tenant rollout record for signed policy promotion."""
+
+    rollout_id: str = Field(..., description="Rollout identifier")
+    tenant_id: str = Field(..., description="Tenant identifier")
+    baseline_version: str = Field(..., description="Current baseline policy")
+    candidate_version: str = Field(..., description="Candidate policy")
+    status: Literal["queued", "promoting", "completed", "rolled_back", "failed"] = (
+        Field(..., description="Rollout status")
+    )
+    verdict: Literal["pass", "fail"] = Field(..., description="Canary verdict")
+    reason: str = Field(..., description="Canary outcome reason")
+    critical_drift: int = Field(..., ge=0, description="Critical drift count")
+    high_drift: int = Field(..., ge=0, description="High drift count")
+    rolled_back: bool = Field(..., description="Whether rollback occurred")
+    created_at: datetime = Field(..., description="Rollout creation time")
+    updated_at: datetime = Field(..., description="Rollout update time")

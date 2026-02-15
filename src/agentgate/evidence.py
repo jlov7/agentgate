@@ -26,6 +26,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from agentgate.models import TraceEvent
+from agentgate.replay import summarize_replay_deltas
 from agentgate.traces import TraceStore
 
 
@@ -127,6 +128,9 @@ class EvidencePack:
     write_action_log: list[dict[str, Any]]
     anomalies: list[dict[str, Any]]
     integrity: dict[str, Any]
+    replay: dict[str, Any] | None
+    incidents: list[dict[str, Any]] | None
+    rollouts: list[dict[str, Any]] | None
 
 
 class EvidenceExporter:
@@ -146,6 +150,9 @@ class EvidenceExporter:
         write_action_log = self._extract_write_actions(traces)
         anomalies = self._detect_anomalies(traces)
         integrity = self._build_integrity(traces)
+        replay = self._build_replay_context(session_id)
+        incidents = self._build_incident_context(session_id)
+        rollouts = self._build_rollout_context(session_id)
 
         return EvidencePack(
             metadata=metadata,
@@ -155,6 +162,9 @@ class EvidenceExporter:
             write_action_log=write_action_log,
             anomalies=anomalies,
             integrity=integrity,
+            replay=replay,
+            incidents=incidents,
+            rollouts=rollouts,
         )
 
     def to_json(self, pack: EvidencePack) -> str:
@@ -168,6 +178,9 @@ class EvidenceExporter:
             "write_action_log": pack.write_action_log,
             "anomalies": pack.anomalies,
             "integrity": pack.integrity,
+            "replay": pack.replay,
+            "incidents": pack.incidents,
+            "rollouts": pack.rollouts,
         }
         return json.dumps(payload, indent=2)
 
@@ -218,6 +231,78 @@ class EvidenceExporter:
             _format_rule_row(name, data)
             for name, data in pack.policy_analysis["rules_triggered"].items()
         )
+        replay_rows = ""
+        replay_section = ""
+        if pack.replay:
+            replay_rows = "\n".join(
+                _format_replay_row(entry) for entry in pack.replay.get("runs", [])
+            )
+            replay_section = f"""
+    <section class="card">
+      <h2>Replay Context</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Run</th>
+            <th>Status</th>
+            <th>Drifted</th>
+            <th>Critical</th>
+            <th>High</th>
+          </tr>
+        </thead>
+        <tbody>
+          {replay_rows}
+        </tbody>
+      </table>
+    </section>
+            """.rstrip()
+        incident_section = ""
+        if pack.incidents:
+            incident_rows = "\n".join(
+                _format_incident_row(entry) for entry in pack.incidents
+            )
+            incident_section = f"""
+    <section class="card">
+      <h2>Incidents</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Risk</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {incident_rows}
+        </tbody>
+      </table>
+    </section>
+            """.rstrip()
+        rollout_section = ""
+        if pack.rollouts:
+            rollout_rows = "\n".join(
+                _format_rollout_row(entry) for entry in pack.rollouts
+            )
+            rollout_section = f"""
+    <section class="card">
+      <h2>Rollouts</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Verdict</th>
+            <th>Baseline</th>
+            <th>Candidate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rollout_rows}
+        </tbody>
+      </table>
+    </section>
+            """.rstrip()
         theme_name = _resolve_theme(theme)
         theme_vars = _format_theme_vars(theme_name)
 
@@ -364,6 +449,9 @@ class EvidenceExporter:
         </tbody>
       </table>
     </section>
+    {replay_section}
+    {incident_section}
+    {rollout_section}
 
     <section class="card">
       <details>
@@ -390,6 +478,48 @@ class EvidenceExporter:
             "agent_id": _collapse_identity(agent_ids),
             "time_range": time_range,
         }
+
+    def _build_replay_context(self, session_id: str) -> dict[str, Any] | None:
+        runs = self.trace_store.list_replay_runs(session_id=session_id)
+        if not runs:
+            return None
+        payload: list[dict[str, Any]] = []
+        for run in runs:
+            deltas = self.trace_store.list_replay_deltas(run.run_id)
+            summary = summarize_replay_deltas(run_id=run.run_id, deltas=deltas)
+            payload.append(
+                {
+                    "run_id": run.run_id,
+                    "status": run.status,
+                    "baseline_policy_version": run.baseline_policy_version,
+                    "candidate_policy_version": run.candidate_policy_version,
+                    "created_at": run.created_at.isoformat(),
+                    "completed_at": run.completed_at.isoformat() if run.completed_at else None,
+                    "summary": summary.model_dump(mode="json"),
+                }
+            )
+        return {"runs": payload}
+
+    def _build_incident_context(self, session_id: str) -> list[dict[str, Any]] | None:
+        records = self.trace_store.list_incidents(session_id=session_id)
+        if not records:
+            return None
+        payload: list[dict[str, Any]] = []
+        for record in records:
+            events = self.trace_store.list_incident_events(record.incident_id)
+            payload.append(
+                {
+                    "record": record.model_dump(mode="json"),
+                    "events": [event.model_dump(mode="json") for event in events],
+                }
+            )
+        return payload
+
+    def _build_rollout_context(self, tenant_id: str) -> list[dict[str, Any]] | None:
+        records = self.trace_store.list_rollouts(tenant_id=tenant_id)
+        if not records:
+            return None
+        return [record.model_dump(mode="json") for record in records]
 
     def _build_summary(self, traces: list[TraceEvent]) -> dict[str, Any]:
         """Aggregate summary statistics from traces."""
@@ -667,6 +797,44 @@ def _format_rule_row(name: str, data: dict[str, Any]) -> str:
         f"<td>{_escape(name)}</td>"
         f"<td>{_escape(data.get('count', 0))}</td>"
         f"<td>{_escape(decisions)}</td>"
+        "</tr>"
+    )
+
+
+def _format_replay_row(entry: dict[str, Any]) -> str:
+    summary = entry.get("summary") or {}
+    by_severity = summary.get("by_severity") or {}
+    return (
+        "<tr>"
+        f"<td>{_escape(entry.get('run_id', ''))}</td>"
+        f"<td>{_escape(entry.get('status', ''))}</td>"
+        f"<td>{_escape(summary.get('drifted_events', 0))}</td>"
+        f"<td>{_escape(by_severity.get('critical', 0))}</td>"
+        f"<td>{_escape(by_severity.get('high', 0))}</td>"
+        "</tr>"
+    )
+
+
+def _format_incident_row(entry: dict[str, Any]) -> str:
+    record = entry.get("record") or {}
+    return (
+        "<tr>"
+        f"<td>{_escape(record.get('incident_id', ''))}</td>"
+        f"<td>{_escape(record.get('status', ''))}</td>"
+        f"<td>{_escape(record.get('risk_score', 0))}</td>"
+        f"<td>{_escape(record.get('reason', ''))}</td>"
+        "</tr>"
+    )
+
+
+def _format_rollout_row(entry: dict[str, Any]) -> str:
+    return (
+        "<tr>"
+        f"<td>{_escape(entry.get('rollout_id', ''))}</td>"
+        f"<td>{_escape(entry.get('status', ''))}</td>"
+        f"<td>{_escape(entry.get('verdict', ''))}</td>"
+        f"<td>{_escape(entry.get('baseline_version', ''))}</td>"
+        f"<td>{_escape(entry.get('candidate_version', ''))}</td>"
         "</tr>"
     )
 

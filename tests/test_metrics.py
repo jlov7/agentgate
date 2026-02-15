@@ -54,3 +54,11 @@ def test_histogram_collect_without_label_values() -> None:
     histogram.observe(0.5)
     output = histogram.collect()
     assert 'test_histogram_bucket{le="1.0"} 1' in output
+
+
+def test_metrics_error_rate_from_denials() -> None:
+    registry = MetricsRegistry()
+    registry.tool_calls_total.inc("db_query", "ALLOW", amount=3.0)
+    registry.tool_calls_total.inc("db_query", "DENY", amount=1.0)
+
+    assert registry.error_rate() == 0.25

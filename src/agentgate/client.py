@@ -50,6 +50,42 @@ class AgentGateClient:
         response.raise_for_status()
         return cast(dict[str, Any], response.json())
 
+    async def create_replay_run(
+        self, *, api_key: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Trigger a replay run via the admin API."""
+        response = await self._client.post(
+            "/admin/replay/runs",
+            headers={"X-API-Key": api_key},
+            json=payload,
+        )
+        response.raise_for_status()
+        return cast(dict[str, Any], response.json())
+
+    async def release_incident(
+        self, *, api_key: str, incident_id: str, released_by: str
+    ) -> dict[str, Any]:
+        """Release a quarantined incident via the admin API."""
+        response = await self._client.post(
+            f"/admin/incidents/{incident_id}/release",
+            headers={"X-API-Key": api_key},
+            json={"released_by": released_by},
+        )
+        response.raise_for_status()
+        return cast(dict[str, Any], response.json())
+
+    async def start_rollout(
+        self, *, api_key: str, tenant_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Start a tenant rollout via the admin API."""
+        response = await self._client.post(
+            f"/admin/tenants/{tenant_id}/rollouts",
+            headers={"X-API-Key": api_key},
+            json=payload,
+        )
+        response.raise_for_status()
+        return cast(dict[str, Any], response.json())
+
     async def close(self) -> None:
         """Close the underlying HTTP client."""
         await self._client.aclose()

@@ -238,6 +238,19 @@ class MetricsRegistry:
             labels=("dependency",),
         )
 
+    def error_rate(self) -> float:
+        """Return ratio of denied tool calls to total."""
+        with self.tool_calls_total._lock:
+            total = sum(self.tool_calls_total._values.values())
+            if total == 0:
+                return 0.0
+            denied = sum(
+                value
+                for labels, value in self.tool_calls_total._values.items()
+                if len(labels) > 1 and labels[1] == "DENY"
+            )
+        return denied / total
+
     def collect_all(self) -> str:
         """Collect all metrics in Prometheus format."""
         metrics = [

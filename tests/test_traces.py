@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import UTC, datetime
 
-from agentgate.models import TraceEvent
+from agentgate.models import IncidentEvent, IncidentRecord, TraceEvent
 from agentgate.traces import TraceStore, hash_arguments, hash_arguments_safe
 
 
@@ -95,3 +95,33 @@ def test_hash_arguments_deterministic() -> None:
     first = hash_arguments(payload)
     second = hash_arguments({"a": 1, "b": 2})
     assert first == second
+
+
+def test_trace_contains_revocation_outcome_metadata(tmp_path) -> None:
+    now = datetime(2026, 2, 15, 21, 0, tzinfo=UTC)
+    record = IncidentRecord(
+        incident_id="incident-revoke",
+        session_id="sess-revoke",
+        status="revoked",
+        risk_score=9,
+        reason="Risk score exceeded",
+        created_at=now,
+        updated_at=now,
+        released_by=None,
+        released_at=None,
+    )
+    event = IncidentEvent(
+        incident_id="incident-revoke",
+        event_type="revoked",
+        detail="revoked: ok",
+        timestamp=now,
+    )
+
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        store.save_incident(record)
+        store.add_incident_event(event)
+        events = store.list_incident_events("incident-revoke")
+
+    assert events
+    assert events[0].event_type == "revoked"
+    assert "revoked" in events[0].detail

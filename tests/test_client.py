@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from agentgate.client import AgentGateClient
+from agentgate.models import IncidentRecord
+from agentgate.policy_packages import hash_policy_bundle, sign_policy_package
 
 
 @pytest.mark.asyncio
@@ -50,3 +54,91 @@ async def test_client_context_manager_optional_fields(app) -> None:
             context={"user_id": "client"},
         )
         assert response["success"] is True
+
+
+@pytest.mark.asyncio
+async def test_client_admin_controls(app, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_POLICY_PACKAGE_SECRET", "secret")
+    transport = ASGITransport(app=app)
+    client = AgentGateClient("http://test")
+
+    await client._client.aclose()
+    client._client = AsyncClient(transport=transport, base_url="http://test")
+
+    try:
+        session_id = "client-admin"
+        await client.call_tool(
+            session_id=session_id,
+            tool_name="db_query",
+            arguments={"query": "SELECT 1"},
+        )
+        replay = await client.create_replay_run(
+            api_key="admin-secret-change-me",
+            payload={
+                "session_id": session_id,
+                "baseline_policy_version": "v1",
+                "candidate_policy_version": "v2",
+                "baseline_policy_data": {
+                    "read_only_tools": ["db_query"],
+                    "write_tools": ["db_insert"],
+                    "all_known_tools": ["db_query", "db_insert"],
+                },
+                "candidate_policy_data": {
+                    "read_only_tools": [],
+                    "write_tools": ["db_insert"],
+                    "all_known_tools": ["db_query", "db_insert"],
+                },
+            },
+        )
+        run_id = replay["run_id"]
+        assert replay["summary"]["total_events"] >= 1
+
+        now = datetime(2026, 2, 16, 0, 0, tzinfo=UTC)
+        incident = IncidentRecord(
+            incident_id="incident-client",
+            session_id=session_id,
+            status="revoked",
+            risk_score=9,
+            reason="Risk exceeded",
+            created_at=now,
+            updated_at=now,
+            released_by=None,
+            released_at=None,
+        )
+        app.state.trace_store.save_incident(incident)
+        released = await client.release_incident(
+            api_key="admin-secret-change-me",
+            incident_id="incident-client",
+            released_by="ops",
+        )
+        assert released["status"] == "released"
+
+        bundle = {"read_only_tools": ["db_query"], "write_tools": ["db_insert"]}
+        bundle_hash = hash_policy_bundle(bundle)
+        signature = sign_policy_package(
+            secret="secret",
+            tenant_id="tenant-a",
+            version="v2",
+            bundle=bundle,
+            signer="ops",
+        )
+        rollout = await client.start_rollout(
+            api_key="admin-secret-change-me",
+            tenant_id="tenant-a",
+            payload={
+                "run_id": run_id,
+                "baseline_version": "v1",
+                "candidate_version": "v2",
+                "candidate_package": {
+                    "tenant_id": "tenant-a",
+                    "version": "v2",
+                    "signer": "ops",
+                    "bundle_hash": bundle_hash,
+                    "bundle": bundle,
+                    "signature": signature,
+                },
+            },
+        )
+        assert rollout["rollout"]["tenant_id"] == "tenant-a"
+    finally:
+        await client.close()

@@ -10,6 +10,9 @@ nav:
   - Executive Summary: EXEC_SUMMARY.md
   - Demo Script: DEMO_SCRIPT.md
   - Architecture: ARCHITECTURE.md
+  - Replay Lab: REPLAY_LAB.md
+  - Incident Response: INCIDENT_RESPONSE.md
+  - Tenant Rollouts: TENANT_ROLLOUTS.md
   - Threat Model: THREAT_MODEL.md
   - UX Audit: UX_AUDIT.md
   - Showcase Artifacts: showcase/README.md

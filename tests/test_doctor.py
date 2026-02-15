@@ -38,3 +38,13 @@ def test_doctor_allows_check_subset(tmp_path: Path) -> None:
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     check_names = [check["name"] for check in payload["checks"]]
     assert check_names == ["verify", "docs"]
+
+
+def test_doctor_includes_controls_audit_check(tmp_path: Path) -> None:
+    output_path = tmp_path / "doctor-controls.json"
+    result = _run("--dry-run", "--output", str(output_path))
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    check_names = {check["name"] for check in payload["checks"]}
+    assert "controls" in check_names

@@ -82,3 +82,34 @@ def test_support_bundle_fails_when_required_pattern_missing(tmp_path: Path) -> N
     payload = json.loads(manifest.read_text(encoding="utf-8"))
     assert payload["status"] == "fail"
     assert "artifacts/doctor.json" in payload["missing_required_patterns"]
+
+
+def test_support_bundle_requires_advanced_control_artifacts_by_default(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "artifacts").mkdir(parents=True)
+    (tmp_path / "README.md").write_text("# AgentGate\n", encoding="utf-8")
+    (tmp_path / "RELEASE_GATES.md").write_text("# Gates\n", encoding="utf-8")
+    (tmp_path / "GAPS.md").write_text("# Gaps\n", encoding="utf-8")
+    (tmp_path / "SCORECARDS.md").write_text("# Scorecards\n", encoding="utf-8")
+    (tmp_path / "PRODUCT_TODO.md").write_text("# Product\n", encoding="utf-8")
+    (tmp_path / "artifacts" / "scorecard.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "artifacts" / "product-audit.json").write_text("{}", encoding="utf-8")
+
+    output = tmp_path / "artifacts" / "support-bundle.tar.gz"
+    manifest = tmp_path / "artifacts" / "support-bundle.json"
+
+    result = _run(
+        tmp_path,
+        "--output",
+        str(output),
+        "--manifest",
+        str(manifest),
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    assert any(
+        "replay-report.json" in missing
+        for missing in payload["missing_required_patterns"]
+    )

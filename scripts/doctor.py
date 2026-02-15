@@ -91,6 +91,12 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         ),
     ),
     CheckSpec(
+        name="controls",
+        gate="RG-11",
+        description="Advanced control surface artifacts",
+        command=".venv/bin/python scripts/controls_audit.py --output-dir artifacts",
+    ),
+    CheckSpec(
         name="support",
         gate="RG-10",
         description="Support bundle reproducibility and triage readiness",
@@ -101,6 +107,9 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
             "--require README.md "
             "--require artifacts/scorecard.json "
             "--require artifacts/product-audit.json "
+            "--require artifacts/replay-report.json "
+            "--require artifacts/incident-report.json "
+            "--require artifacts/rollout-report.json "
             "--require artifacts/logs/verify.log "
             "--require artifacts/logs/security.log"
         ),

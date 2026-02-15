@@ -13,6 +13,8 @@ from pathlib import Path
 import httpx
 import pytest
 
+from agentgate.policy_packages import hash_policy_bundle, sign_policy_package
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -90,6 +92,7 @@ def live_stack() -> str:
         env = os.environ.copy()
         env["AGENTGATE_REDIS_URL"] = f"redis://127.0.0.1:{redis_port}/0"
         env["AGENTGATE_OPA_URL"] = f"http://127.0.0.1:{opa_port}"
+        env["AGENTGATE_POLICY_PACKAGE_SECRET"] = "secret"  # noqa: S105
         env["PYTHONUNBUFFERED"] = "1"
 
         process = subprocess.Popen(  # noqa: S603
@@ -189,3 +192,57 @@ def test_live_stack_end_to_end(live_stack: str) -> None:
     metrics = httpx.get(f"{base_url}/metrics", timeout=2.0)
     assert metrics.status_code == 200
     assert "agentgate_tool_calls_total" in metrics.text
+
+    admin_headers = {"X-API-Key": "admin-secret-change-me"}
+    replay_payload = {
+        "session_id": "live-session",
+        "baseline_policy_version": "v1",
+        "candidate_policy_version": "v2",
+        "baseline_policy_data": {
+            "read_only_tools": ["db_query"],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+        "candidate_policy_data": {
+            "read_only_tools": [],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+    }
+    replay_response = httpx.post(
+        f"{base_url}/admin/replay/runs",
+        headers=admin_headers,
+        json=replay_payload,
+        timeout=5.0,
+    )
+    assert replay_response.status_code == 200
+    run_id = replay_response.json()["run_id"]
+
+    bundle = {"read_only_tools": ["db_query"], "write_tools": ["db_insert"]}
+    bundle_hash = hash_policy_bundle(bundle)
+    signature = sign_policy_package(
+        secret="secret",
+        tenant_id="tenant-a",
+        version="v2",
+        bundle=bundle,
+        signer="ops",
+    )
+    rollout_response = httpx.post(
+        f"{base_url}/admin/tenants/tenant-a/rollouts",
+        headers=admin_headers,
+        json={
+            "run_id": run_id,
+            "baseline_version": "v1",
+            "candidate_version": "v2",
+            "candidate_package": {
+                "tenant_id": "tenant-a",
+                "version": "v2",
+                "signer": "ops",
+                "bundle_hash": bundle_hash,
+                "bundle": bundle,
+                "signature": signature,
+            },
+        },
+        timeout=5.0,
+    )
+    assert rollout_response.status_code == 200

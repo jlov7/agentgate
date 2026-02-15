@@ -44,3 +44,13 @@ class TestKillSwitchEnforcement:
                 },
             )
             assert response.status_code < 500
+
+    @pytest.mark.asyncio
+    async def test_quarantine_release_requires_admin_credential(self, async_client) -> None:
+        """Incident release must require a valid admin API key."""
+        response = await async_client.post(
+            "/admin/incidents/incident-1/release",
+            headers={"X-API-Key": "wrong"},
+            json={"released_by": "ops"},
+        )
+        assert response.status_code == 403

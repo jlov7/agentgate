@@ -19,7 +19,15 @@ def _run(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _write_minimal_scorecards(path: Path, journey_score: str = "10/10") -> None:
+def _write_minimal_scorecards(
+    path: Path, journey_score: str = "10/10", include_controls: bool = True
+) -> None:
+    controls_line = ""
+    if include_controls:
+        controls_line = (
+            "Advanced controls evidence: artifacts/replay-report.json, "
+            "artifacts/incident-report.json, artifacts/rollout-report.json"
+        )
     path.write_text(
         "\n".join(
             [
@@ -40,6 +48,7 @@ def _write_minimal_scorecards(path: Path, journey_score: str = "10/10") -> None:
                 "| Correctness | 10/10 | evidence |",
                 "",
                 "Backend overall: **10/10**",
+                controls_line,
             ]
         ),
         encoding="utf-8",
@@ -164,6 +173,33 @@ def test_scorecard_fails_when_p0_or_p1_gap_is_open(tmp_path: Path) -> None:
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["status"] == "fail"
     assert any("GAP-P1-001" in finding for finding in payload["findings"])
+
+
+def test_scorecard_fails_when_advanced_controls_missing(tmp_path: Path) -> None:
+    scorecards = tmp_path / "SCORECARDS.md"
+    gaps = tmp_path / "GAPS.md"
+    doctor = tmp_path / "doctor.json"
+    output = tmp_path / "scorecard.json"
+
+    _write_minimal_scorecards(scorecards, include_controls=False)
+    _write_minimal_gaps(gaps)
+    _write_doctor(doctor, overall_status="pass")
+
+    result = _run(
+        "--scorecards",
+        str(scorecards),
+        "--gaps",
+        str(gaps),
+        "--doctor",
+        str(doctor),
+        "--output",
+        str(output),
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["status"] == "fail"
+    assert any("advanced controls" in finding.lower() for finding in payload["findings"])
 
 
 def test_scorecard_can_skip_doctor_validation(tmp_path: Path) -> None:

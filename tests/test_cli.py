@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import runpy
 import sys
 
@@ -133,6 +134,94 @@ def test_cli_showcase_respects_explicit_showcase_session(monkeypatch) -> None:
 
     assert excinfo.value.code == 0
     assert captured["session_id"] == "showcase"
+
+
+def test_cli_can_trigger_replay_and_print_summary_json(capsys, monkeypatch, tmp_path) -> None:
+    payload = {
+        "session_id": "cli-session",
+        "baseline_policy_version": "v1",
+        "candidate_policy_version": "v2",
+        "baseline_policy_data": {"read_only_tools": ["db_query"]},
+        "candidate_policy_data": {"read_only_tools": []},
+    }
+    path = tmp_path / "replay.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    class DummyClient:
+        def __init__(self, base_url: str) -> None:
+            self.base_url = base_url
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        async def create_replay_run(self, *, api_key: str, payload: dict) -> dict:
+            return {"run_id": "run-cli", "summary": {"total_events": 0}}
+
+    monkeypatch.setattr("agentgate.__main__.AgentGateClient", DummyClient)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "agentgate",
+            "--replay-run",
+            str(path),
+            "--admin-key",
+            "admin",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+
+    assert excinfo.value.code == 0
+    output = capsys.readouterr().out
+    assert "\"run_id\": \"run-cli\"" in output
+
+
+def test_cli_can_release_incident_and_show_status(capsys, monkeypatch) -> None:
+    class DummyClient:
+        def __init__(self, base_url: str) -> None:
+            self.base_url = base_url
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        async def release_incident(
+            self,
+            *,
+            api_key: str,
+            incident_id: str,
+            released_by: str,
+        ) -> dict:
+            return {"status": "released", "incident_id": incident_id}
+
+    monkeypatch.setattr("agentgate.__main__.AgentGateClient", DummyClient)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "agentgate",
+            "--incident-release",
+            "incident-123",
+            "--released-by",
+            "ops",
+            "--admin-key",
+            "admin",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+
+    assert excinfo.value.code == 0
+    output = capsys.readouterr().out
+    assert "\"status\": \"released\"" in output
 
 
 def test_main_module_runs(monkeypatch) -> None:

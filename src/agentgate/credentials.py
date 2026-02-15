@@ -19,3 +19,7 @@ class CredentialBroker:
             "expires_at": expires_at.isoformat(),
             "note": "Stub credential - replace with real broker",
         }
+
+    def revoke_credentials(self, session_id: str, reason: str) -> tuple[bool, str]:
+        """Revoke active credentials for a session."""
+        return True, f"revoked:{session_id}"

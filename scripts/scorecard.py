@@ -12,6 +12,11 @@ from typing import Any
 
 SCORE_PATTERN = re.compile(r"\b(?P<score>\d{1,2})/10\b")
 GAP_ID_PATTERN = re.compile(r"GAP-[A-Z0-9-]+")
+ADVANCED_CONTROL_ARTIFACTS = (
+    "artifacts/replay-report.json",
+    "artifacts/incident-report.json",
+    "artifacts/rollout-report.json",
+)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -85,6 +90,19 @@ def _validate_critical_gaps(gaps_text: str) -> list[str]:
     return findings
 
 
+def _validate_advanced_controls(scorecards_text: str) -> list[str]:
+    missing = [
+        artifact
+        for artifact in ADVANCED_CONTROL_ARTIFACTS
+        if artifact not in scorecards_text
+    ]
+    if not missing:
+        return []
+    return [
+        "Advanced controls evidence missing for: " + ", ".join(missing)
+    ]
+
+
 def _validate_doctor_report(doctor_payload: dict[str, Any]) -> list[str]:
     findings: list[str] = []
     overall_status = doctor_payload.get("overall_status")
@@ -118,6 +136,7 @@ def run() -> int:
     check_status: dict[str, str] = {
         "scores_all_ten": "fail",
         "critical_gaps_closed": "fail",
+        "advanced_controls": "fail",
         "doctor_passed": "skipped" if args.skip_doctor else "fail",
     }
 
@@ -127,6 +146,11 @@ def run() -> int:
         findings.extend(score_findings)
         if not score_findings:
             check_status["scores_all_ten"] = "pass"
+
+        controls_findings = _validate_advanced_controls(scorecards_text)
+        findings.extend(controls_findings)
+        if not controls_findings:
+            check_status["advanced_controls"] = "pass"
     except FileNotFoundError:
         findings.append(f"Scorecards file not found: {args.scorecards}")
 

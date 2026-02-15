@@ -238,6 +238,14 @@ Then open:
 | `/docs` | GET | Interactive OpenAPI documentation |
 | `/redoc` | GET | ReDoc API documentation |
 | `/admin/policies/reload` | POST | Hot-reload policies (requires X-API-Key) |
+| `/admin/replay/runs` | POST | Run policy replay (requires X-API-Key) |
+| `/admin/replay/runs/{run_id}` | GET | Fetch replay run summary (requires X-API-Key) |
+| `/admin/replay/runs/{run_id}/report` | GET | Fetch replay deltas report (requires X-API-Key) |
+| `/admin/incidents/{incident_id}` | GET | Fetch quarantine incident timeline (requires X-API-Key) |
+| `/admin/incidents/{incident_id}/release` | POST | Release quarantined incident (requires X-API-Key) |
+| `/admin/tenants/{tenant_id}/rollouts` | POST | Start tenant rollout (requires X-API-Key) |
+| `/admin/tenants/{tenant_id}/rollouts/{rollout_id}` | GET | Fetch rollout status (requires X-API-Key) |
+| `/admin/tenants/{tenant_id}/rollouts/{rollout_id}/rollback` | POST | Roll back rollout (requires X-API-Key) |
 
 ### Example: Tool Call
 
@@ -329,6 +337,15 @@ python -m agentgate --demo
 # Run narrated showcase and generate artifacts
 python -m agentgate --showcase
 
+# Trigger a replay run with JSON payload
+python -m agentgate --replay-run replay.json --admin-key "$AGENTGATE_ADMIN_API_KEY"
+
+# Release a quarantined incident
+python -m agentgate --incident-release incident-123 --released-by ops --admin-key "$AGENTGATE_ADMIN_API_KEY"
+
+# Start a tenant rollout with signed package payload
+python -m agentgate --rollout-start tenant-a --rollout-payload rollout.json --admin-key "$AGENTGATE_ADMIN_API_KEY"
+
 # Show version
 python -m agentgate --version
 ```
@@ -419,6 +436,7 @@ make pre-commit
 |----------|---------|-------------|
 | `AGENTGATE_ADMIN_API_KEY` | `admin-secret-change-me` | Admin API key for privileged endpoints |
 | `AGENTGATE_SIGNING_KEY` | *(none)* | HMAC key for evidence signing |
+| `AGENTGATE_POLICY_PACKAGE_SECRET` | *(none)* | HMAC key for signed policy package verification |
 
 ### Webhook Settings
 
@@ -440,6 +458,10 @@ agentgate/
 │   ├── killswitch.py       # Kill switch controller
 │   ├── traces.py           # Append-only trace store
 │   ├── evidence.py         # Evidence exporter
+│   ├── replay.py           # Policy replay evaluator
+│   ├── quarantine.py       # Quarantine coordinator
+│   ├── rollout.py          # Tenant rollout controller
+│   ├── policy_packages.py  # Signed policy package verification
 │   └── models.py           # Pydantic models
 ├── policies/               # OPA/Rego policies
 │   ├── default.rego        # Base policy rules

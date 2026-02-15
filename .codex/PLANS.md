@@ -36,7 +36,7 @@ Turn AgentGate into a release-ready v1 by codifying release gates, creating a re
 - Treat timestamp freshness as a release-quality invariant; stale evidence is operationally equivalent to missing evidence.
 
 ## Outcomes & Retrospective
-- Completed. Release gates now pass with `RG-01`..`RG-10` and `overall_status: pass`.
+- Completed. Release gates now pass with `RG-01`..`RG-11` and `overall_status: pass` (validated 2026-02-15).
 - Journey and backend scorecards are explicitly documented in `SCORECARDS.md` with evidence pointers.
 - Scorecards are now machine-validated through `scripts/scorecard.py`, `make scorecard`, and doctor gate `RG-08`.
 - Showcase execution now emits deterministic summary artifacts on both success and failure, improving demo/CI diagnosability.
@@ -44,3 +44,41 @@ Turn AgentGate into a release-ready v1 by codifying release gates, creating a re
 - Release artifacts now include a support bundle (`artifacts/support-bundle.tar.gz`) and manifest (`artifacts/support-bundle.json`) for issue triage.
 - Product audit now validates freshness (`artifact_freshness: pass`) to prevent stale status files from masquerading as current readiness.
 - Remaining workspace dirt is limited to local untracked artifacts (`artifacts/`, `.specstory/`, `.cursorindexingignore`).
+
+---
+
+# Next-Level Feature Trilogy ExecPlan
+
+## Purpose / Big Picture
+Ship three advanced capabilities that materially raise AgentGate's control maturity:
+1) counterfactual policy replay,
+2) live quarantine with credential revocation,
+3) signed multi-tenant canary rollouts.
+The outcome should provide stronger pre-deploy policy confidence, faster incident containment, and safer tenant policy operations.
+
+## Progress
+- [x] Capture exhaustive roadmap details in `PRODUCT_TODO.md` (non-gating roadmap section).
+- [x] Produce implementation-ready master plan in `docs/plans/2026-02-15-next-level-feature-trilogy.md`.
+- [x] Set active session context in `.codex/SCRATCHPAD.md`.
+- [x] Execute Task 1 (replay models + persistence schema) with TDD.
+- [x] Execute Task 2 (deterministic replay evaluator) with TDD.
+- [x] Execute Task 3 (replay APIs + report artifacts) with TDD.
+- [x] Execute Tasks 4-7 (quarantine/revocation pipeline) with TDD.
+- [x] Execute Tasks 8-11 (tenant package signing + canary rollout controller) with TDD.
+- [x] Execute Tasks 12-15 (CLI, adversarial coverage, gates/docs, final verification).
+
+## Surprises & Discoveries
+- `scripts/product_audit.py` fails if `PRODUCT_TODO.md` contains any unchecked checklist items, so roadmap entries must avoid `- [ ]` markers.
+- Existing architecture already has strong seams for extension (`gateway.py`, `policy.py`, `traces.py`, `main.py`), reducing integration risk for these features.
+- Replay-first sequencing reduces duplicated logic because rollout canary evaluation can consume replay deltas directly.
+- `make verify` remains green after Task 1 additions, which confirms replay schema/model changes are non-breaking for current runtime.
+
+## Decision Log
+- Keep roadmap details in `PRODUCT_TODO.md` as status-tagged bullets (not checkboxes) to preserve RG-09 compliance.
+- Place the exhaustive step-by-step implementation plan in `docs/plans/2026-02-15-next-level-feature-trilogy.md` for execution continuity.
+- Use task-by-task TDD and commit checkpoints to prevent cross-feature coupling from overwhelming the overnight run.
+
+## Outcomes & Retrospective
+- Completed. Replay, quarantine, and rollout subsystems implemented with admin APIs, evidence updates, CLI workflows, and adversarial coverage.
+- Release gates expanded with advanced control artifacts and support bundle requirements.
+- Lesson captured: release-gated checklist files should not be used as naive backlog checklists when the audit parser enforces completion semantics.

@@ -12,6 +12,7 @@ import httpx
 
 from agentgate.logging import get_logger
 from agentgate.models import PolicyDecision, ToolCallRequest
+from agentgate.policy_packages import PolicyPackageVerifier
 
 logger = get_logger(__name__)
 
@@ -149,13 +150,43 @@ def load_policy_data(path: Path) -> dict[str, Any]:
     try:
         with path.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
-            if isinstance(data, dict):
-                return data
-            logger.error("policy_data_invalid_type", path=str(path))
-            return {}
+            if not isinstance(data, dict):
+                logger.error("policy_data_invalid_type", path=str(path))
+                return {}
+            return _unwrap_policy_package(data)
     except FileNotFoundError:
         logger.error("policy_data_missing", path=str(path))
         return {}
     except json.JSONDecodeError as exc:
         logger.error("policy_data_invalid", path=str(path), error=str(exc))
         return {}
+
+
+def _unwrap_policy_package(data: dict[str, Any]) -> dict[str, Any]:
+    required = {"tenant_id", "version", "bundle", "signature", "bundle_hash", "signer"}
+    if not required.issubset(data):
+        return data
+
+    secret = os.getenv("AGENTGATE_POLICY_PACKAGE_SECRET")
+    if not secret:
+        logger.error("policy_package_missing_secret")
+        return {}
+
+    bundle = data.get("bundle")
+    if not isinstance(bundle, dict):
+        logger.error("policy_package_invalid_bundle")
+        return {}
+
+    verifier = PolicyPackageVerifier(secret=secret)
+    ok, detail = verifier.verify(
+        tenant_id=str(data.get("tenant_id", "")),
+        version=str(data.get("version", "")),
+        bundle=bundle,
+        signature=str(data.get("signature", "")),
+        bundle_hash=str(data.get("bundle_hash", "")),
+        signer=str(data.get("signer", "")),
+    )
+    if not ok:
+        logger.error("policy_package_invalid", detail=detail)
+        return {}
+    return bundle

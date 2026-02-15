@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 from agentgate.main import (
@@ -10,6 +11,8 @@ from agentgate.main import (
     _get_policy_path,
     _get_rate_limit_window_seconds,
 )
+from agentgate.models import IncidentEvent, IncidentRecord, ReplayRun
+from agentgate.policy_packages import hash_policy_bundle, sign_policy_package
 from agentgate.rate_limit import RateLimitStatus
 
 
@@ -333,6 +336,182 @@ def test_reload_policies_invalid_key(client, monkeypatch) -> None:
         "/admin/policies/reload", headers={"X-API-Key": "wrong"}
     )
     assert response.status_code == 403
+
+
+def test_admin_replay_run_and_report(client, monkeypatch) -> None:
+    session_id = "replay-session"
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": session_id,
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+        },
+    )
+
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    payload = {
+        "session_id": session_id,
+        "baseline_policy_version": "v1",
+        "candidate_policy_version": "v2",
+        "baseline_policy_data": {
+            "read_only_tools": ["db_query"],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+        "candidate_policy_data": {
+            "read_only_tools": [],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+    }
+    response = client.post(
+        "/admin/replay/runs", headers={"X-API-Key": "admin-key"}, json=payload
+    )
+    assert response.status_code == 200
+    run_payload = response.json()
+    assert run_payload["status"] == "completed"
+    run_id = run_payload["run_id"]
+
+    report = client.get(
+        f"/admin/replay/runs/{run_id}/report", headers={"X-API-Key": "admin-key"}
+    )
+    assert report.status_code == 200
+    report_payload = report.json()
+    assert report_payload["summary"]["drifted_events"] >= 1
+    assert report_payload["deltas"]
+
+
+def test_admin_replay_run_detail(client, monkeypatch) -> None:
+    session_id = "replay-detail"
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": session_id,
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+        },
+    )
+
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    payload = {
+        "session_id": session_id,
+        "baseline_policy_version": "v1",
+        "candidate_policy_version": "v2",
+        "baseline_policy_data": {
+            "read_only_tools": ["db_query"],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+        "candidate_policy_data": {
+            "read_only_tools": [],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+    }
+    response = client.post(
+        "/admin/replay/runs", headers={"X-API-Key": "admin-key"}, json=payload
+    )
+    assert response.status_code == 200
+    run_id = response.json()["run_id"]
+
+    detail = client.get(
+        f"/admin/replay/runs/{run_id}", headers={"X-API-Key": "admin-key"}
+    )
+    assert detail.status_code == 200
+    detail_payload = detail.json()
+    assert detail_payload["run"]["run_id"] == run_id
+    assert detail_payload["run"]["status"] == "completed"
+
+
+def test_admin_incident_release_flow(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    now = datetime(2026, 2, 15, 18, 0, tzinfo=UTC)
+    incident = IncidentRecord(
+        incident_id="incident-1",
+        session_id="sess-incident",
+        status="quarantined",
+        risk_score=10,
+        reason="Risk threshold exceeded",
+        created_at=now,
+        updated_at=now,
+        released_by=None,
+        released_at=None,
+    )
+    client.app.state.trace_store.save_incident(incident)
+    client.app.state.trace_store.add_incident_event(
+        IncidentEvent(
+            incident_id="incident-1",
+            event_type="quarantined",
+            detail="db_insert:DENY",
+            timestamp=now,
+        )
+    )
+
+    response = client.get(
+        "/admin/incidents/incident-1", headers={"X-API-Key": "admin-key"}
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["incident"]["incident_id"] == "incident-1"
+    assert payload["events"]
+
+    release = client.post(
+        "/admin/incidents/incident-1/release",
+        headers={"X-API-Key": "admin-key"},
+        json={"released_by": "ops"},
+    )
+    assert release.status_code == 200
+    release_payload = release.json()
+    assert release_payload["status"] == "released"
+
+
+def test_create_tenant_rollout_returns_canary_plan(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    monkeypatch.setenv("AGENTGATE_POLICY_PACKAGE_SECRET", "secret")
+    now = datetime(2026, 2, 15, 23, 0, tzinfo=UTC)
+    run = ReplayRun(
+        run_id="run-rollout",
+        session_id="tenant-a",
+        baseline_policy_version="v1",
+        candidate_policy_version="v2",
+        status="completed",
+        created_at=now,
+        completed_at=now,
+    )
+    client.app.state.trace_store.save_replay_run(run)
+    bundle = {"read_only_tools": ["db_query"], "write_tools": ["db_insert"]}
+    bundle_hash = hash_policy_bundle(bundle)
+    signature = sign_policy_package(
+        secret="secret",
+        tenant_id="tenant-a",
+        version="v2",
+        bundle=bundle,
+        signer="ops",
+    )
+
+    response = client.post(
+        "/admin/tenants/tenant-a/rollouts",
+        headers={"X-API-Key": "admin-key"},
+        json={
+            "run_id": "run-rollout",
+            "baseline_version": "v1",
+            "candidate_version": "v2",
+            "error_rate": 0.0,
+            "candidate_package": {
+                "tenant_id": "tenant-a",
+                "version": "v2",
+                "signer": "ops",
+                "bundle_hash": bundle_hash,
+                "bundle": bundle,
+                "signature": signature,
+            },
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["rollout"]["tenant_id"] == "tenant-a"
+    assert payload["rollout"]["status"] == "promoting"
 
 
 def test_validation_error_payload_for_tools_call(client) -> None:

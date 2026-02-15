@@ -20,6 +20,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from agentgate.client import AgentGateClient
+
 DEMO_BASE_URL = "http://localhost:8000"
 
 
@@ -144,6 +146,18 @@ def run_self_check(base_url: str, output_json: bool = False) -> int:
             print(f"warnings: {', '.join(warnings)}")
 
     return 0 if status == "pass" else 1
+
+
+def _load_json_payload(value: str) -> dict[str, Any]:
+    path = Path(value)
+    payload = (
+        json.loads(path.read_text(encoding="utf-8"))
+        if path.exists()
+        else json.loads(value)
+    )
+    if not isinstance(payload, dict):
+        raise ValueError("Expected JSON object for payload.")
+    return payload
 
 
 async def run_demo(base_url: str | None = None) -> None:
@@ -303,6 +317,18 @@ def main() -> None:
         action="store_true",
         help="Run first-run diagnostics and setup guidance",
     )
+    mode_group.add_argument(
+        "--replay-run",
+        help="Run a replay using a JSON payload or path to JSON file",
+    )
+    mode_group.add_argument(
+        "--incident-release",
+        help="Release a quarantined incident by ID",
+    )
+    mode_group.add_argument(
+        "--rollout-start",
+        help="Start a tenant rollout (provide tenant ID)",
+    )
     parser.add_argument(
         "--base-url",
         default="http://localhost:8000",
@@ -340,6 +366,21 @@ def main() -> None:
         help="Emit JSON output for --self-check mode",
     )
     parser.add_argument(
+        "--admin-key",
+        default=os.getenv("AGENTGATE_ADMIN_API_KEY", ""),
+        help="Admin API key for privileged commands",
+    )
+    parser.add_argument(
+        "--released-by",
+        default=None,
+        help="Actor name for incident release",
+    )
+    parser.add_argument(
+        "--rollout-payload",
+        default=None,
+        help="Rollout payload JSON or path to JSON file",
+    )
+    parser.add_argument(
         "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"  # nosec B104
     )
     parser.add_argument(
@@ -350,6 +391,10 @@ def main() -> None:
 
     if args.self_check_json and not args.self_check:
         parser.error("--self-check-json requires --self-check")
+    if args.incident_release and not args.released_by:
+        parser.error("--released-by is required for --incident-release")
+    if args.rollout_start and not args.rollout_payload:
+        parser.error("--rollout-payload is required for --rollout-start")
 
     if args.demo:
         global DEMO_BASE_URL
@@ -372,6 +417,52 @@ def main() -> None:
         sys.exit(asyncio.run(run_showcase(config)))
     elif args.self_check:
         sys.exit(run_self_check(args.base_url, output_json=args.self_check_json))
+    elif args.replay_run:
+        if not args.admin_key:
+            parser.error("--admin-key required for --replay-run")
+
+        async def run_replay() -> int:
+            payload = _load_json_payload(args.replay_run)
+            async with AgentGateClient(args.base_url) as client:
+                result = await client.create_replay_run(
+                    api_key=args.admin_key,
+                    payload=payload,
+                )
+                print(json.dumps(result, indent=2))
+            return 0
+
+        sys.exit(asyncio.run(run_replay()))
+    elif args.incident_release:
+        if not args.admin_key:
+            parser.error("--admin-key required for --incident-release")
+
+        async def run_release() -> int:
+            async with AgentGateClient(args.base_url) as client:
+                result = await client.release_incident(
+                    api_key=args.admin_key,
+                    incident_id=args.incident_release,
+                    released_by=args.released_by,
+                )
+                print(json.dumps(result, indent=2))
+            return 0
+
+        sys.exit(asyncio.run(run_release()))
+    elif args.rollout_start:
+        if not args.admin_key:
+            parser.error("--admin-key required for --rollout-start")
+
+        async def run_rollout() -> int:
+            payload = _load_json_payload(args.rollout_payload)
+            async with AgentGateClient(args.base_url) as client:
+                result = await client.start_rollout(
+                    api_key=args.admin_key,
+                    tenant_id=args.rollout_start,
+                    payload=payload,
+                )
+                print(json.dumps(result, indent=2))
+            return 0
+
+        sys.exit(asyncio.run(run_rollout()))
     else:
         print_banner()
         import uvicorn

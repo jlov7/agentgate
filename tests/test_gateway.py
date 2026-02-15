@@ -258,6 +258,82 @@ class RecordingToolExecutor:
         return self.result
 
 
+class RecordingQuarantine:
+    def __init__(self, quarantined: bool = False, reason: str | None = None) -> None:
+        self.quarantined = quarantined
+        self.reason = reason
+        self.observations: list[tuple[str, str, str, str | None]] = []
+
+    async def is_session_quarantined(self, session_id: str) -> tuple[bool, str | None]:
+        return self.quarantined, self.reason
+
+    async def observe_tool_outcome(
+        self,
+        *,
+        session_id: str,
+        tool_name: str,
+        decision_action: str,
+        error: str | None,
+    ) -> str | None:
+        self.observations.append((session_id, tool_name, decision_action, error))
+        return None
+
+
+@pytest.mark.asyncio
+async def test_gateway_blocks_quarantined_session_before_policy_eval() -> None:
+    policy = RecordingPolicyClient(
+        PolicyDecision(action="ALLOW", reason="ok", matched_rule="read_only_tools")
+    )
+    quarantine = RecordingQuarantine(quarantined=True, reason="risk")
+    gateway = Gateway(
+        policy_client=policy,
+        kill_switch=RecordingKillSwitch(blocked=False),
+        credential_broker=RecordingCredentialBroker(),
+        trace_store=TraceStore(":memory:"),
+        tool_executor=RecordingToolExecutor(),
+        rate_limiter=None,
+        policy_version="v0",
+    )
+    gateway.quarantine = quarantine
+
+    request = ToolCallRequest(
+        session_id="sess-q",
+        tool_name="db_query",
+        arguments={"query": "SELECT 1"},
+    )
+    response = await gateway.call_tool(request)
+    assert response.success is False
+    assert "quarantine" in (response.error or "").lower()
+    assert policy.requests == []
+
+
+@pytest.mark.asyncio
+async def test_gateway_records_quarantine_observation() -> None:
+    policy = RecordingPolicyClient(
+        PolicyDecision(action="DENY", reason="nope", matched_rule="default_deny")
+    )
+    quarantine = RecordingQuarantine(quarantined=False)
+    gateway = Gateway(
+        policy_client=policy,
+        kill_switch=RecordingKillSwitch(blocked=False),
+        credential_broker=RecordingCredentialBroker(),
+        trace_store=TraceStore(":memory:"),
+        tool_executor=RecordingToolExecutor(),
+        rate_limiter=None,
+        policy_version="v0",
+    )
+    gateway.quarantine = quarantine
+
+    request = ToolCallRequest(
+        session_id="sess-q2",
+        tool_name="db_query",
+        arguments={"query": "SELECT 1"},
+    )
+    response = await gateway.call_tool(request)
+    assert response.success is False
+    assert quarantine.observations
+
+
 class RecordingRateLimiter:
     def __init__(self, allowed: bool) -> None:
         self.allowed = allowed

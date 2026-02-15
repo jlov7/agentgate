@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import json
 from pathlib import Path
 
 import httpx
@@ -15,6 +16,7 @@ from agentgate.policy import (
     has_valid_approval_token,
     load_policy_data,
 )
+from agentgate.policy_packages import hash_policy_bundle, sign_policy_package
 
 
 def _load_policy() -> LocalPolicyEvaluator:
@@ -301,6 +303,50 @@ def test_load_policy_data_invalid_json(tmp_path) -> None:
 def test_load_policy_data_non_dict(tmp_path) -> None:
     path = tmp_path / "list.json"
     path.write_text("[1, 2, 3]", encoding="utf-8")
+    data = load_policy_data(path)
+    assert data == {}
+
+
+def test_load_policy_data_accepts_signed_package(tmp_path, monkeypatch) -> None:
+    bundle = {"read_only_tools": ["db_query"], "write_tools": ["db_insert"]}
+    bundle_hash = hash_policy_bundle(bundle)
+    signature = sign_policy_package(
+        secret="secret",
+        tenant_id="tenant-a",
+        version="v2",
+        bundle=bundle,
+        signer="ops",
+    )
+    payload = {
+        "tenant_id": "tenant-a",
+        "version": "v2",
+        "signer": "ops",
+        "bundle_hash": bundle_hash,
+        "bundle": bundle,
+        "signature": signature,
+    }
+    path = tmp_path / "package.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setenv("AGENTGATE_POLICY_PACKAGE_SECRET", "secret")
+
+    data = load_policy_data(path)
+    assert data["read_only_tools"] == ["db_query"]
+
+
+def test_load_policy_data_rejects_bad_package_signature(tmp_path, monkeypatch) -> None:
+    bundle = {"read_only_tools": ["db_query"], "write_tools": ["db_insert"]}
+    payload = {
+        "tenant_id": "tenant-a",
+        "version": "v2",
+        "signer": "ops",
+        "bundle_hash": hash_policy_bundle(bundle),
+        "bundle": bundle,
+        "signature": "bad",
+    }
+    path = tmp_path / "package-bad.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setenv("AGENTGATE_POLICY_PACKAGE_SECRET", "secret")
+
     data = load_policy_data(path)
     assert data == {}
 

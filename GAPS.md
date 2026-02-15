@@ -148,3 +148,4 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - 2026-02-15T01:56:15Z: Added product-audit artifact freshness validation and regression tests; `scripts/doctor.sh`, `make product-audit`, and `make scorecard` all pass.
 - 2026-02-15T14:03:18Z: `scripts/doctor.sh` blocked by missing `.venv` after `make setup` failed to reach PyPI; logged GAP-P0-004 and opened decision request for dependency access.
 - 2026-02-15T15:10:03Z: Dependency access restored; GAP-P0-004 closed and `scripts/doctor.sh` returned `overall_status: pass` with all 10 gates green.
+- 2026-02-15T15:49:00Z: Fixed lint/mypy/test regression around rollout creation; `make verify`, `scripts/doctor.sh`, and `make verify-strict` all pass with `RG-01`..`RG-11` green.

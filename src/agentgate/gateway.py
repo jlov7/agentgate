@@ -25,6 +25,7 @@ from agentgate.killswitch import KillSwitch
 from agentgate.logging import get_logger
 from agentgate.models import PolicyDecision, ToolCallRequest, ToolCallResponse
 from agentgate.policy import PolicyClient
+from agentgate.quarantine import QuarantineCoordinator
 from agentgate.rate_limit import RateLimiter
 from agentgate.traces import TraceStore, build_trace_event, hash_arguments_safe
 
@@ -100,6 +101,7 @@ class Gateway:
         tool_executor: ToolExecutor,
         rate_limiter: RateLimiter | None = None,
         policy_version: str = "unknown",
+        quarantine: QuarantineCoordinator | None = None,
     ) -> None:
         self.policy_client = policy_client
         self.kill_switch = kill_switch
@@ -108,6 +110,7 @@ class Gateway:
         self.tool_executor = tool_executor
         self.rate_limiter = rate_limiter
         self.policy_version = policy_version
+        self.quarantine = quarantine
 
     async def call_tool(self, request: ToolCallRequest) -> ToolCallResponse:
         """Handle a tool call with policy enforcement and tracing."""
@@ -169,9 +172,28 @@ class Gateway:
                     decision=decision,
                 )
 
+        if self.quarantine:
+            quarantined, reason = await self.quarantine.is_session_quarantined(
+                request.session_id
+            )
+            if quarantined:
+                return self._deny_request(
+                    request=request,
+                    event_id=event_id,
+                    timestamp=timestamp,
+                    arguments_hash=arguments_hash,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    decision=PolicyDecision(
+                        action="DENY",
+                        reason=f"Quarantine: {reason or 'Session quarantined'}",
+                        matched_rule="quarantine",
+                    ),
+                )
+
         decision = await self.policy_client.evaluate(request)
         if decision.action == "DENY":
-            return self._deny_request(
+            response = self._deny_request(
                 request=request,
                 event_id=event_id,
                 timestamp=timestamp,
@@ -180,6 +202,8 @@ class Gateway:
                 agent_id=agent_id,
                 decision=decision,
             )
+            await self._notify_quarantine(request, decision.action, response.error)
+            return response
 
         if decision.action == "REQUIRE_APPROVAL":
             error = f"Approval required: {decision.reason}"
@@ -195,7 +219,11 @@ class Gateway:
                 duration_ms=None,
                 error=error,
             )
-            return ToolCallResponse(success=False, result=None, error=error, trace_id=event_id)
+            response = ToolCallResponse(
+                success=False, result=None, error=error, trace_id=event_id
+            )
+            await self._notify_quarantine(request, decision.action, error)
+            return response
 
         credentials = self.credential_broker.get_credentials(
             tool=request.tool_name,
@@ -225,7 +253,11 @@ class Gateway:
                 duration_ms=duration_ms,
                 error=None,
             )
-            return ToolCallResponse(success=True, result=result, error=None, trace_id=event_id)
+            response = ToolCallResponse(
+                success=True, result=result, error=None, trace_id=event_id
+            )
+            await self._notify_quarantine(request, decision.action, None)
+            return response
         except Exception as exc:
             duration_ms = int((time.perf_counter() - start) * 1000)
             error = f"Tool execution failed: {exc}"
@@ -241,7 +273,11 @@ class Gateway:
                 duration_ms=duration_ms,
                 error=error,
             )
-            return ToolCallResponse(success=False, result=None, error=error, trace_id=event_id)
+            response = ToolCallResponse(
+                success=False, result=None, error=error, trace_id=event_id
+            )
+            await self._notify_quarantine(request, decision.action, error)
+            return response
 
     def _deny_request(
         self,
@@ -303,6 +339,18 @@ class Gateway:
             approval_token_present=request.approval_token is not None,
         )
         self.trace_store.append(event)
+
+    async def _notify_quarantine(
+        self, request: ToolCallRequest, decision_action: str, error: str | None
+    ) -> None:
+        if not self.quarantine:
+            return
+        await self.quarantine.observe_tool_outcome(
+            session_id=request.session_id,
+            tool_name=request.tool_name,
+            decision_action=decision_action,
+            error=error,
+        )
 
 
 def _is_valid_tool_name(tool_name: str) -> bool:

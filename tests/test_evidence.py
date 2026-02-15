@@ -10,7 +10,14 @@ from types import ModuleType
 import pytest
 
 from agentgate.evidence import EvidenceExporter, _ensure_weasyprint_paths
-from agentgate.models import TraceEvent
+from agentgate.models import (
+    IncidentEvent,
+    IncidentRecord,
+    ReplayDelta,
+    ReplayRun,
+    RolloutRecord,
+    TraceEvent,
+)
 from agentgate.traces import TraceStore
 
 
@@ -65,6 +72,7 @@ def test_exporter_builds_pack(tmp_path) -> None:
         assert pack.summary["total_tool_calls"] == 2
         assert pack.integrity["event_count"] == 2
         assert pack.metadata["session_id"] == "sess-1"
+        assert pack.replay is None
 
 
 def test_exporter_json_and_html(tmp_path) -> None:
@@ -80,6 +88,102 @@ def test_exporter_json_and_html(tmp_path) -> None:
         html_output = exporter.to_html(pack)
         assert "AgentGate Evidence Pack" in html_output
         assert "Timeline" in html_output
+
+
+def test_exporter_includes_replay_context(tmp_path) -> None:
+    created_at = datetime(2026, 2, 15, 20, 0, tzinfo=UTC)
+    run = ReplayRun(
+        run_id="run-ctx",
+        session_id="sess-ctx",
+        baseline_policy_version="v1",
+        candidate_policy_version="v2",
+        status="completed",
+        created_at=created_at,
+        completed_at=created_at,
+    )
+    delta = ReplayDelta(
+        run_id="run-ctx",
+        event_id="evt-ctx",
+        tool_name="db_query",
+        baseline_action="ALLOW",
+        candidate_action="DENY",
+        severity="high",
+        baseline_reason="read_only_tools",
+        candidate_reason="deny_sensitive",
+    )
+
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(_build_trace("evt-ctx", "ALLOW", "db_query", session_id="sess-ctx"))
+        trace_store.save_replay_run(run)
+        trace_store.save_replay_delta(delta)
+
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-ctx")
+
+        assert pack.replay is not None
+        assert pack.replay["runs"][0]["run_id"] == "run-ctx"
+        assert pack.replay["runs"][0]["summary"]["drifted_events"] == 1
+
+
+def test_exporter_includes_incident_timeline(tmp_path) -> None:
+    now = datetime(2026, 2, 15, 22, 0, tzinfo=UTC)
+    record = IncidentRecord(
+        incident_id="incident-ctx",
+        session_id="sess-incident",
+        status="revoked",
+        risk_score=9,
+        reason="Risk exceeded",
+        created_at=now,
+        updated_at=now,
+        released_by=None,
+        released_at=None,
+    )
+    event = IncidentEvent(
+        incident_id="incident-ctx",
+        event_type="revoked",
+        detail="revoked: ok",
+        timestamp=now,
+    )
+
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(_build_trace("evt-inc", "DENY", "db_insert", session_id="sess-incident"))
+        trace_store.save_incident(record)
+        trace_store.add_incident_event(event)
+
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-incident")
+
+        assert pack.incidents is not None
+        assert pack.incidents[0]["record"]["incident_id"] == "incident-ctx"
+        assert pack.incidents[0]["events"][0]["event_type"] == "revoked"
+
+
+def test_tenant_evidence_includes_rollout_lineage(tmp_path) -> None:
+    now = datetime(2026, 2, 15, 23, 30, tzinfo=UTC)
+    rollout = RolloutRecord(
+        rollout_id="rollout-ctx",
+        tenant_id="tenant-a",
+        baseline_version="v1",
+        candidate_version="v2",
+        status="completed",
+        verdict="pass",
+        reason="Within drift budget",
+        critical_drift=0,
+        high_drift=0,
+        rolled_back=False,
+        created_at=now,
+        updated_at=now,
+    )
+
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(_build_trace("evt-roll", "ALLOW", "db_query", session_id="tenant-a"))
+        trace_store.save_rollout(rollout)
+
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("tenant-a")
+
+        assert pack.rollouts is not None
+        assert pack.rollouts[0]["tenant_id"] == "tenant-a"
 
 
 def test_exporter_html_avoids_unsupported_pdf_css(tmp_path) -> None:

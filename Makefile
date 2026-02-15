@@ -134,6 +134,7 @@ product-audit:
 	.venv/bin/python scripts/product_audit.py --output artifacts/product-audit.json
 
 support-bundle:
+	.venv/bin/python scripts/controls_audit.py --output-dir artifacts
 	.venv/bin/python scripts/support_bundle.py --output artifacts/support-bundle.tar.gz --manifest artifacts/support-bundle.json
 
 # ============================================================================

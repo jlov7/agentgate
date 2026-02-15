@@ -29,6 +29,7 @@ Journey overall: **10/10**
 | Security posture | 10/10 | `RG-02` pass (`pip-audit`, `bandit`, SBOM) in `artifacts/logs/security.log` |
 | Performance budget adherence | 10/10 | `RG-05` pass in `artifacts/logs/perf.log` |
 | Observability and auditability | 10/10 | `/metrics`, evidence export, trace-backed showcase artifacts |
+| Advanced controls readiness | 10/10 | `artifacts/replay-report.json`, `artifacts/incident-report.json`, `artifacts/rollout-report.json` |
 | Automation reliability | 10/10 | `scripts/doctor.sh` pass + script lint gate (`RG-07`) |
 | Supportability and triage readiness | 10/10 | `RG-10` pass in `artifacts/logs/support.log`, `artifacts/support-bundle.json` |
 | Release automation and documentation | 10/10 | `RELEASE_GATES.md`, `GAPS.md`, `artifacts/doctor.json` |
@@ -43,5 +44,8 @@ Backend overall: **10/10**
 - `artifacts/scorecard.json`: `status: pass` with `scores_all_ten`, `critical_gaps_closed`, and `doctor_passed` all `pass`
 - `artifacts/product-audit.json`: `status: pass` including `artifact_freshness: pass`
 - `artifacts/support-bundle.json`: `status: pass` with reproducible bundle manifest and file hashes
+- `artifacts/replay-report.json`: replay control artifact (controls audit)
+- `artifacts/incident-report.json`: incident control artifact (controls audit)
+- `artifacts/rollout-report.json`: rollout control artifact (controls audit)
 - `docs/showcase/evidence.json`: deterministic showcase summary and signed integrity block
 - `make verify-strict`: pass (mutation gate skipped on non-Linux host by design), coverage `95%` total

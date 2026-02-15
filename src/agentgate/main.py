@@ -27,10 +27,12 @@ from __future__ import annotations
 import inspect
 import json
 import os
+import re
 import secrets
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -54,9 +56,13 @@ from agentgate.logging import (
     get_logger,
 )
 from agentgate.metrics import get_metrics
-from agentgate.models import KillRequest, ToolCallRequest, ToolCallResponse
+from agentgate.models import KillRequest, ReplayRun, ToolCallRequest, ToolCallResponse
 from agentgate.policy import PolicyClient, load_policy_data
+from agentgate.policy_packages import PolicyPackageVerifier
+from agentgate.quarantine import QuarantineCoordinator
 from agentgate.rate_limit import RateLimiter
+from agentgate.replay import PolicyReplayEvaluator, summarize_replay_deltas
+from agentgate.rollout import CanaryEvaluator, RolloutController
 from agentgate.traces import TraceStore
 from agentgate.webhooks import configure_webhook_notifier, get_webhook_notifier
 
@@ -75,6 +81,11 @@ BANNER = r"""
 
 # Maximum request body size (1MB) to prevent DoS attacks
 MAX_REQUEST_SIZE = 1 * 1024 * 1024
+_TENANT_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+
+
+def _valid_tenant_id(value: str) -> bool:
+    return bool(_TENANT_ID_PATTERN.fullmatch(value))
 
 
 def _get_repo_root() -> Path:
@@ -213,6 +224,11 @@ def create_app(
     # Configure webhook notifier
     webhook_notifier = configure_webhook_notifier(webhook_url=_get_webhook_url())
 
+    quarantine = QuarantineCoordinator(
+        trace_store=trace_store,
+        kill_switch=kill_switch,
+        credential_broker=credential_broker,
+    )
     gateway = Gateway(
         policy_client=policy_client,
         kill_switch=kill_switch,
@@ -221,8 +237,15 @@ def create_app(
         tool_executor=tool_executor,
         rate_limiter=rate_limiter,
         policy_version=_get_policy_version(),
+        quarantine=quarantine,
     )
     evidence_exporter = EvidenceExporter(trace_store=trace_store, version=app.version)
+    replay_evaluator = PolicyReplayEvaluator(trace_store=trace_store)
+    rollout_controller = RolloutController(
+        trace_store=trace_store,
+        evaluator=CanaryEvaluator(),
+        metrics=get_metrics(),
+    )
 
     # Store components in app state
     app.state.gateway = gateway
@@ -230,6 +253,9 @@ def create_app(
     app.state.kill_switch = kill_switch
     app.state.trace_store = trace_store
     app.state.evidence_exporter = evidence_exporter
+    app.state.replay_evaluator = replay_evaluator
+    app.state.rollout_controller = rollout_controller
+    app.state.quarantine = quarantine
     app.state.rate_limiter = rate_limiter
     app.state.webhook_notifier = webhook_notifier
     app.state.policy_path = policy_path
@@ -570,6 +596,254 @@ def create_app(
         except Exception as exc:
             logger.error("policy_reload_failed", error=str(exc))
             raise HTTPException(status_code=500, detail=f"Failed to reload: {exc}") from exc
+
+    @app.post("/admin/replay/runs")
+    async def create_replay_run(
+        payload: dict[str, Any],
+        x_api_key: str = Header(..., alias="X-API-Key"),
+    ) -> JSONResponse:
+        """Create and execute a replay run (admin only)."""
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+
+        session_id = payload.get("session_id")
+        baseline_policy_data = payload.get("baseline_policy_data")
+        candidate_policy_data = payload.get("candidate_policy_data")
+        if not isinstance(session_id, str):
+            raise HTTPException(status_code=400, detail="session_id required")
+        if not isinstance(baseline_policy_data, dict) or not isinstance(
+            candidate_policy_data, dict
+        ):
+            raise HTTPException(status_code=400, detail="policy data required")
+
+        baseline_version = payload.get("baseline_policy_version", "baseline")
+        candidate_version = payload.get("candidate_policy_version", "candidate")
+        run_id = payload.get("run_id") or f"replay-{uuid.uuid4()}"
+        now = datetime.now(UTC)
+        run = ReplayRun(
+            run_id=run_id,
+            session_id=session_id,
+            baseline_policy_version=str(baseline_version),
+            candidate_policy_version=str(candidate_version),
+            status="running",
+            created_at=now,
+            completed_at=None,
+        )
+        app.state.trace_store.save_replay_run(run)
+        summary = app.state.replay_evaluator.evaluate_run(
+            run_id=run_id,
+            baseline_policy_data=baseline_policy_data,
+            candidate_policy_data=candidate_policy_data,
+            session_id=session_id,
+        )
+        return JSONResponse({
+            "run_id": run_id,
+            "status": "completed",
+            "summary": summary.model_dump(),
+        })
+
+    @app.get("/admin/replay/runs/{run_id}")
+    async def get_replay_run(
+        run_id: str, x_api_key: str = Header(..., alias="X-API-Key")
+    ) -> JSONResponse:
+        """Fetch replay run metadata and summary (admin only)."""
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+
+        run = app.state.trace_store.get_replay_run(run_id)
+        if run is None:
+            raise HTTPException(status_code=404, detail="Replay run not found")
+        deltas = app.state.trace_store.list_replay_deltas(run_id)
+        summary = summarize_replay_deltas(run_id=run_id, deltas=deltas)
+        return JSONResponse({
+            "run": run.model_dump(mode="json"),
+            "summary": summary.model_dump(mode="json"),
+        })
+
+    @app.get("/admin/replay/runs/{run_id}/report")
+    async def replay_report(
+        run_id: str, x_api_key: str = Header(..., alias="X-API-Key")
+    ) -> JSONResponse:
+        """Return replay summary and per-event deltas (admin only)."""
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+
+        run = app.state.trace_store.get_replay_run(run_id)
+        if run is None:
+            raise HTTPException(status_code=404, detail="Replay run not found")
+        deltas = app.state.trace_store.list_replay_deltas(run_id)
+        summary = summarize_replay_deltas(run_id=run_id, deltas=deltas)
+        return JSONResponse({
+            "run": run.model_dump(mode="json"),
+            "summary": summary.model_dump(mode="json"),
+            "deltas": [delta.model_dump(mode="json") for delta in deltas],
+        })
+
+    @app.get("/admin/incidents/{incident_id}")
+    async def get_incident(
+        incident_id: str, x_api_key: str = Header(..., alias="X-API-Key")
+    ) -> JSONResponse:
+        """Fetch incident record and timeline (admin only)."""
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+
+        record = app.state.trace_store.get_incident(incident_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="Incident not found")
+        events = app.state.trace_store.list_incident_events(incident_id)
+        return JSONResponse({
+            "incident": record.model_dump(mode="json"),
+            "events": [event.model_dump(mode="json") for event in events],
+        })
+
+    @app.post("/admin/incidents/{incident_id}/release")
+    async def release_incident(
+        incident_id: str,
+        payload: dict[str, Any],
+        x_api_key: str = Header(..., alias="X-API-Key"),
+    ) -> JSONResponse:
+        """Release a quarantined incident (admin only)."""
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+        released_by = payload.get("released_by")
+        if not isinstance(released_by, str):
+            raise HTTPException(status_code=400, detail="released_by required")
+        ok = await app.state.quarantine.release_incident(
+            incident_id, released_by=released_by
+        )
+        if not ok:
+            raise HTTPException(status_code=404, detail="Incident not found")
+        return JSONResponse({"status": "released", "incident_id": incident_id})
+
+    @app.post("/admin/tenants/{tenant_id}/rollouts")
+    async def create_tenant_rollout(
+        tenant_id: str,
+        payload: dict[str, Any],
+        x_api_key: str = Header(..., alias="X-API-Key"),
+    ) -> JSONResponse:
+        """Create a tenant rollout (admin only)."""
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+        if not _valid_tenant_id(tenant_id):
+            raise HTTPException(status_code=400, detail="Invalid tenant_id")
+
+        run_id = payload.get("run_id")
+        if not isinstance(run_id, str):
+            raise HTTPException(status_code=400, detail="run_id required")
+        baseline_version = payload.get("baseline_version")
+        candidate_version = payload.get("candidate_version")
+        if not isinstance(baseline_version, str) or not isinstance(
+            candidate_version, str
+        ):
+            raise HTTPException(status_code=400, detail="baseline_version required")
+
+        stages = payload.get("stages")
+        if stages is not None:
+            if not isinstance(stages, list) or not stages:
+                raise HTTPException(status_code=400, detail="stages must be a list")
+            numeric = []
+            for stage in stages:
+                if not isinstance(stage, (int, float)):
+                    raise HTTPException(status_code=400, detail="stages must be numeric")
+                if stage <= 0 or stage > 100:
+                    raise HTTPException(
+                        status_code=400, detail="stages must be within (0, 100]"
+                    )
+                numeric.append(float(stage))
+            if sum(numeric) > 100:
+                raise HTTPException(status_code=400, detail="stages exceed 100%")
+
+        candidate_package = payload.get("candidate_package")
+        if not isinstance(candidate_package, dict):
+            raise HTTPException(status_code=400, detail="candidate_package required")
+        bundle = candidate_package.get("bundle")
+        if not isinstance(bundle, dict):
+            raise HTTPException(status_code=400, detail="candidate bundle invalid")
+        if candidate_package.get("tenant_id") != tenant_id:
+            raise HTTPException(status_code=400, detail="candidate tenant mismatch")
+        if candidate_package.get("version") != candidate_version:
+            raise HTTPException(status_code=400, detail="candidate version mismatch")
+
+        secret = os.getenv("AGENTGATE_POLICY_PACKAGE_SECRET")
+        if not secret:
+            raise HTTPException(
+                status_code=500, detail="Policy package verification unavailable"
+            )
+        verifier = PolicyPackageVerifier(secret=secret)
+        ok, detail = verifier.verify(
+            tenant_id=str(candidate_package.get("tenant_id", "")),
+            version=str(candidate_package.get("version", "")),
+            bundle=bundle,
+            signature=str(candidate_package.get("signature", "")),
+            bundle_hash=str(candidate_package.get("bundle_hash", "")),
+            signer=str(candidate_package.get("signer", "")),
+        )
+        if not ok:
+            raise HTTPException(status_code=400, detail=detail)
+
+        run = app.state.trace_store.get_replay_run(run_id)
+        if run is None:
+            raise HTTPException(status_code=404, detail="Replay run not found")
+        deltas = app.state.trace_store.list_replay_deltas(run_id)
+        summary = summarize_replay_deltas(run_id=run_id, deltas=deltas)
+        error_rate = payload.get("error_rate")
+        if error_rate is not None and not isinstance(error_rate, (int, float)):
+            raise HTTPException(status_code=400, detail="error_rate must be numeric")
+
+        rollout = app.state.rollout_controller.start_rollout(
+            tenant_id=tenant_id,
+            baseline_version=baseline_version,
+            candidate_version=candidate_version,
+            summary=summary,
+            deltas=deltas,
+            error_rate=float(error_rate) if error_rate is not None else None,
+        )
+        return JSONResponse({
+            "rollout": rollout.model_dump(mode="json"),
+            "summary": summary.model_dump(mode="json"),
+        })
+
+    @app.get("/admin/tenants/{tenant_id}/rollouts/{rollout_id}")
+    async def get_tenant_rollout(
+        tenant_id: str,
+        rollout_id: str,
+        x_api_key: str = Header(..., alias="X-API-Key"),
+    ) -> JSONResponse:
+        """Fetch a tenant rollout record (admin only)."""
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+        rollout = app.state.trace_store.get_rollout(rollout_id)
+        if rollout is None or rollout.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Rollout not found")
+        return JSONResponse({"rollout": rollout.model_dump(mode="json")})
+
+    @app.post("/admin/tenants/{tenant_id}/rollouts/{rollout_id}/rollback")
+    async def rollback_tenant_rollout(
+        tenant_id: str,
+        rollout_id: str,
+        payload: dict[str, Any],
+        x_api_key: str = Header(..., alias="X-API-Key"),
+    ) -> JSONResponse:
+        """Roll back a tenant rollout (admin only)."""
+        expected_key = _get_admin_api_key()
+        if not secrets.compare_digest(x_api_key, expected_key):
+            raise HTTPException(status_code=403, detail="Invalid API key")
+        reason = payload.get("reason")
+        if not isinstance(reason, str):
+            raise HTTPException(status_code=400, detail="reason required")
+        rollout = app.state.rollout_controller.rollback_rollout(
+            rollout_id, reason=reason
+        )
+        if rollout is None or rollout.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Rollout not found")
+        return JSONResponse({"rollout": rollout.model_dump(mode="json")})
 
     return app
 
