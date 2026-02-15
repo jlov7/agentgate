@@ -64,6 +64,13 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - Fix strategy: Add `scripts/scorecard.py`, gate it as `RG-08`, and provide `make scorecard` artifact output.
 - Status: Done
 
+### GAP-P1-006 — Showcase runtime path lacked direct tests and failure summary artifact
+- Priority: P1
+- Evidence: `src/agentgate/showcase.py` had minimal direct test coverage and no guaranteed `summary.json` on runtime failure.
+- Impacted journey: Demo reliability and debugging speed when showcase generation fails in CI/local demos.
+- Fix strategy: Add direct showcase success/failure tests and always emit `summary.json` with pass/fail status.
+- Status: Done
+
 ## P2
 
 ### GAP-P2-001 — Gap loop evidence not linked to per-iteration history
@@ -78,6 +85,20 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - Evidence: No normalized scorecard artifact tied to release evidence.
 - Impacted journey: Stakeholder confidence in UX and backend quality claims.
 - Fix strategy: Create a scored artifact with category-level evidence references and objective gate links.
+- Status: Done
+
+### GAP-P2-003 — Playwright warning noise reduced signal in verification logs
+- Priority: P2
+- Evidence: Repeated Node warnings (`NO_COLOR` with `FORCE_COLOR`) cluttered E2E and doctor logs.
+- Impacted journey: Triage clarity for UX/a11y gate failures.
+- Fix strategy: Normalize Playwright invocations to unset `NO_COLOR` in release and verification commands.
+- Status: Done
+
+### GAP-P2-004 — Docker OPA image architecture drift caused noisy startup warnings
+- Priority: P2
+- Evidence: E2E/load helper scripts could start Compose with an OPA image built for the wrong architecture, producing platform mismatch warnings on Apple Silicon.
+- Impacted journey: CI/local verification signal quality and cross-architecture reliability.
+- Fix strategy: Detect daemon architecture, set `DOCKER_DEFAULT_PLATFORM`, pre-pull matching OPA image, and add regression checks for script safeguards.
 - Status: Done
 
 ## Iteration History
@@ -96,3 +117,7 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 - 2026-02-14T22:38:48Z: `make doctor` passed with `RG-01`..`RG-08` and refreshed `artifacts/doctor.json`.
 - 2026-02-14T22:38:50Z: `make scorecard` passed and emitted `artifacts/scorecard.json` (`status: pass`).
 - 2026-02-14T22:39:13Z: `make verify-strict` passed after scorecard automation changes (mutation gate skipped on non-Linux host by policy).
+- 2026-02-15T01:29:37Z: Added direct showcase runtime tests (`tests/test_showcase.py`) and hardened `run_showcase` to always emit status-rich `summary.json`.
+- 2026-02-15T01:29:37Z: Normalized Playwright commands with `env -u NO_COLOR` in `Makefile`, doctor checks, and release gate docs to remove warning noise.
+- 2026-02-15T01:35:58Z: Added Docker platform safeguards in `scripts/e2e-server.sh` and `scripts/load_server.sh` (daemon-arch detection + platform-matched OPA pull) with regression tests in `tests/test_compose_platform_defaults.py`.
+- 2026-02-15T01:35:58Z: Re-ran `make doctor`, `make scorecard`, and `make verify-strict`; all passed with improved test coverage (`TOTAL 98%`, `showcase.py 97%`).

@@ -40,7 +40,7 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         gate="RG-03",
         description="Critical UX journeys",
         command=(
-            "npx playwright test tests/e2e/api-happy.spec.ts "
+            "env -u NO_COLOR npx playwright test tests/e2e/api-happy.spec.ts "
             "tests/e2e/api-negative.spec.ts tests/e2e/docs-ui.spec.ts"
         ),
     ),
@@ -48,7 +48,7 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         name="a11y",
         gate="RG-04",
         description="Accessibility smoke checks",
-        command="npx playwright test tests/e2e/a11y.spec.ts",
+        command="env -u NO_COLOR npx playwright test tests/e2e/a11y.spec.ts",
     ),
     CheckSpec(
         name="perf",

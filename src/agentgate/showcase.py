@@ -68,11 +68,14 @@ async def run_showcase(config: ShowcaseConfig) -> int:
     console = Console(record=True, force_terminal=True, width=96)
     output_dir = config.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
+    summary_path = output_dir / "summary.json"
+    exit_code = 0
 
     summary: dict[str, Any] = {
         "timestamp": datetime.now(UTC).isoformat(),
         "base_url": config.base_url,
         "session_id": config.session_id,
+        "status": "running",
         "artifacts": {},
     }
 
@@ -244,14 +247,19 @@ async def run_showcase(config: ShowcaseConfig) -> int:
         console.print(f"- {output_dir}/metrics.prom")
         await _pause(config.step_delay)
 
-        summary_path = output_dir / "summary.json"
+        summary["status"] = "pass"
         summary["artifacts"]["summary"] = str(summary_path)
         _write_json(summary_path, summary)
-        return 0
     except Exception as exc:
+        exit_code = 1
+        summary["status"] = "fail"
+        summary["error"] = str(exc)
         console.print("")
         console.print(f"Showcase failed: {exc}")
-        return 1
     finally:
         log_path = output_dir / "showcase.log"
         _write_text(log_path, console.export_text(clear=False))
+        summary["artifacts"]["showcase_log"] = str(log_path)
+        summary["artifacts"]["summary"] = str(summary_path)
+        _write_json(summary_path, summary)
+    return exit_code

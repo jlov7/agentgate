@@ -64,7 +64,7 @@ ai-evals:
 	.venv/bin/python evals/run_evals.py
 
 e2e:
-	npx playwright test
+	env -u NO_COLOR npx playwright test
 
 mutate:
 	@if [ "$$(uname -s)" != "Linux" ]; then \
@@ -117,7 +117,7 @@ verify:
 	.venv/bin/pytest tests/integration -v -m integration
 	.venv/bin/pytest tests/evals -v -m evals
 	.venv/bin/python evals/run_evals.py
-	npx playwright test
+	env -u NO_COLOR npx playwright test
 
 check-docker:
 	scripts/check_docker.sh

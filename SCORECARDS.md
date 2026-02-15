@@ -31,7 +31,7 @@ Journey overall: **10/10**
 | Observability and auditability | 10/10 | `/metrics`, evidence export, trace-backed showcase artifacts |
 | Automation reliability | 10/10 | `scripts/doctor.sh` pass + script lint gate (`RG-07`) |
 | Release automation and documentation | 10/10 | `RELEASE_GATES.md`, `GAPS.md`, `artifacts/doctor.json` |
-| Maintainability/test rigor | 10/10 | Expanded tests (`tests/test_main.py`, `tests/test_cli.py`, `tests/test_evidence.py`) |
+| Maintainability/test rigor | 10/10 | Expanded tests (`tests/test_main.py`, `tests/test_cli.py`, `tests/test_evidence.py`, `tests/test_showcase.py`) |
 
 Backend overall: **10/10**
 
@@ -41,4 +41,4 @@ Backend overall: **10/10**
 - Required gates: `RG-01`..`RG-08` all pass (`required_checks_passed: 8/8`)
 - `artifacts/scorecard.json`: `status: pass` with `scores_all_ten`, `critical_gaps_closed`, and `doctor_passed` all `pass`
 - `docs/showcase/evidence.json`: deterministic showcase summary and signed integrity block
-- `make verify-strict`: pass (mutation gate skipped on non-Linux host by design)
+- `make verify-strict`: pass (mutation gate skipped on non-Linux host by design), coverage `98%` total with `src/agentgate/showcase.py` at `97%`
