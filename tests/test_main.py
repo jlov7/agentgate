@@ -2,18 +2,46 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
 import json
+import time
 from datetime import UTC, datetime
 from pathlib import Path
+
+import pytest
 
 from agentgate.main import (
     MAX_REQUEST_SIZE,
     _get_policy_path,
     _get_rate_limit_window_seconds,
+    _validate_secret_baseline,
 )
 from agentgate.models import IncidentEvent, IncidentRecord, ReplayRun
 from agentgate.policy_packages import hash_policy_bundle, sign_policy_package
 from agentgate.rate_limit import RateLimitStatus
+
+
+def _issue_admin_token(secret: str, roles: list[str], exp_offset_seconds: int = 600) -> str:
+    header = {"alg": "HS256", "typ": "JWT"}
+    payload = {
+        "sub": "ops-user",
+        "roles": roles,
+        "exp": int(time.time()) + exp_offset_seconds,
+    }
+    header_segment = base64.urlsafe_b64encode(
+        json.dumps(header, separators=(",", ":")).encode("utf-8")
+    ).decode("utf-8").rstrip("=")
+    payload_segment = base64.urlsafe_b64encode(
+        json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    ).decode("utf-8").rstrip("=")
+    signing_input = f"{header_segment}.{payload_segment}".encode()
+    signature = hmac.new(
+        secret.encode("utf-8"), signing_input, hashlib.sha256
+    ).digest()
+    signature_segment = base64.urlsafe_b64encode(signature).decode("utf-8").rstrip("=")
+    return f"{header_segment}.{payload_segment}.{signature_segment}"
 
 
 def test_request_size_middleware_rejects_large_payload(client) -> None:
@@ -38,6 +66,23 @@ def test_metrics_endpoint(client) -> None:
     response = client.get("/metrics")
     assert response.status_code == 200
     assert "agentgate_tool_calls_total" in response.text
+
+
+def test_api_version_headers_present(client) -> None:
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.headers["X-AgentGate-API-Version"] == "v1"
+    assert response.headers["X-AgentGate-Supported-Versions"] == "v1"
+
+
+def test_unsupported_requested_api_version_returns_400(client) -> None:
+    response = client.get(
+        "/health", headers={"X-AgentGate-Requested-Version": "v2"}
+    )
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["error"] == "Unsupported API version"
+    assert payload["supported_versions"] == ["v1"]
 
 
 def test_docs_endpoint_renders_swagger_with_nav_landmark(client) -> None:
@@ -338,6 +383,124 @@ def test_reload_policies_invalid_key(client, monkeypatch) -> None:
     assert response.status_code == 403
 
 
+def test_reload_policies_accepts_bearer_policy_admin(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_JWT_SECRET", "jwt-secret")
+    token = _issue_admin_token("jwt-secret", ["policy_admin"])
+    response = client.post(
+        "/admin/policies/reload",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "reloaded"
+
+
+def test_rotate_admin_api_key_replaces_previous_value(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "seed-admin-key")
+    rotate = client.post(
+        "/admin/secrets/admin-api-key/rotate",
+        headers={"X-API-Key": "seed-admin-key"},
+    )
+    assert rotate.status_code == 200
+    rotated_key = rotate.json()["admin_api_key"]
+    assert isinstance(rotated_key, str)
+    assert rotated_key != "seed-admin-key"
+
+    old_key_attempt = client.post(
+        "/admin/policies/reload", headers={"X-API-Key": "seed-admin-key"}
+    )
+    assert old_key_attempt.status_code == 403
+
+    new_key_attempt = client.post(
+        "/admin/policies/reload", headers={"X-API-Key": rotated_key}
+    )
+    assert new_key_attempt.status_code == 200
+
+
+def test_replay_run_rejects_bearer_with_wrong_role(client, monkeypatch) -> None:
+    session_id = "replay-role-session"
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": session_id,
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+        },
+    )
+    monkeypatch.setenv("AGENTGATE_ADMIN_JWT_SECRET", "jwt-secret")
+    token = _issue_admin_token("jwt-secret", ["policy_admin"])
+    payload = {
+        "session_id": session_id,
+        "baseline_policy_version": "v1",
+        "candidate_policy_version": "v2",
+        "baseline_policy_data": {
+            "read_only_tools": ["db_query"],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+        "candidate_policy_data": {
+            "read_only_tools": ["db_query"],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+    }
+    response = client.post(
+        "/admin/replay/runs",
+        headers={"Authorization": f"Bearer {token}"},
+        json=payload,
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Insufficient admin role"
+
+
+def test_shadow_config_rejects_policy_admin_role(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_JWT_SECRET", "jwt-secret")
+    token = _issue_admin_token("jwt-secret", ["policy_admin"])
+    response = client.post(
+        "/admin/shadow/config",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "candidate_policy_version": "shadow-v1",
+            "candidate_policy_data": {
+                "read_only_tools": ["db_query"],
+                "write_tools": ["db_insert"],
+                "all_known_tools": ["db_query", "db_insert"],
+            },
+        },
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Insufficient admin role"
+
+
+def test_shadow_config_accepts_shadow_admin_role(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_JWT_SECRET", "jwt-secret")
+    token = _issue_admin_token("jwt-secret", ["shadow_admin"])
+    response = client.post(
+        "/admin/shadow/config",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "candidate_policy_version": "shadow-v1",
+            "candidate_policy_data": {
+                "read_only_tools": ["db_query"],
+                "write_tools": ["db_insert"],
+                "all_known_tools": ["db_query", "db_insert"],
+            },
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "configured"
+
+
+def test_incident_endpoint_rejects_replay_admin_role(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_JWT_SECRET", "jwt-secret")
+    token = _issue_admin_token("jwt-secret", ["replay_admin"])
+    response = client.get(
+        "/admin/incidents/missing-incident",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Insufficient admin role"
+
+
 def test_admin_replay_run_and_report(client, monkeypatch) -> None:
     session_id = "replay-session"
     client.post(
@@ -606,11 +769,9 @@ def test_validation_error_payload_serializes_ctx_values(client) -> None:
 
 def test_validation_error_payload_for_admin_reload(client) -> None:
     response = client.post("/admin/policies/reload")
-    assert response.status_code == 422
+    assert response.status_code == 403
     payload = response.json()
-    assert payload["error"] == "Invalid request"
-    assert "X-API-Key" in payload["hint"]
-    assert payload["example"]["headers"]["X-API-Key"] == "<admin-key>"
+    assert payload["detail"] == "Missing admin credentials"
 
 
 def test_reload_policies_failure(client, monkeypatch) -> None:
@@ -642,3 +803,24 @@ def test_reload_policies_without_rate_limits(client, monkeypatch) -> None:
     )
     assert response.status_code == 200
     assert client.app.state.rate_limiter is None
+
+
+def test_strict_secrets_mode_rejects_default_placeholders(monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_STRICT_SECRETS", "true")
+    monkeypatch.setenv("AGENTGATE_ADMIN_ALLOW_API_KEY", "true")
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-secret-change-me")
+    monkeypatch.setenv("AGENTGATE_APPROVAL_TOKEN", "approved")
+    monkeypatch.delenv("AGENTGATE_ADMIN_JWT_SECRET", raising=False)
+
+    with pytest.raises(RuntimeError, match="Strict secrets mode failed"):
+        _validate_secret_baseline()
+
+
+def test_strict_secrets_mode_accepts_explicit_values(monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_STRICT_SECRETS", "true")
+    monkeypatch.setenv("AGENTGATE_ADMIN_ALLOW_API_KEY", "true")
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "super-secret-admin-key-1234")
+    monkeypatch.setenv("AGENTGATE_APPROVAL_TOKEN", "super-secret-approval-token")
+    monkeypatch.setenv("AGENTGATE_ADMIN_JWT_SECRET", "super-secret-jwt")
+
+    _validate_secret_baseline()

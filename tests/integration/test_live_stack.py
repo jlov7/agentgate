@@ -16,6 +16,7 @@ import pytest
 from agentgate.policy_packages import hash_policy_bundle, sign_policy_package
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+INTEGRATION_ADMIN_API_KEY = "integration-admin-key-123"
 
 
 def _get_free_port() -> int:
@@ -93,6 +94,7 @@ def live_stack() -> str:
         env["AGENTGATE_REDIS_URL"] = f"redis://127.0.0.1:{redis_port}/0"
         env["AGENTGATE_OPA_URL"] = f"http://127.0.0.1:{opa_port}"
         env["AGENTGATE_POLICY_PACKAGE_SECRET"] = "secret"  # noqa: S105
+        env["AGENTGATE_ADMIN_API_KEY"] = INTEGRATION_ADMIN_API_KEY
         env["PYTHONUNBUFFERED"] = "1"
 
         process = subprocess.Popen(  # noqa: S603
@@ -193,7 +195,7 @@ def test_live_stack_end_to_end(live_stack: str) -> None:
     assert metrics.status_code == 200
     assert "agentgate_tool_calls_total" in metrics.text
 
-    admin_headers = {"X-API-Key": "admin-secret-change-me"}
+    admin_headers = {"X-API-Key": INTEGRATION_ADMIN_API_KEY}
     replay_payload = {
         "session_id": "live-session",
         "baseline_policy_version": "v1",

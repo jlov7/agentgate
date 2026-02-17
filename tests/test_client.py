@@ -59,6 +59,8 @@ async def test_client_context_manager_optional_fields(app) -> None:
 @pytest.mark.asyncio
 async def test_client_admin_controls(app, monkeypatch) -> None:
     monkeypatch.setenv("AGENTGATE_POLICY_PACKAGE_SECRET", "secret")
+    admin_api_key = "client-admin-api-key-123456"
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", admin_api_key)
     transport = ASGITransport(app=app)
     client = AgentGateClient("http://test")
 
@@ -73,7 +75,7 @@ async def test_client_admin_controls(app, monkeypatch) -> None:
             arguments={"query": "SELECT 1"},
         )
         replay = await client.create_replay_run(
-            api_key="admin-secret-change-me",
+            api_key=admin_api_key,
             payload={
                 "session_id": session_id,
                 "baseline_policy_version": "v1",
@@ -107,7 +109,7 @@ async def test_client_admin_controls(app, monkeypatch) -> None:
         )
         app.state.trace_store.save_incident(incident)
         released = await client.release_incident(
-            api_key="admin-secret-change-me",
+            api_key=admin_api_key,
             incident_id="incident-client",
             released_by="ops",
         )
@@ -123,7 +125,7 @@ async def test_client_admin_controls(app, monkeypatch) -> None:
             signer="ops",
         )
         rollout = await client.start_rollout(
-            api_key="admin-secret-change-me",
+            api_key=admin_api_key,
             tenant_id="tenant-a",
             payload={
                 "run_id": run_id,

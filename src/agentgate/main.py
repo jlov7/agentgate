@@ -24,11 +24,16 @@ Key capabilities in v0.2.x:
 
 from __future__ import annotations
 
+import base64
+import binascii
+import hashlib
+import hmac
 import inspect
 import json
 import os
 import re
 import secrets
+import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -72,6 +77,9 @@ from agentgate.webhooks import configure_webhook_notifier, get_webhook_notifier
 
 logger = get_logger(__name__)
 BODY_NONE = Body(default=None)
+
+_ADMIN_API_KEY_OVERRIDE: str | None = None
+_RUNTIME_ADMIN_API_KEY = secrets.token_urlsafe(32)
 
 # ASCII art banner
 BANNER = r"""
@@ -142,6 +150,25 @@ def _get_policy_version() -> str:
     return os.getenv("AGENTGATE_POLICY_VERSION", "v0")
 
 
+def _get_api_version() -> str:
+    return os.getenv("AGENTGATE_API_VERSION", "v1")
+
+
+def _get_supported_api_versions() -> list[str]:
+    raw = os.getenv("AGENTGATE_SUPPORTED_API_VERSIONS", _get_api_version())
+    versions = [part.strip() for part in raw.split(",") if part.strip()]
+    if not versions:
+        return [_get_api_version()]
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for version in versions:
+        if version in seen:
+            continue
+        seen.add(version)
+        ordered.append(version)
+    return ordered
+
+
 def _get_rate_limit_window_seconds() -> int:
     window = os.getenv("AGENTGATE_RATE_WINDOW_SECONDS", "60")
     try:
@@ -152,7 +179,154 @@ def _get_rate_limit_window_seconds() -> int:
 
 def _get_admin_api_key() -> str:
     """Return the admin API key for privileged endpoints."""
-    return os.getenv("AGENTGATE_ADMIN_API_KEY", "admin-secret-change-me")
+    if _ADMIN_API_KEY_OVERRIDE:
+        return _ADMIN_API_KEY_OVERRIDE
+    configured = os.getenv("AGENTGATE_ADMIN_API_KEY")
+    if configured:
+        trimmed = configured.strip()
+        if trimmed:
+            return trimmed
+    return _RUNTIME_ADMIN_API_KEY
+
+
+def _allow_legacy_admin_api_key() -> bool:
+    value = os.getenv("AGENTGATE_ADMIN_ALLOW_API_KEY", "true").strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
+def _get_admin_jwt_secret() -> str | None:
+    secret = os.getenv("AGENTGATE_ADMIN_JWT_SECRET")
+    if not secret:
+        return None
+    trimmed = secret.strip()
+    return trimmed or None
+
+
+def _is_strict_secrets_mode() -> bool:
+    explicit = os.getenv("AGENTGATE_STRICT_SECRETS")
+    if explicit is not None:
+        return explicit.strip().lower() in {"1", "true", "yes", "on"}
+    env = os.getenv("AGENTGATE_ENV", "").strip().lower()
+    return env in {"prod", "production"}
+
+
+def _validate_secret_baseline() -> None:
+    if not _is_strict_secrets_mode():
+        return
+
+    issues: list[str] = []
+    api_key = os.getenv("AGENTGATE_ADMIN_API_KEY", "").strip()
+    jwt_secret = os.getenv("AGENTGATE_ADMIN_JWT_SECRET", "").strip()
+    approval_token = os.getenv("AGENTGATE_APPROVAL_TOKEN", "").strip()
+
+    if _allow_legacy_admin_api_key() and len(api_key) < 24:
+        issues.append("AGENTGATE_ADMIN_API_KEY (minimum length: 24)")
+    if not jwt_secret and not api_key:
+        issues.append(
+            "AGENTGATE_ADMIN_JWT_SECRET (or explicit AGENTGATE_ADMIN_API_KEY fallback)"
+        )
+    if len(approval_token) < 12:
+        issues.append("AGENTGATE_APPROVAL_TOKEN (minimum length: 12)")
+
+    if issues:
+        joined = "; ".join(issues)
+        raise RuntimeError(f"Strict secrets mode failed: {joined}")
+
+
+def _rotate_admin_api_key() -> str:
+    global _ADMIN_API_KEY_OVERRIDE
+    _ADMIN_API_KEY_OVERRIDE = secrets.token_urlsafe(32)
+    return _ADMIN_API_KEY_OVERRIDE
+
+
+def _reset_admin_api_key_override() -> None:
+    global _ADMIN_API_KEY_OVERRIDE
+    _ADMIN_API_KEY_OVERRIDE = None
+
+
+def _decode_base64url(value: str) -> bytes:
+    padding = "=" * ((4 - len(value) % 4) % 4)
+    return base64.urlsafe_b64decode(value + padding)
+
+
+def _encode_base64url(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).decode("utf-8").rstrip("=")
+
+
+def _roles_from_claims(claims: dict[str, Any]) -> set[str]:
+    raw_roles = claims.get("roles")
+    if isinstance(raw_roles, str):
+        return {raw_roles}
+    if isinstance(raw_roles, list):
+        roles = {item for item in raw_roles if isinstance(item, str)}
+        return roles
+    return set()
+
+
+def _verify_admin_bearer_token(authorization: str | None) -> set[str] | None:
+    if not authorization:
+        return None
+    parts = authorization.split(" ", 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return None
+    token = parts[1].strip()
+    token_parts = token.split(".")
+    if len(token_parts) != 3:
+        return None
+
+    secret = _get_admin_jwt_secret()
+    if not secret:
+        return None
+
+    header_segment, payload_segment, signature_segment = token_parts
+    signing_input = f"{header_segment}.{payload_segment}".encode()
+    expected_signature = _encode_base64url(
+        hmac.new(secret.encode("utf-8"), signing_input, hashlib.sha256).digest()
+    )
+    if not secrets.compare_digest(signature_segment, expected_signature):
+        return None
+
+    try:
+        payload_raw = _decode_base64url(payload_segment)
+        payload = json.loads(payload_raw.decode("utf-8"))
+    except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+
+    exp = payload.get("exp")
+    if isinstance(exp, (int, float)) and time.time() >= float(exp):
+        return None
+
+    return _roles_from_claims(payload)
+
+
+def _authorize_admin_request(
+    *,
+    required_roles: set[str],
+    x_api_key: str | None,
+    authorization: str | None,
+) -> None:
+    bearer_roles = _verify_admin_bearer_token(authorization)
+    if bearer_roles is not None:
+        if "admin" in bearer_roles or required_roles.issubset(bearer_roles):
+            return
+        raise HTTPException(status_code=403, detail="Insufficient admin role")
+
+    if _allow_legacy_admin_api_key() and x_api_key:
+        expected_key = _get_admin_api_key()
+        if secrets.compare_digest(x_api_key, expected_key):
+            return
+        raise HTTPException(status_code=403, detail="Invalid API key")
+
+    raise HTTPException(status_code=403, detail="Missing admin credentials")
+
+
+POLICY_ADMIN_ROLE = "policy_admin"
+REPLAY_ADMIN_ROLE = "replay_admin"
+INCIDENT_ADMIN_ROLE = "incident_admin"
+ROLLOUT_ADMIN_ROLE = "rollout_admin"
+SHADOW_ADMIN_ROLE = "shadow_admin"
 
 
 def _get_webhook_url() -> str | None:
@@ -178,7 +352,9 @@ def create_app(
     tool_executor: ToolExecutor | None = None,
 ) -> FastAPI:
     """Create and configure the FastAPI application."""
+    _reset_admin_api_key_override()
     configure_logging(_get_log_level())
+    _validate_secret_baseline()
 
     # Print banner on startup
     print(BANNER)
@@ -290,6 +466,33 @@ def create_app(
         return await call_next(request)
 
     @app.middleware("http")
+    async def api_version_middleware(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        """Enforce API version compatibility and publish contract headers."""
+        supported_versions = _get_supported_api_versions()
+        active_version = _get_api_version()
+        requested_version = request.headers.get("X-AgentGate-Requested-Version")
+        if requested_version and requested_version not in supported_versions:
+            return JSONResponse(
+                {
+                    "error": "Unsupported API version",
+                    "requested_version": requested_version,
+                    "supported_versions": supported_versions,
+                },
+                status_code=400,
+            )
+
+        response = await call_next(request)
+        response.headers["X-AgentGate-API-Version"] = active_version
+        response.headers["X-AgentGate-Supported-Versions"] = ",".join(
+            supported_versions
+        )
+        if requested_version:
+            response.headers["X-AgentGate-Requested-Version"] = requested_version
+        return response
+
+    @app.middleware("http")
     async def correlation_middleware(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
@@ -317,8 +520,13 @@ def create_app(
                 "arguments": {"query": "SELECT 1"},
             }
         elif request.url.path == "/admin/policies/reload":
-            hint = "Provide the X-API-Key header for admin endpoints."
-            example = {"headers": {"X-API-Key": "<admin-key>"}}
+            hint = "Provide Authorization: Bearer <token> or X-API-Key for admin endpoints."
+            example = {
+                "headers": {
+                    "Authorization": "Bearer <admin-token>",
+                    "X-API-Key": "<admin-key>",
+                }
+            }
 
         detail = json.loads(json.dumps(exc.errors(), default=str))
         payload: dict[str, Any] = {
@@ -582,15 +790,15 @@ def create_app(
 
     @app.post("/admin/policies/reload")
     async def reload_policies(
-        x_api_key: str = Header(..., alias="X-API-Key")
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
-        """Hot-reload policy data from disk (admin only).
-
-        Requires X-API-Key header matching AGENTGATE_ADMIN_API_KEY.
-        """
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        """Hot-reload policy data from disk (admin only)."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
 
         try:
             policy_data_path = app.state.policy_data_path
@@ -615,15 +823,38 @@ def create_app(
             logger.error("policy_reload_failed", error=str(exc))
             raise HTTPException(status_code=500, detail=f"Failed to reload: {exc}") from exc
 
+    @app.post("/admin/secrets/admin-api-key/rotate")
+    async def rotate_admin_api_key(
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Rotate the legacy admin API key override (admin only)."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        rotated = _rotate_admin_api_key()
+        return JSONResponse(
+            {
+                "status": "rotated",
+                "admin_api_key": rotated,
+                "rotated_at": datetime.now(UTC).isoformat(),
+            }
+        )
+
     @app.post("/admin/shadow/config")
     async def configure_shadow_policy(
         payload: dict[str, Any],
-        x_api_key: str = Header(..., alias="X-API-Key"),
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
         """Configure candidate shadow policy (admin only)."""
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        _authorize_admin_request(
+            required_roles={SHADOW_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
         candidate_policy_data = payload.get("candidate_policy_data")
         if not isinstance(candidate_policy_data, dict):
             raise HTTPException(
@@ -646,24 +877,30 @@ def create_app(
     @app.get("/admin/shadow/report")
     async def get_shadow_report(
         session_id: str | None = None,
-        x_api_key: str = Header(..., alias="X-API-Key"),
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
         """Return shadow policy drift report and suggestions (admin only)."""
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        _authorize_admin_request(
+            required_roles={SHADOW_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
         report = app.state.shadow_twin.build_report(session_id=session_id)
         return JSONResponse(report)
 
     @app.post("/admin/replay/runs")
     async def create_replay_run(
         payload: dict[str, Any],
-        x_api_key: str = Header(..., alias="X-API-Key"),
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
         """Create and execute a replay run (admin only)."""
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        _authorize_admin_request(
+            required_roles={REPLAY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
 
         session_id = payload.get("session_id")
         baseline_policy_data = payload.get("baseline_policy_data")
@@ -717,12 +954,16 @@ def create_app(
 
     @app.get("/admin/replay/runs/{run_id}")
     async def get_replay_run(
-        run_id: str, x_api_key: str = Header(..., alias="X-API-Key")
+        run_id: str,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
         """Fetch replay run metadata and summary (admin only)."""
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        _authorize_admin_request(
+            required_roles={REPLAY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
 
         run = app.state.trace_store.get_replay_run(run_id)
         if run is None:
@@ -738,12 +979,16 @@ def create_app(
 
     @app.get("/admin/replay/runs/{run_id}/report")
     async def replay_report(
-        run_id: str, x_api_key: str = Header(..., alias="X-API-Key")
+        run_id: str,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
         """Return replay summary and per-event deltas (admin only)."""
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        _authorize_admin_request(
+            required_roles={REPLAY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
 
         run = app.state.trace_store.get_replay_run(run_id)
         if run is None:
@@ -760,12 +1005,16 @@ def create_app(
 
     @app.get("/admin/incidents/{incident_id}")
     async def get_incident(
-        incident_id: str, x_api_key: str = Header(..., alias="X-API-Key")
+        incident_id: str,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
         """Fetch incident record and timeline (admin only)."""
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        _authorize_admin_request(
+            required_roles={INCIDENT_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
 
         record = app.state.trace_store.get_incident(incident_id)
         if record is None:
@@ -780,12 +1029,15 @@ def create_app(
     async def release_incident(
         incident_id: str,
         payload: dict[str, Any],
-        x_api_key: str = Header(..., alias="X-API-Key"),
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
         """Release a quarantined incident (admin only)."""
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        _authorize_admin_request(
+            required_roles={INCIDENT_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
         released_by = payload.get("released_by")
         if not isinstance(released_by, str):
             raise HTTPException(status_code=400, detail="released_by required")
@@ -800,12 +1052,15 @@ def create_app(
     async def create_tenant_rollout(
         tenant_id: str,
         payload: dict[str, Any],
-        x_api_key: str = Header(..., alias="X-API-Key"),
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
         """Create a tenant rollout (admin only)."""
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        _authorize_admin_request(
+            required_roles={ROLLOUT_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
         if not _valid_tenant_id(tenant_id):
             raise HTTPException(status_code=400, detail="Invalid tenant_id")
 
@@ -889,12 +1144,15 @@ def create_app(
     async def get_tenant_rollout(
         tenant_id: str,
         rollout_id: str,
-        x_api_key: str = Header(..., alias="X-API-Key"),
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
         """Fetch a tenant rollout record (admin only)."""
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        _authorize_admin_request(
+            required_roles={ROLLOUT_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
         rollout = app.state.trace_store.get_rollout(rollout_id)
         if rollout is None or rollout.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Rollout not found")
@@ -905,12 +1163,15 @@ def create_app(
         tenant_id: str,
         rollout_id: str,
         payload: dict[str, Any],
-        x_api_key: str = Header(..., alias="X-API-Key"),
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
     ) -> JSONResponse:
         """Roll back a tenant rollout (admin only)."""
-        expected_key = _get_admin_api_key()
-        if not secrets.compare_digest(x_api_key, expected_key):
-            raise HTTPException(status_code=403, detail="Invalid API key")
+        _authorize_admin_request(
+            required_roles={ROLLOUT_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
         reason = payload.get("reason")
         if not isinstance(reason, str):
             raise HTTPException(status_code=400, detail="reason required")

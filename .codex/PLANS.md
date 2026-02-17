@@ -146,3 +146,44 @@ Make AgentGate dramatically easier to evaluate and demonstrate by introducing a 
 - Added `scripts/try_now.py` and `make try` to standardize first-run success and artifact handoff.
 - Added docs site pages (`TRY_NOW`, `DEMO_LAB`, `DEMO_DAY`) plus nav/README wiring for faster discovery.
 - Added regression tests for proof-bundle packaging and Demo Lab seeded assets.
+
+---
+
+# Release-Ready Master Program ExecPlan
+
+## Purpose / Big Picture
+Deliver all remaining requirements needed for production-grade release readiness with exhaustive tracking and strict verification evidence at each step.
+
+## Progress
+- [x] Re-established release gate baseline (`scripts/doctor.sh` pass after Docker recovery).
+- [x] Wrote exhaustive master program plan (`docs/plans/2026-02-17-release-ready-master-program.md`).
+- [x] Implement P0-004 admin RBAC by operation domain.
+- [x] Implement P0-017 API versioning contract.
+- [x] Implement P0-003 enterprise admin auth hardening.
+- [x] Implement P0-001 real credential broker integration.
+- [x] Implement P0-002 secret lifecycle hardening.
+- [ ] Implement P0-005 trace-store Postgres migration path.
+- [ ] Continue sequential execution of P0 backlog to completion.
+
+## Surprises & Discoveries
+- 2026-02-17: Docker daemon outage caused temporary doctor failures (`RG-01`, `RG-03`, `RG-04`, `RG-05`) unrelated to code changes.
+
+## Decision Log
+- Begin with P0-017 (API version contract) as the first execution slice due bounded scope and high downstream integration value.
+- After P0-017 success, prioritize P0-003 (admin auth) before RBAC and tenant hardening tasks.
+- After P0-003 success, prioritize P0-004 RBAC boundary coverage and enforcement.
+- After P0-004 success, prioritize P0-001 credential broker integration to remove static credential assumptions.
+- After P0-001 success, prioritize P0-002 secret lifecycle hardening and rotation safety.
+- After P0-002 success, prioritize P0-005 trace-store backend migration for production durability.
+
+## Outcomes & Retrospective
+- P0-017 completed with RED->GREEN->verify->doctor loop.
+- Added API compatibility enforcement and version contract headers without regression (`make verify` pass, `scripts/doctor.sh` pass).
+- P0-003 completed with RED->GREEN->verify->doctor loop.
+- Added Bearer JWT admin auth with role checks and optional legacy API-key fallback across all admin endpoints without regression (`make verify` pass, `scripts/doctor.sh` pass).
+- P0-004 completed with RED->GREEN->verify->doctor loop.
+- Added operation-domain RBAC separation (`policy_admin`, `shadow_admin`, `replay_admin`, `incident_admin`, `rollout_admin`) with regression tests and no gate regressions (`make verify` pass, `scripts/doctor.sh` pass).
+- P0-001 completed with RED->GREEN->verify->doctor loop.
+- Added pluggable credential providers (`stub`, `http`, `oauth_client_credentials`, `aws_sts`) and fail-closed gateway behavior on broker issuance failures with full gate pass evidence (`make verify`, `scripts/doctor.sh`).
+- P0-002 completed with RED->GREEN->verify->doctor loop.
+- Removed static admin API-key fallback, added strict secret baseline validation mode, and implemented admin API-key rotation endpoint with regression coverage and full gate pass evidence (`make verify`, `scripts/doctor.sh`).

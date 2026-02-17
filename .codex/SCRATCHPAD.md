@@ -1,31 +1,49 @@
 ## Current Task
 
-Deliver a world-class adoption and demo experience so people can see, try, trust, and share AgentGate quickly.
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-002 to P0-005 (trace store Postgres migration path).
 
 ## Status
 
-Complete (verified with `make verify` and `scripts/doctor.sh` on 2026-02-15)
+In Progress
 
-## To-Do (Live)
+## Plan
 
-1. [x] Audit existing demo/docs surfaces and identify leverage points
-2. [x] Capture implementation plan in `.codex/PLANS.md`
-3. [x] Implement `make try` zero-friction entrypoint (setup checks + managed stack + showcase + polished output)
-4. [x] Add proof-bundle generation for shareable artifacts
-5. [x] Build hosted interactive Demo Lab scaffold with three seeded scenarios and artifact export
-6. [x] Add docs: `docs/TRY_NOW.md` and `docs/DEMO_DAY.md`
-7. [x] Wire docs/navigation/README to the new experience ladder
-8. [x] Add/adjust regression tests for new automation/scripts
-9. [x] Run targeted tests for changed modules
-10. [x] Run full `make verify`
-11. [x] Run `scripts/doctor.sh`
-12. [x] Update outcome notes and residual risks
+1. [x] Run strict baseline gate (`scripts/doctor.sh`) and recover environment blockers.
+2. [x] Create exhaustive release program file with all tracked tasks.
+3. [x] P0-017 RED: add failing tests for API version headers + incompatible version rejection.
+4. [x] P0-017 GREEN: implement API version middleware and contract behavior.
+5. [x] Run targeted tests for P0-017.
+6. [x] Run full `make verify`.
+7. [x] Run full `scripts/doctor.sh`.
+8. [x] Update tracking files (`.codex/PLANS.md`, `docs/plans/...`) with evidence.
+9. [x] Move to next P0 item.
+10. [x] P0-003 RED: add failing tests for Bearer admin auth acceptance and role enforcement.
+11. [x] P0-003 GREEN: implement JWT-based admin auth verifier and endpoint enforcement.
+12. [x] Run targeted tests for P0-003.
+13. [x] Re-run `make verify` and `scripts/doctor.sh`.
+14. [x] P0-004 RED: add failing tests for operation-domain RBAC boundaries.
+15. [x] P0-004 GREEN: enforce and document domain role mapping for admin endpoints.
+16. [x] Run targeted tests for P0-004.
+17. [x] Re-run `make verify` and `scripts/doctor.sh`.
+18. [x] P0-001 RED: add failing tests for external credential-provider integration contract.
+19. [x] P0-001 GREEN: implement pluggable credential provider bridge (Vault/STS-compatible interface).
+20. [x] Run targeted tests for P0-001.
+21. [x] Re-run `make verify` and `scripts/doctor.sh`.
+22. [x] P0-002 RED: add failing tests for insecure static-secret defaults and rotation behavior.
+23. [x] P0-002 GREEN: enforce secret hardening and rotation-safe lifecycle controls.
+24. [x] Run targeted tests for P0-002.
+25. [x] Re-run `make verify` and `scripts/doctor.sh`.
+26. [ ] P0-005 RED: add failing tests for Postgres trace-store DSN handling and compatibility.
+27. [ ] P0-005 GREEN: implement production trace-store backend migration path.
+28. [ ] Run targeted tests for P0-005.
+29. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
-- Reuse existing showcase/evidence pipeline as the core engine to avoid introducing a parallel demo stack.
-- Ship a static hosted Demo Lab in docs (MkDocs/GitHub Pages friendly) with seeded scenarios and downloadable proof bundles.
+- Execute by strict P0-first ordering with evidence gating on each item.
+- Start with API contract stability before deeper auth/storage migrations.
+- P0-002 is complete and verified; next priority is production-grade trace-store backend migration.
 
 ## Open Questions
 
-- None blocking implementation.
+- None blocking P0-005 implementation start.

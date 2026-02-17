@@ -156,13 +156,14 @@ def test_evidence_export_contract(client) -> None:
 
 
 @pytest.mark.integration
-def test_admin_policy_reload_requires_key(client) -> None:
+def test_admin_policy_reload_requires_key(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "integration-admin-key-123")
     response = client.post("/admin/policies/reload", headers={"X-API-Key": "wrong-key"})
     assert response.status_code == 403
 
     ok_response = client.post(
         "/admin/policies/reload",
-        headers={"X-API-Key": "admin-secret-change-me"},
+        headers={"X-API-Key": "integration-admin-key-123"},
     )
     assert ok_response.status_code == 200
     payload = ok_response.json()

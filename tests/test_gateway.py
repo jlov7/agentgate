@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 
+from agentgate.credentials import CredentialBrokerError
 from agentgate.gateway import Gateway, _is_valid_tool_name
 from agentgate.models import PolicyDecision, ToolCallRequest
 from agentgate.taint import TaintTracker
@@ -240,6 +241,14 @@ class RecordingCredentialBroker:
     def get_credentials(self, tool: str, scope: str, ttl: int) -> dict[str, Any]:
         self.calls.append((tool, scope, ttl))
         return self.credentials
+
+
+class FailingCredentialBroker:
+    def __init__(self, message: str) -> None:
+        self.message = message
+
+    def get_credentials(self, tool: str, scope: str, ttl: int) -> dict[str, Any]:
+        raise CredentialBrokerError(self.message)
 
 
 class RecordingToolExecutor:
@@ -689,3 +698,36 @@ async def test_gateway_tool_execution_error_records_duration(trace_store, monkey
     assert event.user_id == "user-3"
     assert event.agent_id == "agent-3"
     assert event.error == "Tool execution failed: boom"
+
+
+@pytest.mark.asyncio
+async def test_gateway_denies_when_credential_broker_fails(trace_store) -> None:
+    decision = PolicyDecision(
+        action="ALLOW",
+        reason="ok",
+        matched_rule="read_only_tools",
+    )
+    tool_executor = RecordingToolExecutor(result={"rows": [1]})
+    gateway = _build_gateway(
+        trace_store,
+        decision,
+        credential_broker=FailingCredentialBroker("provider timeout"),
+        tool_executor=tool_executor,
+        policy_version="v-unit",
+    )
+    request = ToolCallRequest(
+        session_id="sess-credential-error",
+        tool_name="db_query",
+        arguments={"query": "SELECT 1"},
+    )
+
+    response = await gateway.call_tool(request)
+
+    assert response.success is False
+    assert response.error is not None
+    assert "credential broker unavailable" in response.error.lower()
+    assert tool_executor.calls == []
+
+    event = trace_store.query(session_id="sess-credential-error")[0]
+    assert event.executed is False
+    assert event.error == response.error

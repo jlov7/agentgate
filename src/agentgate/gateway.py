@@ -20,7 +20,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from agentgate.credentials import CredentialBroker
+from agentgate.credentials import CredentialBroker, CredentialBrokerError
 from agentgate.killswitch import KillSwitch
 from agentgate.logging import get_logger
 from agentgate.models import PolicyDecision, ToolCallRequest, ToolCallResponse
@@ -261,11 +261,32 @@ class Gateway:
             await self._notify_quarantine(request, decision.action, error)
             return response
 
-        credentials = self.credential_broker.get_credentials(
-            tool=request.tool_name,
-            scope=decision.allowed_scope or "read",
-            ttl=decision.credential_ttl,
-        )
+        try:
+            credentials = self.credential_broker.get_credentials(
+                tool=request.tool_name,
+                scope=decision.allowed_scope or "read",
+                ttl=decision.credential_ttl,
+            )
+        except CredentialBrokerError as exc:
+            error = f"Credential broker unavailable: {exc}"
+            self._append_trace(
+                request=request,
+                event_id=event_id,
+                timestamp=timestamp,
+                arguments_hash=arguments_hash,
+                user_id=user_id,
+                agent_id=agent_id,
+                decision=decision,
+                executed=False,
+                duration_ms=None,
+                error=error,
+            )
+            response = ToolCallResponse(
+                success=False, result=None, error=error, trace_id=event_id
+            )
+            await self._notify_quarantine(request, decision.action, error)
+            return response
+
         logger.info(
             "tool_call_allowed",
             session_id=request.session_id,
