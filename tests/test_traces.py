@@ -5,8 +5,16 @@ from __future__ import annotations
 import sqlite3
 from datetime import UTC, datetime
 
+import pytest
+
 from agentgate.models import IncidentEvent, IncidentRecord, TraceEvent
-from agentgate.traces import TraceStore, hash_arguments, hash_arguments_safe
+from agentgate.traces import (
+    TraceStore,
+    _is_postgres_dsn,
+    _normalize_postgres_sql,
+    hash_arguments,
+    hash_arguments_safe,
+)
 
 
 def _build_event(event_id: str, session_id: str, timestamp: datetime) -> TraceEvent:
@@ -145,3 +153,25 @@ def test_trace_store_persists_replay_invariant_report(tmp_path) -> None:
         saved = store.get_replay_invariant_report("run-1")
 
     assert saved == report
+
+
+def test_postgres_dsn_detection() -> None:
+    assert _is_postgres_dsn("postgresql://user:pass@localhost:5432/agentgate") is True
+    assert _is_postgres_dsn("postgres://user:pass@localhost:5432/agentgate") is True
+    assert _is_postgres_dsn("./traces.db") is False
+
+
+def test_normalize_postgres_sql_converts_qmark_and_autoincrement() -> None:
+    sql = "SELECT * FROM traces WHERE session_id = ?"
+    assert _normalize_postgres_sql(sql) == "SELECT * FROM traces WHERE session_id = %s"
+    create = "CREATE TABLE t (id INTEGER PRIMARY KEY AUTOINCREMENT, value TEXT)"
+    assert "BIGSERIAL PRIMARY KEY" in _normalize_postgres_sql(create)
+
+
+def test_postgres_trace_store_requires_psycopg(monkeypatch) -> None:
+    def raise_import_error():
+        raise ImportError("missing psycopg")
+
+    monkeypatch.setattr("agentgate.traces._import_psycopg", raise_import_error)
+    with pytest.raises(RuntimeError, match="psycopg"):
+        TraceStore("postgresql://user:pass@localhost:5432/agentgate")

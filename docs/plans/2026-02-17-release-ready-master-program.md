@@ -74,7 +74,7 @@
 - [x] P0-002
 - [x] P0-003
 - [x] P0-004
-- [ ] P0-005
+- [x] P0-005
 - [ ] P0-006
 - [ ] P0-007
 - [ ] P0-008
@@ -113,12 +113,13 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-005` Trace store production backend migration path (Postgres).
-- Why now: Core auth/secrets hardening is complete; next blocker is durable production-grade trace storage beyond local SQLite.
+- Active item: `P0-006` Schema migration system with rollback-safe upgrade path.
+- Why now: Postgres migration compatibility path is complete; next blocker is deterministic, versioned schema evolution.
 
 ## Surprises & Discoveries (Live)
 
 - 2026-02-17: Doctor initially failed due Docker daemon down; recovered by starting Docker Desktop and re-running (`overall_status: pass`).
+- 2026-02-18: Trace schema SQL was SQLite-shaped, so Postgres support required compatibility normalization rather than full query rewrites.
 
 ## Decision Log (Live)
 
@@ -128,6 +129,7 @@
 - 2026-02-17: Move next to P0-001 after P0-004 established explicit domain RBAC boundaries.
 - 2026-02-17: Move next to P0-002 after P0-001 delivered pluggable credential-provider support.
 - 2026-02-17: Move next to P0-005 after P0-002 landed with secret lifecycle hardening.
+- 2026-02-18: Move next to P0-006 after P0-005 landed with Postgres trace-store migration compatibility.
 
 ## Outcomes & Retrospective (Live)
 
@@ -157,3 +159,8 @@
   - Added admin API key rotation endpoint and override lifecycle handling.
   - Updated client/integration tests to rely on explicit admin key configuration instead of static defaults.
   - Evidence: targeted tests pass, `make verify` pass, `scripts/doctor.sh` pass.
+- 2026-02-18: Completed `P0-005` with Postgres trace-store migration path.
+  - Added Postgres DSN detection and optional psycopg-backed connection adapter while preserving SQLite as default runtime behavior.
+  - Added SQL normalization for SQLite placeholders/autoincrement semantics in the Postgres adapter path.
+  - Added regression tests for DSN detection, SQL normalization behavior, and explicit runtime failure when psycopg is not installed.
+  - Evidence: `pytest tests/test_traces.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

@@ -162,11 +162,12 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P0-003 enterprise admin auth hardening.
 - [x] Implement P0-001 real credential broker integration.
 - [x] Implement P0-002 secret lifecycle hardening.
-- [ ] Implement P0-005 trace-store Postgres migration path.
+- [x] Implement P0-005 trace-store Postgres migration path.
 - [ ] Continue sequential execution of P0 backlog to completion.
 
 ## Surprises & Discoveries
 - 2026-02-17: Docker daemon outage caused temporary doctor failures (`RG-01`, `RG-03`, `RG-04`, `RG-05`) unrelated to code changes.
+- 2026-02-18: Current trace schema uses SQLite-native SQL (`?` placeholders, `AUTOINCREMENT`), so Postgres support required lightweight SQL normalization in the trace-store adapter path.
 
 ## Decision Log
 - Begin with P0-017 (API version contract) as the first execution slice due bounded scope and high downstream integration value.
@@ -175,6 +176,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P0-004 success, prioritize P0-001 credential broker integration to remove static credential assumptions.
 - After P0-001 success, prioritize P0-002 secret lifecycle hardening and rotation safety.
 - After P0-002 success, prioritize P0-005 trace-store backend migration for production durability.
+- After P0-005 success, prioritize P0-006 schema migration/versioning system.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -187,3 +189,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added pluggable credential providers (`stub`, `http`, `oauth_client_credentials`, `aws_sts`) and fail-closed gateway behavior on broker issuance failures with full gate pass evidence (`make verify`, `scripts/doctor.sh`).
 - P0-002 completed with RED->GREEN->verify->doctor loop.
 - Removed static admin API-key fallback, added strict secret baseline validation mode, and implemented admin API-key rotation endpoint with regression coverage and full gate pass evidence (`make verify`, `scripts/doctor.sh`).
+- P0-005 completed with RED->GREEN->verify->doctor loop.
+- Added Postgres DSN detection and optional psycopg-backed trace-store adapter while preserving existing SQLite behavior.
+- Added SQL compatibility normalization for qmark placeholders and SQLite autoincrement declarations in the Postgres adapter path.
+- Added regression tests for DSN detection, SQL normalization behavior, and explicit error when psycopg is unavailable.
+- Evidence: `pytest tests/test_traces.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

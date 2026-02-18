@@ -1,4 +1,4 @@
-"""Append-only trace storage using SQLite."""
+"""Append-only trace storage using SQLite with Postgres migration support."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from contextlib import suppress
 from datetime import datetime
 from threading import Lock
 from types import TracebackType
+from typing import Any
 
 from agentgate.models import (
     IncidentEvent,
@@ -20,12 +21,70 @@ from agentgate.models import (
 )
 
 
+def _is_postgres_dsn(db_path: str) -> bool:
+    lowered = db_path.strip().lower()
+    return lowered.startswith(
+        (
+            "postgres://",
+            "postgresql://",
+            "postgres+psycopg://",
+            "postgresql+psycopg://",
+        )
+    )
+
+
+def _normalize_postgres_sql(sql: str) -> str:
+    normalized = sql.replace("?", "%s")
+    return normalized.replace(
+        "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "BIGSERIAL PRIMARY KEY",
+    )
+
+
+def _import_psycopg() -> tuple[Any, Any]:
+    import psycopg  # type: ignore[import-not-found]
+    from psycopg.rows import dict_row  # type: ignore[import-not-found]
+
+    return psycopg, dict_row
+
+
+class _PostgresConnectionAdapter:
+    def __init__(self, raw_conn: Any) -> None:
+        self._raw_conn = raw_conn
+
+    def execute(self, query: str, params: tuple[Any, ...] | list[Any] | None = None) -> Any:
+        normalized = _normalize_postgres_sql(query)
+        if params is None:
+            return self._raw_conn.execute(normalized)
+        return self._raw_conn.execute(normalized, params)
+
+    def commit(self) -> None:
+        self._raw_conn.commit()
+
+    def close(self) -> None:
+        self._raw_conn.close()
+
+
 class TraceStore:
-    """Append-only trace store backed by SQLite."""
+    """Append-only trace store backed by SQLite or Postgres."""
 
     def __init__(self, db_path: str) -> None:
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row
+        self._is_postgres = _is_postgres_dsn(db_path)
+        self.conn: Any
+        if self._is_postgres:
+            try:
+                psycopg, dict_row = _import_psycopg()
+            except ImportError as exc:
+                raise RuntimeError(
+                    "Postgres trace store requires psycopg. "
+                    "Install with: pip install psycopg[binary]"
+                ) from exc
+            raw_conn = psycopg.connect(db_path, row_factory=dict_row)
+            self.conn = _PostgresConnectionAdapter(raw_conn)
+        else:
+            conn = sqlite3.connect(db_path, check_same_thread=False)
+            conn.row_factory = sqlite3.Row
+            self.conn = conn
         self._lock = Lock()
         self._closed = False
         self._init_schema()
@@ -209,6 +268,8 @@ class TraceStore:
 
     def _migrate_schema(self) -> None:
         """Add missing columns for backward compatibility."""
+        if self._is_postgres:
+            return
         with self._lock:
             columns = self.conn.execute("PRAGMA table_info(traces)").fetchall()
             existing = {col[1] for col in columns}
