@@ -820,9 +820,13 @@ def create_app(
         return JSONResponse(payload, headers=_archive_headers(archive_record))
 
     @app.get("/sessions/{session_id}/transparency")
-    async def get_transparency_report(session_id: str) -> JSONResponse:
+    async def get_transparency_report(
+        session_id: str, anchor: bool = False
+    ) -> JSONResponse:
         """Return the transparency proof report for a session."""
-        report = app.state.transparency_log.build_session_report(session_id)
+        report = app.state.transparency_log.build_session_report(
+            session_id, anchor=anchor
+        )
         return JSONResponse(report)
 
     @app.post("/admin/policies/reload")

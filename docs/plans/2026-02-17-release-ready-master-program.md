@@ -80,7 +80,7 @@
 - [x] P0-008
 - [x] P0-009
 - [x] P0-010
-- [ ] P0-011
+- [x] P0-011
 - [ ] P0-012
 - [ ] P0-013
 - [ ] P0-014
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-011` External transparency checkpoint anchoring.
-- Why now: Immutable archival is now implemented and verified; next blocker is externally anchored transparency checkpoints for third-party verifiability.
+- Active item: `P0-012` Signed policy provenance enforcement on load.
+- Why now: External transparency checkpoint anchoring is complete and verified; next blocker is strict signed provenance validation during policy-load paths.
 
 ## Surprises & Discoveries (Live)
 
@@ -135,6 +135,7 @@
 - 2026-02-18: Move next to P0-009 after P0-008 landed with idempotent quarantine/rollout orchestration.
 - 2026-02-18: Move next to P0-010 after P0-009 landed with asymmetric evidence-signing support.
 - 2026-02-18: Move next to P0-011 after P0-010 landed with immutable evidence archival support.
+- 2026-02-18: Move next to P0-012 after P0-011 landed with external transparency checkpoint anchoring.
 
 ## Outcomes & Retrospective (Live)
 
@@ -196,3 +197,9 @@
   - Added `/sessions/{session_id}/evidence?archive=true` support for JSON/HTML/PDF exports with archive metadata and headers.
   - Added regression tests for archive write-once behavior, immutability enforcement, and API idempotent archive response semantics.
   - Evidence: `pytest tests/test_traces.py tests/test_main.py::test_export_evidence_archive_write_once tests/test_main.py::test_export_evidence_formats -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-18: Completed `P0-011` with external transparency checkpoint anchoring.
+  - Added rollback-safe schema migration `v4` for immutable `transparency_checkpoints` storage with update/delete guards.
+  - Added checkpoint persistence APIs in trace store with idempotency keyed by `(session_id, root_hash, anchor_source)`.
+  - Added `TransparencyLog.build_session_report(..., anchor=True)` external/local anchoring flow with guarded URL scheme validation and persisted checkpoint receipts.
+  - Added `/sessions/{session_id}/transparency?anchor=true` endpoint support and regression tests for anchored checkpoint idempotency.
+  - Evidence: `pytest tests/test_transparency.py tests/test_main.py::test_session_transparency_report_can_anchor_checkpoint tests/test_traces.py::test_transparency_checkpoint_write_once_and_immutable -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

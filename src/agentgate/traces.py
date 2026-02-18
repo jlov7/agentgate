@@ -130,6 +130,7 @@ class TraceStore:
             (1, "bootstrap_schema", self._migration_bootstrap_schema),
             (2, "trace_columns_backfill", self._migrate_schema),
             (3, "evidence_archives", self._migration_evidence_archives),
+            (4, "transparency_checkpoints", self._migration_transparency_checkpoints),
         ]
 
     def _ensure_migrations_table(self) -> None:
@@ -481,6 +482,94 @@ class TraceStore:
                 """
             )
 
+    def _migration_transparency_checkpoints(self) -> None:
+        """Create immutable transparency checkpoint storage."""
+        with self._lock:
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS transparency_checkpoints (
+                    checkpoint_id TEXT PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    root_hash TEXT NOT NULL,
+                    anchor_source TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    receipt_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_transparency_checkpoints_unique_root
+                ON transparency_checkpoints(session_id, root_hash, anchor_source)
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_transparency_checkpoints_session
+                ON transparency_checkpoints(session_id, created_at)
+                """
+            )
+            if self._is_postgres:
+                self.conn.execute(
+                    """
+                    CREATE OR REPLACE FUNCTION prevent_transparency_checkpoints_mutation()
+                    RETURNS trigger
+                    AS $$
+                    BEGIN
+                        RAISE EXCEPTION 'transparency checkpoints are immutable';
+                    END;
+                    $$ LANGUAGE plpgsql
+                    """
+                )
+                self.conn.execute(
+                    """
+                    DROP TRIGGER IF EXISTS transparency_checkpoints_no_update
+                    ON transparency_checkpoints
+                    """
+                )
+                self.conn.execute(
+                    """
+                    CREATE TRIGGER transparency_checkpoints_no_update
+                    BEFORE UPDATE ON transparency_checkpoints
+                    FOR EACH ROW
+                    EXECUTE FUNCTION prevent_transparency_checkpoints_mutation()
+                    """
+                )
+                self.conn.execute(
+                    """
+                    DROP TRIGGER IF EXISTS transparency_checkpoints_no_delete
+                    ON transparency_checkpoints
+                    """
+                )
+                self.conn.execute(
+                    """
+                    CREATE TRIGGER transparency_checkpoints_no_delete
+                    BEFORE DELETE ON transparency_checkpoints
+                    FOR EACH ROW
+                    EXECUTE FUNCTION prevent_transparency_checkpoints_mutation()
+                    """
+                )
+                return
+            self.conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS transparency_checkpoints_no_update
+                BEFORE UPDATE ON transparency_checkpoints
+                BEGIN
+                    SELECT RAISE(ABORT, 'transparency checkpoints are immutable');
+                END;
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS transparency_checkpoints_no_delete
+                BEFORE DELETE ON transparency_checkpoints
+                BEGIN
+                    SELECT RAISE(ABORT, 'transparency checkpoints are immutable');
+                END;
+                """
+            )
+
     def archive_evidence_pack(
         self,
         *,
@@ -596,6 +685,102 @@ class TraceStore:
             "created_at": row["created_at"],
             "immutable": True,
         }
+
+    def save_transparency_checkpoint(
+        self,
+        *,
+        session_id: str,
+        root_hash: str,
+        anchor_source: str,
+        status: str,
+        receipt: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Persist immutable transparency checkpoint metadata."""
+        checkpoint_key = f"{session_id}:{root_hash}:{anchor_source}".encode()
+        checkpoint_id = hashlib.sha256(checkpoint_key).hexdigest()
+        receipt_json = json.dumps(receipt, sort_keys=True)
+
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT INTO transparency_checkpoints (
+                    checkpoint_id,
+                    session_id,
+                    root_hash,
+                    anchor_source,
+                    status,
+                    receipt_json
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(checkpoint_id) DO NOTHING
+                """,
+                (
+                    checkpoint_id,
+                    session_id,
+                    root_hash,
+                    anchor_source,
+                    status,
+                    receipt_json,
+                ),
+            )
+            row = self.conn.execute(
+                """
+                SELECT checkpoint_id, session_id, root_hash, anchor_source, status,
+                       receipt_json, created_at
+                FROM transparency_checkpoints
+                WHERE checkpoint_id = ?
+                """,
+                (checkpoint_id,),
+            ).fetchone()
+            self.conn.commit()
+
+        if row is None:
+            raise RuntimeError("Transparency checkpoint persistence failed.")
+
+        stored_receipt = json.loads(row["receipt_json"])
+        if not isinstance(stored_receipt, dict):
+            stored_receipt = {}
+        return {
+            "checkpoint_id": row["checkpoint_id"],
+            "session_id": row["session_id"],
+            "root_hash": row["root_hash"],
+            "anchor_source": row["anchor_source"],
+            "status": row["status"],
+            "receipt": stored_receipt,
+            "created_at": row["created_at"],
+            "immutable": True,
+        }
+
+    def list_transparency_checkpoints(self, session_id: str) -> list[dict[str, Any]]:
+        """List transparency checkpoints for a session."""
+        with self._lock:
+            rows = self.conn.execute(
+                """
+                SELECT checkpoint_id, session_id, root_hash, anchor_source, status,
+                       receipt_json, created_at
+                FROM transparency_checkpoints
+                WHERE session_id = ?
+                ORDER BY created_at ASC, checkpoint_id ASC
+                """,
+                (session_id,),
+            ).fetchall()
+        checkpoints: list[dict[str, Any]] = []
+        for row in rows:
+            receipt = json.loads(row["receipt_json"])
+            if not isinstance(receipt, dict):
+                receipt = {}
+            checkpoints.append(
+                {
+                    "checkpoint_id": row["checkpoint_id"],
+                    "session_id": row["session_id"],
+                    "root_hash": row["root_hash"],
+                    "anchor_source": row["anchor_source"],
+                    "status": row["status"],
+                    "receipt": receipt,
+                    "created_at": row["created_at"],
+                    "immutable": True,
+                }
+            )
+        return checkpoints
 
     def append(self, event: TraceEvent) -> None:
         """Append a trace event (insert-only)."""

@@ -168,6 +168,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P0-008 distributed idempotency/locking for quarantine and rollout.
 - [x] Implement P0-009 asymmetric evidence signatures + verification.
 - [x] Implement P0-010 immutable evidence archival (WORM-style path).
+- [x] Implement P0-011 external transparency checkpoint anchoring.
 - [ ] Continue sequential execution of P0 backlog to completion.
 
 ## Surprises & Discoveries
@@ -187,6 +188,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P0-008 success, prioritize P0-009 asymmetric evidence signatures.
 - After P0-009 success, prioritize P0-010 immutable archival support.
 - After P0-010 success, prioritize P0-011 external transparency checkpoint anchoring.
+- After P0-011 success, prioritize P0-012 signed policy provenance enforcement.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -219,3 +221,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - P0-010 completed with RED->GREEN->verify->doctor loop.
 - Added immutable `evidence_archives` storage with write-once idempotency and API archival export support (`archive=true`).
 - Evidence: targeted archive tests pass, `make verify` pass, `scripts/doctor.sh` pass.
+- P0-011 completed with RED->GREEN->verify->doctor loop.
+- Added immutable `transparency_checkpoints` storage and endpoint-level anchoring via `/sessions/{id}/transparency?anchor=true`.
+- Added guarded external checkpoint dispatch path with persisted anchor receipts and idempotent checkpoint IDs.
+- Evidence: targeted transparency anchor tests pass, `make verify` pass, `scripts/doctor.sh` pass.

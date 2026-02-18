@@ -83,3 +83,35 @@ def test_transparency_report_includes_verified_proofs(tmp_path) -> None:
     assert report["root_hash"]
     assert report["proofs"]
     assert all(entry["verified"] is True for entry in report["proofs"])
+
+
+def test_transparency_report_can_anchor_external_checkpoint(tmp_path) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        store.append(
+            TraceEvent(
+                event_id="evt-1",
+                timestamp=datetime(2026, 2, 16, 0, 0, tzinfo=UTC),
+                session_id="sess-anchor",
+                user_id=None,
+                agent_id=None,
+                tool_name="db_query",
+                arguments_hash="hash-1",
+                policy_version="v1",
+                policy_decision="ALLOW",
+                policy_reason="ok",
+                matched_rule="read_only_tools",
+                executed=True,
+                duration_ms=1,
+                error=None,
+                is_write_action=False,
+                approval_token_present=False,
+            )
+        )
+
+        log = TransparencyLog(trace_store=store)
+        first = log.build_session_report("sess-anchor", anchor=True)
+        second = log.build_session_report("sess-anchor", anchor=True)
+
+    assert first["checkpoints"]
+    assert first["checkpoints"][0]["status"] == "anchored"
+    assert first["checkpoints"][0]["checkpoint_id"] == second["checkpoints"][0]["checkpoint_id"]

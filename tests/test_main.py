@@ -601,6 +601,30 @@ def test_session_transparency_report_endpoint(client) -> None:
     assert all(item["verified"] for item in payload["proofs"])
 
 
+def test_session_transparency_report_can_anchor_checkpoint(client) -> None:
+    session_id = "transparency-anchor-session"
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": session_id,
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+        },
+    )
+
+    first = client.get(f"/sessions/{session_id}/transparency?anchor=true")
+    assert first.status_code == 200
+    first_payload = first.json()
+    assert first_payload["checkpoints"]
+    checkpoint_id = first_payload["checkpoints"][0]["checkpoint_id"]
+    assert first_payload["checkpoints"][0]["status"] == "anchored"
+
+    second = client.get(f"/sessions/{session_id}/transparency?anchor=true")
+    assert second.status_code == 200
+    second_payload = second.json()
+    assert second_payload["checkpoints"][0]["checkpoint_id"] == checkpoint_id
+
+
 def test_admin_replay_run_detail(client, monkeypatch) -> None:
     session_id = "replay-detail"
     client.post(

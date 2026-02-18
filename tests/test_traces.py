@@ -102,7 +102,7 @@ def test_trace_store_migrates_legacy_schema(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2, 3]
+        assert versions == [1, 2, 3, 4]
 
 
 def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
@@ -113,7 +113,7 @@ def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-    assert versions == [1, 2, 3]
+    assert versions == [1, 2, 3, 4]
 
 
 def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
@@ -138,7 +138,7 @@ def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2, 3]
+        assert versions == [1, 2, 3, 4]
 
 
 def test_hash_arguments_deterministic() -> None:
@@ -258,4 +258,34 @@ def test_evidence_archive_write_once_and_immutable(tmp_path) -> None:
             store.conn.execute(
                 "DELETE FROM evidence_archives WHERE archive_id = ?",
                 (archived["archive_id"],),
+            )
+
+
+def test_transparency_checkpoint_write_once_and_immutable(tmp_path) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        checkpoint = store.save_transparency_checkpoint(
+            session_id="sess-transparent",
+            root_hash="root-1",
+            anchor_source="local-ledger",
+            status="anchored",
+            receipt={"status": "anchored"},
+        )
+        repeated = store.save_transparency_checkpoint(
+            session_id="sess-transparent",
+            root_hash="root-1",
+            anchor_source="local-ledger",
+            status="anchored",
+            receipt={"status": "anchored"},
+        )
+        assert checkpoint["checkpoint_id"] == repeated["checkpoint_id"]
+        assert checkpoint["immutable"] is True
+
+        checkpoints = store.list_transparency_checkpoints("sess-transparent")
+        assert len(checkpoints) == 1
+        assert checkpoints[0]["status"] == "anchored"
+
+        with pytest.raises(sqlite3.DatabaseError, match="immutable"):
+            store.conn.execute(
+                "UPDATE transparency_checkpoints SET status = ? WHERE checkpoint_id = ?",
+                ("failed", checkpoint["checkpoint_id"]),
             )

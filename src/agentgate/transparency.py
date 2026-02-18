@@ -3,6 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import os
+from datetime import UTC, datetime
+from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 from agentgate.models import TraceEvent
 from agentgate.traces import TraceStore
@@ -77,7 +84,9 @@ class TransparencyLog:
     def __init__(self, *, trace_store: TraceStore) -> None:
         self.trace_store = trace_store
 
-    def build_session_report(self, session_id: str) -> dict[str, object]:
+    def build_session_report(
+        self, session_id: str, *, anchor: bool = False
+    ) -> dict[str, object]:
         traces = self.trace_store.query(session_id=session_id)
         leaf_hashes = [hash_leaf(_canonicalize_trace(trace)) for trace in traces]
         root_hash = build_merkle_root(leaf_hashes)
@@ -102,11 +111,28 @@ class TransparencyLog:
                     else True,
                 }
             )
+        if anchor:
+            anchor_source = os.getenv("AGENTGATE_TRANSPARENCY_ANCHOR_SOURCE", "local-ledger")
+            receipt, status = _anchor_checkpoint_receipt(
+                session_id=session_id,
+                root_hash=root_hash,
+                event_count=len(traces),
+                anchor_source=anchor_source,
+            )
+            self.trace_store.save_transparency_checkpoint(
+                session_id=session_id,
+                root_hash=root_hash,
+                anchor_source=anchor_source,
+                status=status,
+                receipt=receipt,
+            )
+        checkpoints = self.trace_store.list_transparency_checkpoints(session_id)
         return {
             "session_id": session_id,
             "event_count": len(traces),
             "root_hash": root_hash,
             "proofs": proofs,
+            "checkpoints": checkpoints,
         }
 
 
@@ -119,3 +145,68 @@ def _canonicalize_trace(trace: TraceEvent) -> str:
     return (
         f"{event_id}|{timestamp}|{tool_name}|{arguments_hash}|{policy_decision}"
     )
+
+
+def _anchor_checkpoint_receipt(
+    *,
+    session_id: str,
+    root_hash: str,
+    event_count: int,
+    anchor_source: str,
+) -> tuple[dict[str, Any], str]:
+    payload = {
+        "session_id": session_id,
+        "root_hash": root_hash,
+        "event_count": event_count,
+        "anchored_at": datetime.now(UTC).isoformat(),
+        "anchor_source": anchor_source,
+    }
+    url = os.getenv("AGENTGATE_TRANSPARENCY_ANCHOR_URL")
+    if not url:
+        return {
+            "mode": "local",
+            "status": "anchored",
+            "payload": payload,
+        }, "anchored"
+    parsed_url = urlparse(url)
+    if parsed_url.scheme not in {"http", "https"}:
+        return {
+            "mode": "external",
+            "status": "failed",
+            "url": url,
+            "payload": payload,
+            "error": "unsupported anchor URL scheme",
+        }, "failed"
+
+    request_body = json.dumps(payload, sort_keys=True).encode("utf-8")
+    request = Request(  # noqa: S310
+        url=url,
+        data=request_body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    timeout_seconds = float(os.getenv("AGENTGATE_TRANSPARENCY_ANCHOR_TIMEOUT", "2.0"))
+    try:
+        with urlopen(request, timeout=timeout_seconds) as response:  # noqa: S310  # nosec B310
+            response_body = response.read().decode("utf-8")
+            parsed: dict[str, Any] | str
+            try:
+                parsed = json.loads(response_body)
+            except json.JSONDecodeError:
+                parsed = response_body
+            return {
+                "mode": "external",
+                "status": "anchored",
+                "url": url,
+                "http_status": response.status,
+                "payload": payload,
+                "response": parsed,
+            }, "anchored"
+    except (HTTPError, URLError, OSError, ValueError) as exc:
+        return {
+            "mode": "external",
+            "status": "failed",
+            "url": url,
+            "payload": payload,
+            "error": str(exc),
+        }, "failed"
