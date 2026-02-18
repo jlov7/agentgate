@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-005 to P0-006 (schema migration system).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-006 to P0-007 (Redis HA/failover resilience).
 
 ## Status
 
@@ -37,17 +37,21 @@ In Progress
 27. [x] P0-005 GREEN: implement production trace-store backend migration path.
 28. [x] Run targeted tests for P0-005.
 29. [x] Re-run `make verify` and `scripts/doctor.sh`.
-30. [ ] P0-006 RED: add failing tests for schema versioning and migration ordering.
-31. [ ] P0-006 GREEN: implement rollback-safe migration runner.
-32. [ ] Run targeted tests for P0-006.
-33. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+30. [x] P0-006 RED: add failing tests for schema versioning and migration ordering.
+31. [x] P0-006 GREEN: implement rollback-safe migration runner.
+32. [x] Run targeted tests for P0-006.
+33. [x] Re-run `make verify` and `scripts/doctor.sh`.
+34. [ ] P0-007 RED: add failing tests for Redis degradation and failover behavior.
+35. [ ] P0-007 GREEN: implement resilient Redis client behavior and recovery.
+36. [ ] Run targeted tests for P0-007.
+37. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-005 is complete and verified; next priority is schema migration/versioning (`P0-006`).
+- P0-006 is complete and verified; next priority is Redis HA/failover resilience (`P0-007`).
 
 ## Open Questions
 
-- None blocking P0-006 implementation start.
+- None blocking P0-007 implementation start.

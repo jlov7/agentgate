@@ -75,7 +75,7 @@
 - [x] P0-003
 - [x] P0-004
 - [x] P0-005
-- [ ] P0-006
+- [x] P0-006
 - [ ] P0-007
 - [ ] P0-008
 - [ ] P0-009
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-006` Schema migration system with rollback-safe upgrade path.
-- Why now: Postgres migration compatibility path is complete; next blocker is deterministic, versioned schema evolution.
+- Active item: `P0-007` Redis HA/failover readiness and resilience tests.
+- Why now: Trace storage now has deterministic schema migrations; next blocker is resilient runtime behavior under Redis degradation/failover.
 
 ## Surprises & Discoveries (Live)
 
@@ -130,6 +130,7 @@
 - 2026-02-17: Move next to P0-002 after P0-001 delivered pluggable credential-provider support.
 - 2026-02-17: Move next to P0-005 after P0-002 landed with secret lifecycle hardening.
 - 2026-02-18: Move next to P0-006 after P0-005 landed with Postgres trace-store migration compatibility.
+- 2026-02-18: Move next to P0-007 after P0-006 landed with rollback-safe schema migrations.
 
 ## Outcomes & Retrospective (Live)
 
@@ -163,4 +164,9 @@
   - Added Postgres DSN detection and optional psycopg-backed connection adapter while preserving SQLite as default runtime behavior.
   - Added SQL normalization for SQLite placeholders/autoincrement semantics in the Postgres adapter path.
   - Added regression tests for DSN detection, SQL normalization behavior, and explicit runtime failure when psycopg is not installed.
+  - Evidence: `pytest tests/test_traces.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-18: Completed `P0-006` with trace-store schema migration versioning.
+  - Added `schema_migrations` tracking table and ordered migration execution for trace store bootstrap/backfill steps.
+  - Added explicit rollback-safe migration execution using savepoints so failed migration steps do not leave partial DDL state behind.
+  - Added regression tests for migration version tracking and rollback behavior on failing migration steps.
   - Evidence: `pytest tests/test_traces.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

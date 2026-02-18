@@ -96,6 +96,49 @@ def test_trace_store_migrates_legacy_schema(tmp_path) -> None:
         assert "policy_version" in columns
         assert "is_write_action" in columns
         assert "approval_token_present" in columns
+        versions = [
+            row[0]
+            for row in store.conn.execute(
+                "SELECT version FROM schema_migrations ORDER BY version ASC"
+            ).fetchall()
+        ]
+        assert versions == [1, 2]
+
+
+def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        versions = [
+            row[0]
+            for row in store.conn.execute(
+                "SELECT version FROM schema_migrations ORDER BY version ASC"
+            ).fetchall()
+        ]
+    assert versions == [1, 2]
+
+
+def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        def fail_after_ddl() -> None:
+            store.conn.execute(
+                "CREATE TABLE rollback_probe (id INTEGER PRIMARY KEY AUTOINCREMENT)"
+            )
+            raise RuntimeError("boom")
+
+        with pytest.raises(RuntimeError, match="Failed trace schema migration v999"):
+            store._apply_migration(999, "rollback_probe", fail_after_ddl)
+
+        probe = store.conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='rollback_probe'"
+        ).fetchone()
+        assert probe is None
+
+        versions = [
+            row[0]
+            for row in store.conn.execute(
+                "SELECT version FROM schema_migrations ORDER BY version ASC"
+            ).fetchall()
+        ]
+        assert versions == [1, 2]
 
 
 def test_hash_arguments_deterministic() -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime
 from threading import Lock
@@ -19,6 +20,8 @@ from agentgate.models import (
     RolloutRecord,
     TraceEvent,
 )
+
+MigrationStep = tuple[int, str, Callable[[], None]]
 
 
 def _is_postgres_dsn(db_path: str) -> bool:
@@ -60,6 +63,9 @@ class _PostgresConnectionAdapter:
 
     def commit(self) -> None:
         self._raw_conn.commit()
+
+    def rollback(self) -> None:
+        self._raw_conn.rollback()
 
     def close(self) -> None:
         self._raw_conn.close()
@@ -113,7 +119,82 @@ class TraceStore:
             self.close()
 
     def _init_schema(self) -> None:
-        """Initialize the trace schema if it does not exist."""
+        """Initialize and migrate trace schema to the latest version."""
+        self._ensure_migrations_table()
+        self._apply_migrations()
+
+    def _build_migrations(self) -> list[MigrationStep]:
+        return [
+            (1, "bootstrap_schema", self._migration_bootstrap_schema),
+            (2, "trace_columns_backfill", self._migrate_schema),
+        ]
+
+    def _ensure_migrations_table(self) -> None:
+        with self._lock:
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS schema_migrations (
+                    version INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            self.conn.commit()
+
+    def _applied_migration_versions(self) -> set[int]:
+        with self._lock:
+            rows = self.conn.execute(
+                "SELECT version FROM schema_migrations ORDER BY version ASC"
+            ).fetchall()
+        return {int(row["version"]) for row in rows}
+
+    def _apply_migrations(self) -> None:
+        migrations = self._build_migrations()
+        versions = [version for version, _, _ in migrations]
+        if versions != sorted(versions):
+            raise RuntimeError("Trace schema migrations must be ordered by version.")
+        if len(versions) != len(set(versions)):
+            raise RuntimeError("Trace schema migrations contain duplicate versions.")
+
+        applied_versions = self._applied_migration_versions()
+        for version, name, handler in migrations:
+            if version in applied_versions:
+                continue
+            self._apply_migration(version, name, handler)
+            applied_versions.add(version)
+
+    def _apply_migration(
+        self,
+        version: int,
+        name: str,
+        handler: Callable[[], None],
+    ) -> None:
+        savepoint = f"trace_schema_migration_v{version}"
+        with self._lock:
+            self.conn.execute(f"SAVEPOINT {savepoint}")
+        try:
+            handler()
+            with self._lock:
+                self.conn.execute(
+                    "INSERT INTO schema_migrations (version, name) VALUES (?, ?)",
+                    (version, name),
+                )
+                self.conn.execute(f"RELEASE SAVEPOINT {savepoint}")
+                self.conn.commit()
+        except Exception as exc:
+            with self._lock:
+                with suppress(Exception):
+                    self.conn.execute(f"ROLLBACK TO SAVEPOINT {savepoint}")
+                    self.conn.execute(f"RELEASE SAVEPOINT {savepoint}")
+                with suppress(Exception):
+                    self.conn.rollback()
+            raise RuntimeError(
+                f"Failed trace schema migration v{version} ({name})."
+            ) from exc
+
+    def _migration_bootstrap_schema(self) -> None:
+        """Create baseline schema objects if they do not exist."""
         with self._lock:
             self.conn.execute(
                 """
@@ -263,8 +344,6 @@ class TraceStore:
             self.conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_rollouts_tenant ON rollouts(tenant_id)"
             )
-            self.conn.commit()
-        self._migrate_schema()
 
     def _migrate_schema(self) -> None:
         """Add missing columns for backward compatibility."""
@@ -290,8 +369,6 @@ class TraceStore:
                 self.conn.execute(
                     f"ALTER TABLE traces ADD COLUMN {name} {col_type} DEFAULT {default}"
                 )
-            if missing:
-                self.conn.commit()
 
     def append(self, event: TraceEvent) -> None:
         """Append a trace event (insert-only)."""
