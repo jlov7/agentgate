@@ -53,6 +53,12 @@ class QuarantineCoordinator:
         if score < self.threshold:
             return None
 
+        persisted = self._latest_active_incident(session_id)
+        if persisted is not None:
+            self._active_incidents[session_id] = persisted.incident_id
+            self._risk_scores[session_id] = persisted.risk_score
+            return persisted.incident_id
+
         incident_id = f"incident-{uuid.uuid4()}"
         now = datetime.now(UTC)
         record = IncidentRecord(
@@ -66,8 +72,17 @@ class QuarantineCoordinator:
             released_by=None,
             released_at=None,
         )
+        try:
+            self.trace_store.save_incident(record)
+        except Exception as exc:
+            if _is_uniqueness_error(exc):
+                persisted = self._latest_active_incident(session_id)
+                if persisted is not None:
+                    self._active_incidents[session_id] = persisted.incident_id
+                    self._risk_scores[session_id] = persisted.risk_score
+                    return persisted.incident_id
+            raise
         self._active_incidents[session_id] = incident_id
-        self.trace_store.save_incident(record)
         self.trace_store.add_incident_event(
             IncidentEvent(
                 incident_id=incident_id,
@@ -147,6 +162,13 @@ class QuarantineCoordinator:
                     self._active_incidents[record.session_id] = record.incident_id
                     self._risk_scores[record.session_id] = record.risk_score
 
+    def _latest_active_incident(self, session_id: str) -> IncidentRecord | None:
+        records = self.trace_store.list_incidents(session_id)
+        for record in reversed(records):
+            if _is_active_status(record.status):
+                return record
+        return None
+
 
 def _score_risk(*, decision_action: str, error: str | None) -> int:
     if decision_action == "DENY":
@@ -160,3 +182,8 @@ def _score_risk(*, decision_action: str, error: str | None) -> int:
 
 def _is_active_status(status: str) -> bool:
     return status in {"quarantined", "revoked", "failed"}
+
+
+def _is_uniqueness_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return "unique constraint" in message or "duplicate key value" in message

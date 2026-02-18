@@ -161,3 +161,38 @@ async def test_quarantine_idempotent_across_restart(tmp_path) -> None:
         assert broker.calls == 1
         events = trace_store.list_incident_events(incident_id)
         assert len(events) == 2
+
+
+async def test_quarantine_reuses_persisted_active_incident_when_memory_stale(
+    tmp_path,
+) -> None:
+    redis = FakeRedis()
+    kill_switch = KillSwitch(redis)
+    broker = CountingBroker()
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        coordinator = QuarantineCoordinator(
+            trace_store=trace_store,
+            kill_switch=kill_switch,
+            credential_broker=broker,
+            threshold=1,
+        )
+        first_id = await coordinator.observe_tool_outcome(
+            session_id="sess-stale",
+            tool_name="db_insert",
+            decision_action="DENY",
+            error="Policy denied",
+        )
+        assert first_id is not None
+        assert broker.calls == 1
+
+        coordinator._active_incidents.clear()
+        coordinator._risk_scores.clear()
+
+        second_id = await coordinator.observe_tool_outcome(
+            session_id="sess-stale",
+            tool_name="db_insert",
+            decision_action="DENY",
+            error="Policy denied",
+        )
+        assert second_id == first_id
+        assert broker.calls == 1

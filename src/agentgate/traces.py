@@ -122,6 +122,7 @@ class TraceStore:
         """Initialize and migrate trace schema to the latest version."""
         self._ensure_migrations_table()
         self._apply_migrations()
+        self._ensure_runtime_idempotency_indexes()
 
     def _build_migrations(self) -> list[MigrationStep]:
         return [
@@ -192,6 +193,25 @@ class TraceStore:
             raise RuntimeError(
                 f"Failed trace schema migration v{version} ({name})."
             ) from exc
+
+    def _ensure_runtime_idempotency_indexes(self) -> None:
+        """Ensure idempotency/locking indexes exist even on pre-existing databases."""
+        with self._lock:
+            self.conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_incidents_active_session
+                ON incidents(session_id)
+                WHERE status IN ('quarantined', 'revoked', 'failed')
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_rollouts_active_tenant_versions
+                ON rollouts(tenant_id, baseline_version, candidate_version)
+                WHERE status IN ('queued', 'promoting')
+                """
+            )
+            self.conn.commit()
 
     def _migration_bootstrap_schema(self) -> None:
         """Create baseline schema objects if they do not exist."""

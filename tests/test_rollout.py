@@ -156,3 +156,35 @@ def test_rollout_auto_rolls_back_on_regression(tmp_path) -> None:
 
         assert rollout.status == "rolled_back"
         assert rollout.verdict == "fail"
+
+
+def test_rollout_start_is_idempotent_for_same_version_pair(tmp_path) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        controller = RolloutController(trace_store=trace_store, evaluator=CanaryEvaluator())
+        summary = ReplaySummary(
+            run_id="run-6",
+            total_events=2,
+            drifted_events=0,
+            by_severity={},
+        )
+        deltas: list[ReplayDelta] = []
+
+        first = controller.start_rollout(
+            tenant_id="tenant-idem",
+            baseline_version="v1",
+            candidate_version="v2",
+            summary=summary,
+            deltas=deltas,
+            error_rate=0.0,
+        )
+        second = controller.start_rollout(
+            tenant_id="tenant-idem",
+            baseline_version="v1",
+            candidate_version="v2",
+            summary=summary,
+            deltas=deltas,
+            error_rate=0.0,
+        )
+
+        assert second.rollout_id == first.rollout_id
+        assert len(trace_store.list_rollouts("tenant-idem")) == 1

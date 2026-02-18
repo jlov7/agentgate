@@ -101,6 +101,14 @@ class RolloutController:
         deltas: list[ReplayDelta],
         error_rate: float | None = None,
     ) -> RolloutRecord:
+        existing = self._find_existing_rollout(
+            tenant_id=tenant_id,
+            baseline_version=baseline_version,
+            candidate_version=candidate_version,
+        )
+        if existing is not None:
+            return existing
+
         if error_rate is None:
             error_rate = self.metrics.error_rate()
         decision = self.evaluator.evaluate(
@@ -127,7 +135,18 @@ class RolloutController:
             created_at=now,
             updated_at=now,
         )
-        self.trace_store.save_rollout(record)
+        try:
+            self.trace_store.save_rollout(record)
+        except Exception as exc:
+            if _is_uniqueness_error(exc):
+                existing = self._find_existing_rollout(
+                    tenant_id=tenant_id,
+                    baseline_version=baseline_version,
+                    candidate_version=candidate_version,
+                )
+                if existing is not None:
+                    return existing
+            raise
         return record
 
     def advance_rollout(self, rollout_id: str) -> RolloutRecord | None:
@@ -154,3 +173,23 @@ class RolloutController:
         record.updated_at = datetime.now(UTC)
         self.trace_store.save_rollout(record)
         return record
+
+    def _find_existing_rollout(
+        self,
+        *,
+        tenant_id: str,
+        baseline_version: str,
+        candidate_version: str,
+    ) -> RolloutRecord | None:
+        for record in reversed(self.trace_store.list_rollouts(tenant_id)):
+            if (
+                record.baseline_version == baseline_version
+                and record.candidate_version == candidate_version
+            ):
+                return record
+        return None
+
+
+def _is_uniqueness_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return "unique constraint" in message or "duplicate key value" in message
