@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import sqlite3
@@ -128,6 +129,7 @@ class TraceStore:
         return [
             (1, "bootstrap_schema", self._migration_bootstrap_schema),
             (2, "trace_columns_backfill", self._migrate_schema),
+            (3, "evidence_archives", self._migration_evidence_archives),
         ]
 
     def _ensure_migrations_table(self) -> None:
@@ -389,6 +391,211 @@ class TraceStore:
                 self.conn.execute(
                     f"ALTER TABLE traces ADD COLUMN {name} {col_type} DEFAULT {default}"
                 )
+
+    def _migration_evidence_archives(self) -> None:
+        """Create immutable evidence archive storage."""
+        with self._lock:
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS evidence_archives (
+                    archive_id TEXT PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    format TEXT NOT NULL,
+                    integrity_hash TEXT NOT NULL,
+                    payload_hash TEXT NOT NULL,
+                    payload_size_bytes INTEGER NOT NULL,
+                    payload_b64 TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_evidence_archives_unique_content
+                ON evidence_archives(session_id, format, integrity_hash)
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_evidence_archives_session
+                ON evidence_archives(session_id, created_at)
+                """
+            )
+            if self._is_postgres:
+                self.conn.execute(
+                    """
+                    CREATE OR REPLACE FUNCTION prevent_evidence_archives_mutation()
+                    RETURNS trigger
+                    AS $$
+                    BEGIN
+                        RAISE EXCEPTION 'evidence_archives are immutable';
+                    END;
+                    $$ LANGUAGE plpgsql
+                    """
+                )
+                self.conn.execute(
+                    """
+                    DROP TRIGGER IF EXISTS evidence_archives_no_update
+                    ON evidence_archives
+                    """
+                )
+                self.conn.execute(
+                    """
+                    CREATE TRIGGER evidence_archives_no_update
+                    BEFORE UPDATE ON evidence_archives
+                    FOR EACH ROW
+                    EXECUTE FUNCTION prevent_evidence_archives_mutation()
+                    """
+                )
+                self.conn.execute(
+                    """
+                    DROP TRIGGER IF EXISTS evidence_archives_no_delete
+                    ON evidence_archives
+                    """
+                )
+                self.conn.execute(
+                    """
+                    CREATE TRIGGER evidence_archives_no_delete
+                    BEFORE DELETE ON evidence_archives
+                    FOR EACH ROW
+                    EXECUTE FUNCTION prevent_evidence_archives_mutation()
+                    """
+                )
+                return
+            self.conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS evidence_archives_no_update
+                BEFORE UPDATE ON evidence_archives
+                BEGIN
+                    SELECT RAISE(ABORT, 'evidence_archives are immutable');
+                END;
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS evidence_archives_no_delete
+                BEFORE DELETE ON evidence_archives
+                BEGIN
+                    SELECT RAISE(ABORT, 'evidence_archives are immutable');
+                END;
+                """
+            )
+
+    def archive_evidence_pack(
+        self,
+        *,
+        session_id: str,
+        export_format: str,
+        payload: bytes,
+        integrity_hash: str,
+    ) -> dict[str, Any]:
+        """Persist immutable evidence payload and return archive metadata."""
+        normalized_format = export_format.strip().lower()
+        archive_key = f"{session_id}:{normalized_format}:{integrity_hash}".encode()
+        archive_id = hashlib.sha256(archive_key).hexdigest()
+        payload_hash = hashlib.sha256(payload).hexdigest()
+        payload_b64 = base64.b64encode(payload).decode("ascii")
+
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT INTO evidence_archives (
+                    archive_id,
+                    session_id,
+                    format,
+                    integrity_hash,
+                    payload_hash,
+                    payload_size_bytes,
+                    payload_b64
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(archive_id) DO NOTHING
+                """,
+                (
+                    archive_id,
+                    session_id,
+                    normalized_format,
+                    integrity_hash,
+                    payload_hash,
+                    len(payload),
+                    payload_b64,
+                ),
+            )
+            row = self.conn.execute(
+                """
+                SELECT archive_id, session_id, format, integrity_hash, payload_hash,
+                       payload_size_bytes, created_at
+                FROM evidence_archives
+                WHERE archive_id = ?
+                """,
+                (archive_id,),
+            ).fetchone()
+            self.conn.commit()
+
+        if row is None:
+            raise RuntimeError("Evidence archive persistence failed.")
+        return {
+            "archive_id": row["archive_id"],
+            "session_id": row["session_id"],
+            "format": row["format"],
+            "integrity_hash": row["integrity_hash"],
+            "payload_hash": row["payload_hash"],
+            "payload_size_bytes": int(row["payload_size_bytes"]),
+            "created_at": row["created_at"],
+            "immutable": True,
+        }
+
+    def list_evidence_archives(self, session_id: str) -> list[dict[str, Any]]:
+        """List immutable evidence archive metadata for a session."""
+        with self._lock:
+            rows = self.conn.execute(
+                """
+                SELECT archive_id, session_id, format, integrity_hash, payload_hash,
+                       payload_size_bytes, created_at
+                FROM evidence_archives
+                WHERE session_id = ?
+                ORDER BY created_at ASC, archive_id ASC
+                """,
+                (session_id,),
+            ).fetchall()
+        return [
+            {
+                "archive_id": row["archive_id"],
+                "session_id": row["session_id"],
+                "format": row["format"],
+                "integrity_hash": row["integrity_hash"],
+                "payload_hash": row["payload_hash"],
+                "payload_size_bytes": int(row["payload_size_bytes"]),
+                "created_at": row["created_at"],
+                "immutable": True,
+            }
+            for row in rows
+        ]
+
+    def get_evidence_archive(self, archive_id: str) -> dict[str, Any] | None:
+        """Fetch immutable archived evidence payload by archive ID."""
+        with self._lock:
+            row = self.conn.execute(
+                """
+                SELECT archive_id, session_id, format, integrity_hash, payload_hash,
+                       payload_size_bytes, payload_b64, created_at
+                FROM evidence_archives
+                WHERE archive_id = ?
+                """,
+                (archive_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "archive_id": row["archive_id"],
+            "session_id": row["session_id"],
+            "format": row["format"],
+            "integrity_hash": row["integrity_hash"],
+            "payload_hash": row["payload_hash"],
+            "payload_size_bytes": int(row["payload_size_bytes"]),
+            "payload": base64.b64decode(row["payload_b64"].encode("ascii")),
+            "created_at": row["created_at"],
+            "immutable": True,
+        }
 
     def append(self, event: TraceEvent) -> None:
         """Append a trace event (insert-only)."""

@@ -79,7 +79,7 @@
 - [x] P0-007
 - [x] P0-008
 - [x] P0-009
-- [ ] P0-010
+- [x] P0-010
 - [ ] P0-011
 - [ ] P0-012
 - [ ] P0-013
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-010` Immutable evidence archival (WORM/object lock path).
-- Why now: Evidence signing now supports asymmetric primitives and verification; next blocker is immutable archival guarantees for post-facto tamper resistance.
+- Active item: `P0-011` External transparency checkpoint anchoring.
+- Why now: Immutable archival is now implemented and verified; next blocker is externally anchored transparency checkpoints for third-party verifiability.
 
 ## Surprises & Discoveries (Live)
 
@@ -134,6 +134,7 @@
 - 2026-02-18: Move next to P0-008 after P0-007 landed with Redis retry/recovery behavior.
 - 2026-02-18: Move next to P0-009 after P0-008 landed with idempotent quarantine/rollout orchestration.
 - 2026-02-18: Move next to P0-010 after P0-009 landed with asymmetric evidence-signing support.
+- 2026-02-18: Move next to P0-011 after P0-010 landed with immutable evidence archival support.
 
 ## Outcomes & Retrospective (Live)
 
@@ -189,3 +190,9 @@
   - Added integrity signature verification helper supporting both `hmac-sha256` and `ed25519` signatures.
   - Added regression tests for `ed25519` signing and tamper-detection verification failures.
   - Evidence: `pytest tests/test_evidence.py -v` pass, `pytest tests/test_main.py tests/test_traces.py tests/test_rollout.py tests/test_quarantine.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-18: Completed `P0-010` with immutable evidence archival path.
+  - Added rollback-safe schema migration `v3` for `evidence_archives` and immutable DB guards (update/delete blocked by triggers).
+  - Added trace-store archive APIs with write-once idempotency by `(session_id, format, integrity_hash)` and payload retrieval/listing metadata.
+  - Added `/sessions/{session_id}/evidence?archive=true` support for JSON/HTML/PDF exports with archive metadata and headers.
+  - Added regression tests for archive write-once behavior, immutability enforcement, and API idempotent archive response semantics.
+  - Evidence: `pytest tests/test_traces.py tests/test_main.py::test_export_evidence_archive_write_once tests/test_main.py::test_export_evidence_formats -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

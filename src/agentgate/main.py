@@ -39,7 +39,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastapi import Body, FastAPI, Header, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -724,17 +724,22 @@ def create_app(
 
     @app.get("/sessions/{session_id}/evidence")
     async def export_evidence(
-        session_id: str, format: str = "json", theme: str = "studio"
+        session_id: str,
+        format: str = "json",
+        theme: str = "studio",
+        archive: bool = False,
     ) -> Response:
         """Export an evidence pack for a session.
 
         Args:
             session_id: The session to export evidence for
             format: Export format - "json" (default), "html", or "pdf"
+            archive: Persist immutable archive record for exported payload
         """
         metrics = get_metrics()
         exporter = app.state.evidence_exporter
         pack = exporter.export_session(session_id)
+        archive_record: dict[str, Any] | None = None
 
         requested_format = format.lower()
         allowed_formats = {"json", "html", "pdf"}
@@ -748,22 +753,48 @@ def create_app(
                 status_code=400,
             )
 
+        def _archive_headers(record: dict[str, Any] | None) -> dict[str, str]:
+            if record is None:
+                return {}
+            return {
+                "X-AgentGate-Evidence-Archive-Id": str(record["archive_id"]),
+                "X-AgentGate-Evidence-Archive-Immutable": "true",
+            }
+
+        def _persist_archive(payload: bytes, export_format: str) -> dict[str, Any] | None:
+            if not archive:
+                return None
+            integrity_hash = str(pack.integrity.get("hash", ""))
+            archive_payload = app.state.trace_store.archive_evidence_pack(
+                session_id=session_id,
+                export_format=export_format,
+                payload=payload,
+                integrity_hash=integrity_hash,
+            )
+            return cast(dict[str, Any], archive_payload)
+
         if requested_format == "html":
             metrics.evidence_exports_total.inc("html")
+            html_content = exporter.to_html(pack, theme=theme)
+            archive_record = _persist_archive(html_content.encode("utf-8"), "html")
             return Response(
-                content=exporter.to_html(pack, theme=theme),
+                content=html_content,
                 media_type="text/html",
+                headers=_archive_headers(archive_record),
             )
         if requested_format == "pdf":
             metrics.evidence_exports_total.inc("pdf")
             try:
                 pdf_content = exporter.to_pdf(pack, theme=theme)
+                archive_record = _persist_archive(pdf_content, "pdf")
+                headers = _archive_headers(archive_record)
+                headers["Content-Disposition"] = (
+                    f'attachment; filename="evidence_{session_id}.pdf"'
+                )
                 return Response(
                     content=pdf_content,
                     media_type="application/pdf",
-                    headers={
-                        "Content-Disposition": f'attachment; filename="evidence_{session_id}.pdf"'
-                    },
+                    headers=headers,
                 )
             except ImportError:
                 return JSONResponse(
@@ -780,7 +811,13 @@ def create_app(
             "anomalies": pack.anomalies,
             "integrity": pack.integrity,
         }
-        return JSONResponse(payload)
+        archive_payload = json.dumps(
+            payload, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        archive_record = _persist_archive(archive_payload, "json")
+        if archive_record is not None:
+            payload["archive"] = archive_record
+        return JSONResponse(payload, headers=_archive_headers(archive_record))
 
     @app.get("/sessions/{session_id}/transparency")
     async def get_transparency_report(session_id: str) -> JSONResponse:

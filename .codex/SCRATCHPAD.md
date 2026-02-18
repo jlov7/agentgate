@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-009 to P0-010 (immutable evidence archival path).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-010 to P0-011 (external transparency checkpoint anchoring).
 
 ## Status
 
@@ -53,17 +53,21 @@ In Progress
 43. [x] P0-009 GREEN: implement signer/verifier with pluggable KMS-compatible key loading.
 44. [x] Run targeted tests for P0-009.
 45. [x] Re-run `make verify` and `scripts/doctor.sh`.
-46. [ ] P0-010 RED: add failing tests for immutable archival/write-once evidence behavior.
-47. [ ] P0-010 GREEN: implement object-lock style immutable evidence archival path.
-48. [ ] Run targeted tests for P0-010.
-49. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+46. [x] P0-010 RED: add failing tests for immutable archival/write-once evidence behavior.
+47. [x] P0-010 GREEN: implement object-lock style immutable evidence archival path.
+48. [x] Run targeted tests for P0-010.
+49. [x] Re-run `make verify` and `scripts/doctor.sh`.
+50. [ ] P0-011 RED: add failing tests for external transparency checkpoint anchoring.
+51. [ ] P0-011 GREEN: implement checkpoint anchoring + verification path.
+52. [ ] Run targeted tests for P0-011.
+53. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-009 is complete and verified; next priority is immutable evidence archival (`P0-010`).
+- P0-010 is complete and verified; next priority is external transparency checkpoint anchoring (`P0-011`).
 
 ## Open Questions
 
-- None blocking P0-010 implementation start.
+- None blocking P0-011 implementation start.

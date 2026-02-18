@@ -102,7 +102,7 @@ def test_trace_store_migrates_legacy_schema(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2]
+        assert versions == [1, 2, 3]
 
 
 def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
@@ -113,7 +113,7 @@ def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-    assert versions == [1, 2]
+    assert versions == [1, 2, 3]
 
 
 def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
@@ -138,7 +138,7 @@ def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2]
+        assert versions == [1, 2, 3]
 
 
 def test_hash_arguments_deterministic() -> None:
@@ -218,3 +218,44 @@ def test_postgres_trace_store_requires_psycopg(monkeypatch) -> None:
     monkeypatch.setattr("agentgate.traces._import_psycopg", raise_import_error)
     with pytest.raises(RuntimeError, match="psycopg"):
         TraceStore("postgresql://user:pass@localhost:5432/agentgate")
+
+
+def test_evidence_archive_write_once_and_immutable(tmp_path) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        payload = b'{"metadata":{"session_id":"sess-archive"}}'
+        archived = store.archive_evidence_pack(
+            session_id="sess-archive",
+            export_format="json",
+            payload=payload,
+            integrity_hash="integrity-hash-1",
+        )
+        archived_repeat = store.archive_evidence_pack(
+            session_id="sess-archive",
+            export_format="json",
+            payload=payload,
+            integrity_hash="integrity-hash-1",
+        )
+
+        assert archived["archive_id"] == archived_repeat["archive_id"]
+        assert archived["immutable"] is True
+        assert archived["format"] == "json"
+        assert archived["integrity_hash"] == "integrity-hash-1"
+        assert archived["payload_size_bytes"] == len(payload)
+
+        archives = store.list_evidence_archives("sess-archive")
+        assert len(archives) == 1
+        archive = store.get_evidence_archive(archived["archive_id"])
+        assert archive is not None
+        assert archive["payload"] == payload
+
+        with pytest.raises(sqlite3.DatabaseError, match="immutable"):
+            store.conn.execute(
+                "UPDATE evidence_archives SET payload_b64 = ? WHERE archive_id = ?",
+                ("dGFtcGVyZWQ=", archived["archive_id"]),
+            )
+
+        with pytest.raises(sqlite3.DatabaseError, match="immutable"):
+            store.conn.execute(
+                "DELETE FROM evidence_archives WHERE archive_id = ?",
+                (archived["archive_id"],),
+            )

@@ -129,6 +129,32 @@ def test_export_evidence_formats(client) -> None:
     assert payload["metadata"]["session_id"] == session_id
 
 
+def test_export_evidence_archive_write_once(client) -> None:
+    session_id = "evidence-archive"
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": session_id,
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+        },
+    )
+
+    first = client.get(f"/sessions/{session_id}/evidence?format=json&archive=true")
+    assert first.status_code == 200
+    first_payload = first.json()
+    assert first_payload["archive"]["immutable"] is True
+    archive_id = first_payload["archive"]["archive_id"]
+
+    second = client.get(f"/sessions/{session_id}/evidence?format=json&archive=true")
+    assert second.status_code == 200
+    second_payload = second.json()
+    assert second_payload["archive"]["archive_id"] == archive_id
+
+    archives = client.app.state.trace_store.list_evidence_archives(session_id)
+    assert len(archives) == 1
+
+
 def test_export_evidence_invalid_format_returns_400(client) -> None:
     response = client.get("/sessions/evidence-formats/evidence?format=htm")
     assert response.status_code == 400

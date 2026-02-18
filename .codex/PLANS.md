@@ -163,6 +163,11 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P0-001 real credential broker integration.
 - [x] Implement P0-002 secret lifecycle hardening.
 - [x] Implement P0-005 trace-store Postgres migration path.
+- [x] Implement P0-006 rollback-safe schema migration system.
+- [x] Implement P0-007 Redis failover resilience path.
+- [x] Implement P0-008 distributed idempotency/locking for quarantine and rollout.
+- [x] Implement P0-009 asymmetric evidence signatures + verification.
+- [x] Implement P0-010 immutable evidence archival (WORM-style path).
 - [ ] Continue sequential execution of P0 backlog to completion.
 
 ## Surprises & Discoveries
@@ -177,6 +182,11 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P0-001 success, prioritize P0-002 secret lifecycle hardening and rotation safety.
 - After P0-002 success, prioritize P0-005 trace-store backend migration for production durability.
 - After P0-005 success, prioritize P0-006 schema migration/versioning system.
+- After P0-006 success, prioritize P0-007 Redis HA/failover resilience.
+- After P0-007 success, prioritize P0-008 distributed idempotency/locking semantics.
+- After P0-008 success, prioritize P0-009 asymmetric evidence signatures.
+- After P0-009 success, prioritize P0-010 immutable archival support.
+- After P0-010 success, prioritize P0-011 external transparency checkpoint anchoring.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -194,3 +204,18 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added SQL compatibility normalization for qmark placeholders and SQLite autoincrement declarations in the Postgres adapter path.
 - Added regression tests for DSN detection, SQL normalization behavior, and explicit error when psycopg is unavailable.
 - Evidence: `pytest tests/test_traces.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P0-006 completed with RED->GREEN->verify->doctor loop.
+- Added versioned schema migration tracking and rollback-safe migration execution via savepoints.
+- Evidence: `pytest tests/test_traces.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass.
+- P0-007 completed with RED->GREEN->verify->doctor loop.
+- Added retry/recovery behavior for Redis kill-switch operations while preserving fail-closed behavior.
+- Evidence: targeted resilience tests pass, `make verify` pass, `scripts/doctor.sh` pass.
+- P0-008 completed with RED->GREEN->verify->doctor loop.
+- Added idempotent quarantine/rollout start behavior backed by active-state uniqueness constraints.
+- Evidence: targeted idempotency tests pass, `make verify` pass, `scripts/doctor.sh` pass.
+- P0-009 completed with RED->GREEN->verify->doctor loop.
+- Added `ed25519` signing backend and cross-backend integrity signature verification.
+- Evidence: `pytest tests/test_evidence.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass.
+- P0-010 completed with RED->GREEN->verify->doctor loop.
+- Added immutable `evidence_archives` storage with write-once idempotency and API archival export support (`archive=true`).
+- Evidence: targeted archive tests pass, `make verify` pass, `scripts/doctor.sh` pass.
