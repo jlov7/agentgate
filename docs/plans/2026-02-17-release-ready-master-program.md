@@ -76,7 +76,7 @@
 - [x] P0-004
 - [x] P0-005
 - [x] P0-006
-- [ ] P0-007
+- [x] P0-007
 - [ ] P0-008
 - [ ] P0-009
 - [ ] P0-010
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-007` Redis HA/failover readiness and resilience tests.
-- Why now: Trace storage now has deterministic schema migrations; next blocker is resilient runtime behavior under Redis degradation/failover.
+- Active item: `P0-008` Distributed idempotency/locking for quarantine+rollout.
+- Why now: Redis transient-failure handling is now hardened; next blocker is multi-node race safety for containment/rollout orchestration.
 
 ## Surprises & Discoveries (Live)
 
@@ -131,6 +131,7 @@
 - 2026-02-17: Move next to P0-005 after P0-002 landed with secret lifecycle hardening.
 - 2026-02-18: Move next to P0-006 after P0-005 landed with Postgres trace-store migration compatibility.
 - 2026-02-18: Move next to P0-007 after P0-006 landed with rollback-safe schema migrations.
+- 2026-02-18: Move next to P0-008 after P0-007 landed with Redis retry/recovery behavior.
 
 ## Outcomes & Retrospective (Live)
 
@@ -170,3 +171,8 @@
   - Added explicit rollback-safe migration execution using savepoints so failed migration steps do not leave partial DDL state behind.
   - Added regression tests for migration version tracking and rollback behavior on failing migration steps.
   - Evidence: `pytest tests/test_traces.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-18: Completed `P0-007` with Redis resilience improvements in kill-switch path.
+  - Added retry-once behavior with connection pool recovery for Redis operations used by kill-switch checks and mutations.
+  - Preserved fail-closed posture when retries are exhausted (`Kill switch unavailable`).
+  - Added regression tests for transient read/write failure recovery and retry semantics.
+  - Evidence: `pytest tests/test_killswitch.py tests/test_gateway.py tests/test_main.py tests/test_quarantine.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

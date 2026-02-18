@@ -120,3 +120,82 @@ async def test_kill_switch_error_handling() -> None:
     assert await kill_switch.global_pause("reason") is False
     assert await kill_switch.resume() is False
     assert await kill_switch.health() is False
+
+
+@pytest.mark.asyncio
+async def test_kill_switch_retries_transient_redis_errors() -> None:
+    class FlakyRedis:
+        def __init__(self) -> None:
+            self._data = {"agentgate:killed:session:sess": "session blocked"}
+            self.exists_calls = 0
+            self.disconnect_calls = 0
+            self.connection_pool = self
+
+        async def disconnect(self) -> None:
+            self.disconnect_calls += 1
+
+        async def exists(self, key: str) -> int:
+            self.exists_calls += 1
+            if self.exists_calls == 1:
+                raise RuntimeError("transient")
+            return 1 if key in self._data else 0
+
+        async def get(self, key: str) -> str | None:
+            return self._data.get(key)
+
+        async def set(self, key: str, value: str) -> None:
+            self._data[key] = value
+
+        async def delete(self, key: str) -> None:
+            self._data.pop(key, None)
+
+        async def ping(self) -> bool:
+            return True
+
+    redis = FlakyRedis()
+    kill_switch = KillSwitch(redis, max_retries=1)
+
+    blocked, reason = await kill_switch.is_blocked("sess", "db_query")
+    assert blocked is True
+    assert reason == "session blocked"
+    assert redis.disconnect_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_kill_switch_retries_write_operation() -> None:
+    class FlakySetRedis:
+        def __init__(self) -> None:
+            self.set_calls = 0
+            self.disconnect_calls = 0
+            self.connection_pool = self
+            self.values: dict[str, str] = {}
+
+        async def disconnect(self) -> None:
+            self.disconnect_calls += 1
+
+        async def exists(self, key: str) -> int:
+            return 1 if key in self.values else 0
+
+        async def get(self, key: str) -> str | None:
+            return self.values.get(key)
+
+        async def set(self, key: str, value: str) -> None:
+            self.set_calls += 1
+            if self.set_calls == 1:
+                raise RuntimeError("transient")
+            self.values[key] = value
+
+        async def delete(self, key: str) -> None:
+            self.values.pop(key, None)
+
+        async def ping(self) -> bool:
+            return True
+
+    redis = FlakySetRedis()
+    kill_switch = KillSwitch(redis, max_retries=1)
+
+    ok = await kill_switch.kill_session("sess", "reason")
+    assert ok is True
+    assert redis.set_calls == 2
+    assert redis.disconnect_calls == 1
+    assert redis.values["agentgate:killed:session:sess"] == "reason"

@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-006 to P0-007 (Redis HA/failover resilience).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-007 to P0-008 (distributed idempotency/locking).
 
 ## Status
 
@@ -41,17 +41,21 @@ In Progress
 31. [x] P0-006 GREEN: implement rollback-safe migration runner.
 32. [x] Run targeted tests for P0-006.
 33. [x] Re-run `make verify` and `scripts/doctor.sh`.
-34. [ ] P0-007 RED: add failing tests for Redis degradation and failover behavior.
-35. [ ] P0-007 GREEN: implement resilient Redis client behavior and recovery.
-36. [ ] Run targeted tests for P0-007.
-37. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+34. [x] P0-007 RED: add failing tests for Redis degradation and failover behavior.
+35. [x] P0-007 GREEN: implement resilient Redis client behavior and recovery.
+36. [x] Run targeted tests for P0-007.
+37. [x] Re-run `make verify` and `scripts/doctor.sh`.
+38. [ ] P0-008 RED: add failing tests for distributed idempotency and lock semantics.
+39. [ ] P0-008 GREEN: implement idempotency/locking guarantees for quarantine and rollout orchestration.
+40. [ ] Run targeted tests for P0-008.
+41. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-006 is complete and verified; next priority is Redis HA/failover resilience (`P0-007`).
+- P0-007 is complete and verified; next priority is distributed idempotency/locking (`P0-008`).
 
 ## Open Questions
 
-- None blocking P0-007 implementation start.
+- None blocking P0-008 implementation start.
