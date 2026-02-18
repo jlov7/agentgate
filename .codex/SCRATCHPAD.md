@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-012 to P0-013 (mTLS service identity between control-plane components).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-013 to P0-014 (tenant data isolation enforcement across APIs/storage).
 
 ## Status
 
@@ -65,17 +65,21 @@ In Progress
 55. [x] P0-012 GREEN: enforce signed provenance in policy load path.
 56. [x] Run targeted tests for P0-012.
 57. [x] Re-run `make verify` and `scripts/doctor.sh`.
-58. [ ] P0-013 RED: add failing tests for mTLS service identity between control-plane components.
-59. [ ] P0-013 GREEN: implement mTLS client/server identity validation.
-60. [ ] Run targeted tests for P0-013.
-61. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+58. [x] P0-013 RED: add failing tests for mTLS service identity between control-plane components.
+59. [x] P0-013 GREEN: implement mTLS client/server identity validation.
+60. [x] Run targeted tests for P0-013.
+61. [x] Re-run `make verify` and `scripts/doctor.sh`.
+62. [ ] P0-014 RED: add failing tests for tenant data isolation enforcement.
+63. [ ] P0-014 GREEN: enforce tenant isolation across API/storage paths.
+64. [ ] Run targeted tests for P0-014.
+65. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-012 is complete and verified; next priority is mTLS service identity (`P0-013`).
+- P0-013 is complete and verified; next priority is tenant isolation enforcement (`P0-014`).
 
 ## Open Questions
 
-- None blocking P0-013 implementation start.
+- None blocking P0-014 implementation start.

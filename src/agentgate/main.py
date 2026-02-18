@@ -173,6 +173,24 @@ def _get_supported_api_versions() -> list[str]:
     return ordered
 
 
+def _is_mtls_enabled() -> bool:
+    value = os.getenv("AGENTGATE_MTLS_ENABLED", "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
+def _get_mtls_client_material() -> tuple[str, str, str]:
+    ca_file = os.getenv("AGENTGATE_MTLS_CA_FILE", "").strip()
+    cert_file = os.getenv("AGENTGATE_MTLS_CLIENT_CERT_FILE", "").strip()
+    key_file = os.getenv("AGENTGATE_MTLS_CLIENT_KEY_FILE", "").strip()
+    if not ca_file or not cert_file or not key_file:
+        raise RuntimeError(
+            "mTLS enabled but certificate material is incomplete "
+            "(AGENTGATE_MTLS_CA_FILE, AGENTGATE_MTLS_CLIENT_CERT_FILE, "
+            "AGENTGATE_MTLS_CLIENT_KEY_FILE)"
+        )
+    return ca_file, cert_file, key_file
+
+
 def _get_rate_limit_window_seconds() -> int:
     window = os.getenv("AGENTGATE_RATE_WINDOW_SECONDS", "60")
     try:
@@ -340,10 +358,23 @@ def _get_webhook_url() -> str | None:
 
 def _create_redis_client(redis_url: str) -> Redis:
     """Create Redis client with connection pooling."""
+    kwargs: dict[str, Any] = {
+        "decode_responses": True,
+        "max_connections": 20,  # Connection pooling for better performance
+    }
+    if _is_mtls_enabled():
+        ca_file, cert_file, key_file = _get_mtls_client_material()
+        kwargs.update(
+            {
+                "ssl": True,
+                "ssl_ca_certs": ca_file,
+                "ssl_certfile": cert_file,
+                "ssl_keyfile": key_file,
+            }
+        )
     return Redis.from_url(
         redis_url,
-        decode_responses=True,
-        max_connections=20,  # Connection pooling for better performance
+        **kwargs,
     )
 
 

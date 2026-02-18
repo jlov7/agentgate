@@ -14,6 +14,7 @@ import pytest
 
 from agentgate.main import (
     MAX_REQUEST_SIZE,
+    _create_redis_client,
     _get_policy_path,
     _get_rate_limit_window_seconds,
     _validate_secret_baseline,
@@ -265,6 +266,44 @@ def test_get_policy_path_falls_back_to_repo(monkeypatch, tmp_path) -> None:
     monkeypatch.chdir(cwd_root)
 
     assert _get_policy_path() == repo_root / "policies"
+
+
+def test_create_redis_client_requires_mtls_material(monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_MTLS_ENABLED", "true")
+    monkeypatch.delenv("AGENTGATE_MTLS_CA_FILE", raising=False)
+    monkeypatch.delenv("AGENTGATE_MTLS_CLIENT_CERT_FILE", raising=False)
+    monkeypatch.delenv("AGENTGATE_MTLS_CLIENT_KEY_FILE", raising=False)
+
+    with pytest.raises(RuntimeError, match="mTLS"):
+        _create_redis_client("redis://localhost:6379/0")
+
+
+def test_create_redis_client_uses_mtls_kwargs(monkeypatch, tmp_path) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeRedis:
+        @staticmethod
+        def from_url(url: str, **kwargs):
+            captured["url"] = url
+            captured["kwargs"] = kwargs
+            return object()
+
+    ca_file = tmp_path / "ca.pem"
+    cert_file = tmp_path / "client.pem"
+    key_file = tmp_path / "client.key"
+    monkeypatch.setenv("AGENTGATE_MTLS_ENABLED", "true")
+    monkeypatch.setenv("AGENTGATE_MTLS_CA_FILE", str(ca_file))
+    monkeypatch.setenv("AGENTGATE_MTLS_CLIENT_CERT_FILE", str(cert_file))
+    monkeypatch.setenv("AGENTGATE_MTLS_CLIENT_KEY_FILE", str(key_file))
+    monkeypatch.setattr("agentgate.main.Redis", FakeRedis)
+
+    _create_redis_client("redis://localhost:6379/0")
+    kwargs = captured["kwargs"]
+    assert isinstance(kwargs, dict)
+    assert kwargs["ssl"] is True
+    assert kwargs["ssl_ca_certs"] == str(ca_file)
+    assert kwargs["ssl_certfile"] == str(cert_file)
+    assert kwargs["ssl_keyfile"] == str(key_file)
 
 
 def test_list_sessions_endpoint(client) -> None:

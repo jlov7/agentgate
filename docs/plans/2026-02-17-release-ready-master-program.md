@@ -82,7 +82,7 @@
 - [x] P0-010
 - [x] P0-011
 - [x] P0-012
-- [ ] P0-013
+- [x] P0-013
 - [ ] P0-014
 - [ ] P0-015
 - [ ] P0-016
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-013` mTLS service identity between control-plane components.
-- Why now: Signed policy provenance enforcement now passes full gates; next blocker is authenticated service-to-service identity for control-plane traffic.
+- Active item: `P0-014` Tenant data isolation enforcement across APIs/storage.
+- Why now: mTLS service identity controls now pass full gates; next blocker is strict tenant data boundary enforcement.
 
 ## Surprises & Discoveries (Live)
 
@@ -137,6 +137,7 @@
 - 2026-02-18: Move next to P0-011 after P0-010 landed with immutable evidence archival support.
 - 2026-02-18: Move next to P0-012 after P0-011 landed with external transparency checkpoint anchoring.
 - 2026-02-18: Move next to P0-013 after P0-012 landed with signed policy provenance enforcement.
+- 2026-02-18: Move next to P0-014 after P0-013 landed with mTLS service identity controls.
 
 ## Outcomes & Retrospective (Live)
 
@@ -209,3 +210,8 @@
   - Added reload-time enforcement so `/admin/policies/reload` fails closed when strict provenance is enabled and signed package validation fails.
   - Added regression tests for strict-mode unsigned rejection, strict-mode signed acceptance, and admin reload rejection behavior.
   - Evidence: `pytest tests/test_policy.py::test_load_policy_data_requires_signed_package_in_strict_mode tests/test_policy.py::test_load_policy_data_accepts_signed_package_in_strict_mode tests/test_main.py::test_reload_policies_rejects_unsigned_bundle_in_strict_mode -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-18: Completed `P0-013` with mTLS service identity controls.
+  - Added mTLS material enforcement for OPA policy client traffic via `AGENTGATE_MTLS_*` environment settings.
+  - Added mTLS material enforcement for Redis client creation used by kill-switch/quarantine control-plane paths.
+  - Added regression tests for missing mTLS material failures and positive mTLS wiring for both OPA and Redis client constructors.
+  - Evidence: `pytest tests/test_policy.py::test_policy_client_requires_mtls_material_when_enabled tests/test_policy.py::test_policy_client_uses_mtls_httpx_kwargs tests/test_main.py::test_create_redis_client_requires_mtls_material tests/test_main.py::test_create_redis_client_uses_mtls_kwargs -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

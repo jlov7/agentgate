@@ -408,6 +408,66 @@ def test_policy_client_preserves_non_slash_suffix(tmp_path) -> None:
     assert client.opa_url == "http://localhost:8181/X"
 
 
+def test_policy_client_requires_mtls_material_when_enabled(
+    monkeypatch, tmp_path
+) -> None:
+    path = tmp_path / "policy.json"
+    path.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("AGENTGATE_MTLS_ENABLED", "true")
+    monkeypatch.delenv("AGENTGATE_MTLS_CA_FILE", raising=False)
+    monkeypatch.delenv("AGENTGATE_MTLS_CLIENT_CERT_FILE", raising=False)
+    monkeypatch.delenv("AGENTGATE_MTLS_CLIENT_KEY_FILE", raising=False)
+
+    with pytest.raises(RuntimeError, match="mTLS"):
+        PolicyClient("https://opa.internal", path)
+
+
+@pytest.mark.asyncio
+async def test_policy_client_uses_mtls_httpx_kwargs(monkeypatch, tmp_path) -> None:
+    path = tmp_path / "policy.json"
+    path.write_text("{}", encoding="utf-8")
+    ca_file = tmp_path / "ca.pem"
+    cert_file = tmp_path / "client.pem"
+    key_file = tmp_path / "client.key"
+    monkeypatch.setenv("AGENTGATE_MTLS_ENABLED", "true")
+    monkeypatch.setenv("AGENTGATE_MTLS_CA_FILE", str(ca_file))
+    monkeypatch.setenv("AGENTGATE_MTLS_CLIENT_CERT_FILE", str(cert_file))
+    monkeypatch.setenv("AGENTGATE_MTLS_CLIENT_KEY_FILE", str(key_file))
+
+    class MTLSClient:
+        last_verify = None
+        last_cert = None
+        last_timeout = None
+
+        def __init__(
+            self,
+            timeout: float | None = None,
+            verify: str | None = None,
+            cert: tuple[str, str] | None = None,
+            *args,
+            **kwargs,
+        ) -> None:
+            MTLSClient.last_timeout = timeout
+            MTLSClient.last_verify = verify
+            MTLSClient.last_cert = cert
+
+        async def __aenter__(self) -> MTLSClient:
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        async def get(self, url: str, *args, **kwargs):
+            return type("Response", (), {"status_code": 200})()
+
+    monkeypatch.setattr("agentgate.policy.httpx.AsyncClient", MTLSClient)
+    client = PolicyClient("https://opa.internal", path)
+    assert await client.health() is True
+    assert MTLSClient.last_timeout == 2.0
+    assert MTLSClient.last_verify == str(ca_file)
+    assert MTLSClient.last_cert == (str(cert_file), str(key_file))
+
+
 @pytest.mark.asyncio
 async def test_policy_client_evaluate_uses_timeout_and_url(monkeypatch, tmp_path) -> None:
     path = tmp_path / "policy.json"

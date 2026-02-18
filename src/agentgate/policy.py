@@ -31,6 +31,24 @@ def require_signed_policy_packages() -> bool:
     return os.getenv("AGENTGATE_ENV", "").strip().lower() == "production"
 
 
+def _httpx_mtls_kwargs() -> dict[str, Any]:
+    if not _is_truthy(os.getenv("AGENTGATE_MTLS_ENABLED")):
+        return {}
+    ca_file = os.getenv("AGENTGATE_MTLS_CA_FILE", "").strip()
+    cert_file = os.getenv("AGENTGATE_MTLS_CLIENT_CERT_FILE", "").strip()
+    key_file = os.getenv("AGENTGATE_MTLS_CLIENT_KEY_FILE", "").strip()
+    if not ca_file or not cert_file or not key_file:
+        raise RuntimeError(
+            "mTLS enabled but certificate material is incomplete "
+            "(AGENTGATE_MTLS_CA_FILE, AGENTGATE_MTLS_CLIENT_CERT_FILE, "
+            "AGENTGATE_MTLS_CLIENT_KEY_FILE)"
+        )
+    return {
+        "verify": ca_file,
+        "cert": (cert_file, key_file),
+    }
+
+
 def get_required_approval_token() -> str:
     """Return the configured approval token."""
     return os.getenv("AGENTGATE_APPROVAL_TOKEN", "approved")
@@ -53,6 +71,7 @@ class PolicyClient:
     def __init__(self, opa_url: str, policy_data_path: Path) -> None:
         self.opa_url = opa_url.rstrip("/")
         self.policy_data = load_policy_data(policy_data_path)
+        self._httpx_kwargs = _httpx_mtls_kwargs()
 
     async def evaluate(self, request: ToolCallRequest) -> PolicyDecision:
         """Evaluate a policy decision by calling OPA."""
@@ -67,7 +86,7 @@ class PolicyClient:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
+            async with httpx.AsyncClient(timeout=5.0, **self._httpx_kwargs) as client:
                 response = await client.post(
                     f"{self.opa_url}/v1/data/agentgate/decision",
                     json={"input": input_data},
@@ -100,7 +119,7 @@ class PolicyClient:
     async def health(self) -> bool:
         """Check if OPA is reachable."""
         try:
-            async with httpx.AsyncClient(timeout=2.0) as client:
+            async with httpx.AsyncClient(timeout=2.0, **self._httpx_kwargs) as client:
                 response = await client.get(f"{self.opa_url}/health")
                 return response.status_code == 200
         except Exception:
