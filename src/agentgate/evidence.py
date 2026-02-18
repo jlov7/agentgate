@@ -15,6 +15,7 @@ Evidence packs can be exported in JSON, HTML, and PDF formats.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import html
@@ -37,6 +38,73 @@ def _get_signing_key() -> bytes | None:
     if key:
         return key.encode("utf-8")
     return None
+
+
+def _get_signing_backend() -> str:
+    backend = os.getenv("AGENTGATE_SIGNING_BACKEND", "hmac").strip().lower()
+    return backend or "hmac"
+
+
+def _get_key_material(value_env: str, file_env: str) -> str | None:
+    value = os.getenv(value_env)
+    if value:
+        return value
+    file_path = os.getenv(file_env)
+    if not file_path:
+        return None
+    try:
+        with open(file_path, encoding="utf-8") as handle:
+            return handle.read()
+    except OSError:
+        return None
+
+
+def _load_ed25519_private_key() -> Any | None:
+    material = _get_key_material(
+        "AGENTGATE_SIGNING_PRIVATE_KEY",
+        "AGENTGATE_SIGNING_PRIVATE_KEY_FILE",
+    )
+    if not material:
+        return None
+    try:
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import ed25519
+    except ImportError:
+        return None
+    key = serialization.load_pem_private_key(material.encode("utf-8"), password=None)
+    if not isinstance(key, ed25519.Ed25519PrivateKey):
+        return None
+    return key
+
+
+def _load_ed25519_public_key() -> Any | None:
+    material = _get_key_material(
+        "AGENTGATE_SIGNING_PUBLIC_KEY",
+        "AGENTGATE_SIGNING_PUBLIC_KEY_FILE",
+    )
+    if material:
+        try:
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.primitives.asymmetric import ed25519
+        except ImportError:
+            return None
+        key = serialization.load_pem_public_key(material.encode("utf-8"))
+        if isinstance(key, ed25519.Ed25519PublicKey):
+            return key
+
+    private_key = _load_ed25519_private_key()
+    if private_key is None:
+        return None
+    return private_key.public_key()
+
+
+def _base64url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode("utf-8").rstrip("=")
+
+
+def _base64url_decode(value: str) -> bytes:
+    padding = "=" * (-len(value) % 4)
+    return base64.urlsafe_b64decode(value + padding)
 
 
 def _ensure_weasyprint_paths() -> None:
@@ -654,19 +722,66 @@ class EvidenceExporter:
             "transparency_algorithm": "sha256-merkle-v1",
         }
 
-        # Add cryptographic signature if signing key is configured
-        signing_key = _get_signing_key()
-        if signing_key:
-            signature = hmac.new(
-                signing_key,
-                hash_input,
-                hashlib.sha256,
-            ).hexdigest()
-            integrity["signature"] = signature
-            integrity["signature_algorithm"] = "hmac-sha256"
-            integrity["signed_at"] = datetime.now(UTC).isoformat()
+        signing_backend = _get_signing_backend()
+        if signing_backend == "ed25519":
+            private_key = _load_ed25519_private_key()
+            if private_key is not None:
+                from cryptography.hazmat.primitives import serialization
+
+                public_key = private_key.public_key()
+                signature = private_key.sign(hash_input)
+                public_bytes = public_key.public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+                integrity["signature"] = _base64url_encode(signature)
+                integrity["signature_algorithm"] = "ed25519"
+                integrity["key_id"] = hashlib.sha256(public_bytes).hexdigest()[:16]
+                integrity["signed_at"] = datetime.now(UTC).isoformat()
+        else:
+            signing_key = _get_signing_key()
+            if signing_key:
+                signature = hmac.new(
+                    signing_key,
+                    hash_input,
+                    hashlib.sha256,
+                ).hexdigest()
+                integrity["signature"] = signature
+                integrity["signature_algorithm"] = "hmac-sha256"
+                integrity["signed_at"] = datetime.now(UTC).isoformat()
 
         return integrity
+
+
+def verify_integrity_signature(integrity: dict[str, Any], event_ids: list[str]) -> bool:
+    signature = integrity.get("signature")
+    algorithm = integrity.get("signature_algorithm")
+    if not isinstance(signature, str) or not isinstance(algorithm, str):
+        return False
+
+    hash_input = "".join(event_ids).encode("utf-8")
+    if algorithm == "hmac-sha256":
+        key = _get_signing_key()
+        if key is None:
+            return False
+        expected = hmac.new(key, hash_input, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(signature, expected)
+
+    if algorithm == "ed25519":
+        public_key = _load_ed25519_public_key()
+        if public_key is None:
+            return False
+        try:
+            from cryptography.exceptions import InvalidSignature
+        except ImportError:
+            return False
+        try:
+            public_key.verify(_base64url_decode(signature), hash_input)
+            return True
+        except (InvalidSignature, ValueError):
+            return False
+
+    return False
 
 
 def _calculate_time_range(traces: list[TraceEvent]) -> dict[str, str | None]:

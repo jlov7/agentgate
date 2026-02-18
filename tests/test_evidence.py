@@ -9,7 +9,11 @@ from types import ModuleType
 
 import pytest
 
-from agentgate.evidence import EvidenceExporter, _ensure_weasyprint_paths
+from agentgate.evidence import (
+    EvidenceExporter,
+    _ensure_weasyprint_paths,
+    verify_integrity_signature,
+)
 from agentgate.models import (
     IncidentEvent,
     IncidentRecord,
@@ -280,7 +284,12 @@ def test_exporter_signing_and_metadata_identity(tmp_path, monkeypatch) -> None:
                 is_write_action=True,
             )
         )
+        monkeypatch.setenv("AGENTGATE_SIGNING_BACKEND", "hmac")
         monkeypatch.setenv("AGENTGATE_SIGNING_KEY", "secret")
+        monkeypatch.delenv("AGENTGATE_SIGNING_PRIVATE_KEY", raising=False)
+        monkeypatch.delenv("AGENTGATE_SIGNING_PRIVATE_KEY_FILE", raising=False)
+        monkeypatch.delenv("AGENTGATE_SIGNING_PUBLIC_KEY", raising=False)
+        monkeypatch.delenv("AGENTGATE_SIGNING_PUBLIC_KEY_FILE", raising=False)
 
         exporter = EvidenceExporter(trace_store, version="0.1.0")
         pack = exporter.export_session("sess-1")
@@ -291,6 +300,38 @@ def test_exporter_signing_and_metadata_identity(tmp_path, monkeypatch) -> None:
         assert set(pack.summary["policy_versions_used"]) == {"v1", "v2"}
         assert pack.integrity["signature"]
         assert pack.integrity["signature_algorithm"] == "hmac-sha256"
+
+
+def test_exporter_ed25519_signing_and_verification(tmp_path, monkeypatch) -> None:
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ed25519
+
+    private_key = ed25519.Ed25519PrivateKey.generate()
+    private_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode("utf-8")
+    public_pem = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    ).decode("utf-8")
+
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(_build_trace("event-1", "ALLOW", "db_query"))
+
+        monkeypatch.setenv("AGENTGATE_SIGNING_BACKEND", "ed25519")
+        monkeypatch.delenv("AGENTGATE_SIGNING_KEY", raising=False)
+        monkeypatch.setenv("AGENTGATE_SIGNING_PRIVATE_KEY", private_pem)
+        monkeypatch.setenv("AGENTGATE_SIGNING_PUBLIC_KEY", public_pem)
+
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-1")
+
+        event_ids = [entry["event_id"] for entry in pack.timeline]
+        assert pack.integrity["signature_algorithm"] == "ed25519"
+        assert verify_integrity_signature(pack.integrity, event_ids) is True
+        assert verify_integrity_signature(pack.integrity, ["tampered"]) is False
 
 
 def test_exporter_anomalies_and_summary(tmp_path) -> None:
