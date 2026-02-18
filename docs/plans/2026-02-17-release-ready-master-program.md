@@ -78,7 +78,7 @@
 - [x] P0-006
 - [x] P0-007
 - [x] P0-008
-- [ ] P0-009
+- [x] P0-009
 - [ ] P0-010
 - [ ] P0-011
 - [ ] P0-012
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-009` Asymmetric/KMS-backed evidence signatures.
-- Why now: Quarantine/rollout orchestration now has idempotent race protection; next blocker is production-grade asymmetric signing lineage for evidence artifacts.
+- Active item: `P0-010` Immutable evidence archival (WORM/object lock path).
+- Why now: Evidence signing now supports asymmetric primitives and verification; next blocker is immutable archival guarantees for post-facto tamper resistance.
 
 ## Surprises & Discoveries (Live)
 
@@ -133,6 +133,7 @@
 - 2026-02-18: Move next to P0-007 after P0-006 landed with rollback-safe schema migrations.
 - 2026-02-18: Move next to P0-008 after P0-007 landed with Redis retry/recovery behavior.
 - 2026-02-18: Move next to P0-009 after P0-008 landed with idempotent quarantine/rollout orchestration.
+- 2026-02-18: Move next to P0-010 after P0-009 landed with asymmetric evidence-signing support.
 
 ## Outcomes & Retrospective (Live)
 
@@ -183,3 +184,8 @@
   - Hardened rollout start flow to return an existing rollout for identical tenant/version pairs and gracefully resolve uniqueness races.
   - Added regression tests for stale-memory quarantine idempotency and rollout start idempotency.
   - Evidence: `pytest tests/test_quarantine.py tests/test_rollout.py tests/test_traces.py -v` pass, `pytest tests/test_main.py tests/test_gateway.py tests/test_killswitch.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-18: Completed `P0-009` with asymmetric evidence signing.
+  - Added signing backend selection (`hmac` and `ed25519`) with file/env key-material loading for secret- and KMS-mount workflows.
+  - Added integrity signature verification helper supporting both `hmac-sha256` and `ed25519` signatures.
+  - Added regression tests for `ed25519` signing and tamper-detection verification failures.
+  - Evidence: `pytest tests/test_evidence.py -v` pass, `pytest tests/test_main.py tests/test_traces.py tests/test_rollout.py tests/test_quarantine.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-008 to P0-009 (asymmetric/KMS-backed evidence signatures).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-009 to P0-010 (immutable evidence archival path).
 
 ## Status
 
@@ -49,17 +49,21 @@ In Progress
 39. [x] P0-008 GREEN: implement idempotency/locking guarantees for quarantine and rollout orchestration.
 40. [x] Run targeted tests for P0-008.
 41. [x] Re-run `make verify` and `scripts/doctor.sh`.
-42. [ ] P0-009 RED: add failing tests for asymmetric evidence-signature verification path.
-43. [ ] P0-009 GREEN: implement signer/verifier with pluggable KMS-compatible key loading.
-44. [ ] Run targeted tests for P0-009.
-45. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+42. [x] P0-009 RED: add failing tests for asymmetric evidence-signature verification path.
+43. [x] P0-009 GREEN: implement signer/verifier with pluggable KMS-compatible key loading.
+44. [x] Run targeted tests for P0-009.
+45. [x] Re-run `make verify` and `scripts/doctor.sh`.
+46. [ ] P0-010 RED: add failing tests for immutable archival/write-once evidence behavior.
+47. [ ] P0-010 GREEN: implement object-lock style immutable evidence archival path.
+48. [ ] Run targeted tests for P0-010.
+49. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-008 is complete and verified; next priority is asymmetric/KMS-backed evidence signatures (`P0-009`).
+- P0-009 is complete and verified; next priority is immutable evidence archival (`P0-010`).
 
 ## Open Questions
 
-- None blocking P0-009 implementation start.
+- None blocking P0-010 implementation start.
