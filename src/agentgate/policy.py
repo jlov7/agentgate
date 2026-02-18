@@ -17,6 +17,20 @@ from agentgate.policy_packages import PolicyPackageVerifier
 logger = get_logger(__name__)
 
 
+def _is_truthy(value: str | None) -> bool:
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def require_signed_policy_packages() -> bool:
+    """Return whether policy loads must come from signed packages."""
+    explicit = os.getenv("AGENTGATE_REQUIRE_SIGNED_POLICY")
+    if explicit is not None:
+        return _is_truthy(explicit)
+    return os.getenv("AGENTGATE_ENV", "").strip().lower() == "production"
+
+
 def get_required_approval_token() -> str:
     """Return the configured approval token."""
     return os.getenv("AGENTGATE_APPROVAL_TOKEN", "approved")
@@ -165,6 +179,9 @@ def load_policy_data(path: Path) -> dict[str, Any]:
 def _unwrap_policy_package(data: dict[str, Any]) -> dict[str, Any]:
     required = {"tenant_id", "version", "bundle", "signature", "bundle_hash", "signer"}
     if not required.issubset(data):
+        if require_signed_policy_packages():
+            logger.error("policy_package_required")
+            return {}
         return data
 
     secret = os.getenv("AGENTGATE_POLICY_PACKAGE_SECRET")

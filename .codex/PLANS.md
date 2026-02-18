@@ -169,6 +169,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P0-009 asymmetric evidence signatures + verification.
 - [x] Implement P0-010 immutable evidence archival (WORM-style path).
 - [x] Implement P0-011 external transparency checkpoint anchoring.
+- [x] Implement P0-012 signed policy provenance enforcement on load.
 - [ ] Continue sequential execution of P0 backlog to completion.
 
 ## Surprises & Discoveries
@@ -189,6 +190,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P0-009 success, prioritize P0-010 immutable archival support.
 - After P0-010 success, prioritize P0-011 external transparency checkpoint anchoring.
 - After P0-011 success, prioritize P0-012 signed policy provenance enforcement.
+- After P0-012 success, prioritize P0-013 mTLS service identity hardening.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -225,3 +227,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added immutable `transparency_checkpoints` storage and endpoint-level anchoring via `/sessions/{id}/transparency?anchor=true`.
 - Added guarded external checkpoint dispatch path with persisted anchor receipts and idempotent checkpoint IDs.
 - Evidence: targeted transparency anchor tests pass, `make verify` pass, `scripts/doctor.sh` pass.
+- P0-012 completed with RED->GREEN->verify->doctor loop.
+- Added strict signed-policy enforcement switch (`AGENTGATE_REQUIRE_SIGNED_POLICY`) and production-default provenance requirement.
+- Added fail-closed admin policy reload enforcement when strict provenance validation fails.
+- Evidence: targeted strict provenance tests pass, `make verify` pass, `scripts/doctor.sh` pass.

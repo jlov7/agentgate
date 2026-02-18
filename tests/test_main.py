@@ -209,6 +209,27 @@ def test_reload_policies_updates_rate_limits(client, monkeypatch, tmp_path) -> N
     assert client.app.state.rate_limiter.limits["rate_limited_tool"] == 1
 
 
+def test_reload_policies_rejects_unsigned_bundle_in_strict_mode(
+    client, monkeypatch, tmp_path
+) -> None:
+    policy = {
+        "read_only_tools": ["db_query"],
+        "write_tools": [],
+        "all_known_tools": ["db_query"],
+    }
+    policy_path = tmp_path / "data.json"
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+    client.app.state.policy_data_path = policy_path
+
+    monkeypatch.setenv("AGENTGATE_REQUIRE_SIGNED_POLICY", "true")
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "test-key")
+    response = client.post(
+        "/admin/policies/reload", headers={"X-API-Key": "test-key"}
+    )
+    assert response.status_code == 500
+    assert "provenance" in response.json()["detail"].lower()
+
+
 def test_rate_limit_window_seconds_invalid(monkeypatch) -> None:
     monkeypatch.setenv("AGENTGATE_RATE_WINDOW_SECONDS", "not-a-number")
     assert _get_rate_limit_window_seconds() == 60

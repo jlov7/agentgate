@@ -63,7 +63,11 @@ from agentgate.logging import (
 )
 from agentgate.metrics import get_metrics
 from agentgate.models import KillRequest, ReplayRun, ToolCallRequest, ToolCallResponse
-from agentgate.policy import PolicyClient, load_policy_data
+from agentgate.policy import (
+    PolicyClient,
+    load_policy_data,
+    require_signed_policy_packages,
+)
 from agentgate.policy_packages import PolicyPackageVerifier
 from agentgate.quarantine import QuarantineCoordinator
 from agentgate.rate_limit import RateLimiter
@@ -844,6 +848,8 @@ def create_app(
         try:
             policy_data_path = app.state.policy_data_path
             new_policy_data = load_policy_data(policy_data_path)
+            if require_signed_policy_packages() and not new_policy_data:
+                raise RuntimeError("Policy provenance validation failed")
             app.state.policy_client.policy_data = new_policy_data
 
             # Update rate limiter with new limits

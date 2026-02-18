@@ -351,6 +351,49 @@ def test_load_policy_data_rejects_bad_package_signature(tmp_path, monkeypatch) -
     assert data == {}
 
 
+def test_load_policy_data_requires_signed_package_in_strict_mode(
+    tmp_path, monkeypatch
+) -> None:
+    path = tmp_path / "plain.json"
+    path.write_text(
+        json.dumps({"read_only_tools": ["db_query"], "write_tools": []}),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("AGENTGATE_REQUIRE_SIGNED_POLICY", "true")
+
+    data = load_policy_data(path)
+    assert data == {}
+
+
+def test_load_policy_data_accepts_signed_package_in_strict_mode(
+    tmp_path, monkeypatch
+) -> None:
+    bundle = {"read_only_tools": ["db_query"], "write_tools": []}
+    bundle_hash = hash_policy_bundle(bundle)
+    signature = sign_policy_package(
+        secret="secret",
+        tenant_id="tenant-a",
+        version="v3",
+        bundle=bundle,
+        signer="ops",
+    )
+    payload = {
+        "tenant_id": "tenant-a",
+        "version": "v3",
+        "signer": "ops",
+        "bundle_hash": bundle_hash,
+        "bundle": bundle,
+        "signature": signature,
+    }
+    path = tmp_path / "strict-package.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setenv("AGENTGATE_REQUIRE_SIGNED_POLICY", "true")
+    monkeypatch.setenv("AGENTGATE_POLICY_PACKAGE_SECRET", "secret")
+
+    data = load_policy_data(path)
+    assert data == bundle
+
+
 def test_policy_client_strips_trailing_slash(tmp_path) -> None:
     path = tmp_path / "policy.json"
     path.write_text("{}", encoding="utf-8")

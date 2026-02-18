@@ -81,7 +81,7 @@
 - [x] P0-009
 - [x] P0-010
 - [x] P0-011
-- [ ] P0-012
+- [x] P0-012
 - [ ] P0-013
 - [ ] P0-014
 - [ ] P0-015
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-012` Signed policy provenance enforcement on load.
-- Why now: External transparency checkpoint anchoring is complete and verified; next blocker is strict signed provenance validation during policy-load paths.
+- Active item: `P0-013` mTLS service identity between control-plane components.
+- Why now: Signed policy provenance enforcement now passes full gates; next blocker is authenticated service-to-service identity for control-plane traffic.
 
 ## Surprises & Discoveries (Live)
 
@@ -136,6 +136,7 @@
 - 2026-02-18: Move next to P0-010 after P0-009 landed with asymmetric evidence-signing support.
 - 2026-02-18: Move next to P0-011 after P0-010 landed with immutable evidence archival support.
 - 2026-02-18: Move next to P0-012 after P0-011 landed with external transparency checkpoint anchoring.
+- 2026-02-18: Move next to P0-013 after P0-012 landed with signed policy provenance enforcement.
 
 ## Outcomes & Retrospective (Live)
 
@@ -203,3 +204,8 @@
   - Added `TransparencyLog.build_session_report(..., anchor=True)` external/local anchoring flow with guarded URL scheme validation and persisted checkpoint receipts.
   - Added `/sessions/{session_id}/transparency?anchor=true` endpoint support and regression tests for anchored checkpoint idempotency.
   - Evidence: `pytest tests/test_transparency.py tests/test_main.py::test_session_transparency_report_can_anchor_checkpoint tests/test_traces.py::test_transparency_checkpoint_write_once_and_immutable -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-18: Completed `P0-012` with signed policy provenance enforcement.
+  - Added strict provenance mode (`AGENTGATE_REQUIRE_SIGNED_POLICY` or production env) in policy loading, requiring signed policy packages.
+  - Added reload-time enforcement so `/admin/policies/reload` fails closed when strict provenance is enabled and signed package validation fails.
+  - Added regression tests for strict-mode unsigned rejection, strict-mode signed acceptance, and admin reload rejection behavior.
+  - Evidence: `pytest tests/test_policy.py::test_load_policy_data_requires_signed_package_in_strict_mode tests/test_policy.py::test_load_policy_data_accepts_signed_package_in_strict_mode tests/test_main.py::test_reload_policies_rejects_unsigned_bundle_in_strict_mode -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

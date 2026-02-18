@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-011 to P0-012 (signed policy provenance enforcement on load).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-012 to P0-013 (mTLS service identity between control-plane components).
 
 ## Status
 
@@ -61,17 +61,21 @@ In Progress
 51. [x] P0-011 GREEN: implement checkpoint anchoring + verification path.
 52. [x] Run targeted tests for P0-011.
 53. [x] Re-run `make verify` and `scripts/doctor.sh`.
-54. [ ] P0-012 RED: add failing tests for signed policy provenance enforcement on load.
-55. [ ] P0-012 GREEN: enforce signed provenance in policy load path.
-56. [ ] Run targeted tests for P0-012.
-57. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+54. [x] P0-012 RED: add failing tests for signed policy provenance enforcement on load.
+55. [x] P0-012 GREEN: enforce signed provenance in policy load path.
+56. [x] Run targeted tests for P0-012.
+57. [x] Re-run `make verify` and `scripts/doctor.sh`.
+58. [ ] P0-013 RED: add failing tests for mTLS service identity between control-plane components.
+59. [ ] P0-013 GREEN: implement mTLS client/server identity validation.
+60. [ ] Run targeted tests for P0-013.
+61. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-011 is complete and verified; next priority is signed policy provenance enforcement (`P0-012`).
+- P0-012 is complete and verified; next priority is mTLS service identity (`P0-013`).
 
 ## Open Questions
 
-- None blocking P0-012 implementation start.
+- None blocking P0-013 implementation start.
