@@ -77,7 +77,7 @@
 - [x] P0-005
 - [x] P0-006
 - [x] P0-007
-- [ ] P0-008
+- [x] P0-008
 - [ ] P0-009
 - [ ] P0-010
 - [ ] P0-011
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-008` Distributed idempotency/locking for quarantine+rollout.
-- Why now: Redis transient-failure handling is now hardened; next blocker is multi-node race safety for containment/rollout orchestration.
+- Active item: `P0-009` Asymmetric/KMS-backed evidence signatures.
+- Why now: Quarantine/rollout orchestration now has idempotent race protection; next blocker is production-grade asymmetric signing lineage for evidence artifacts.
 
 ## Surprises & Discoveries (Live)
 
@@ -132,6 +132,7 @@
 - 2026-02-18: Move next to P0-006 after P0-005 landed with Postgres trace-store migration compatibility.
 - 2026-02-18: Move next to P0-007 after P0-006 landed with rollback-safe schema migrations.
 - 2026-02-18: Move next to P0-008 after P0-007 landed with Redis retry/recovery behavior.
+- 2026-02-18: Move next to P0-009 after P0-008 landed with idempotent quarantine/rollout orchestration.
 
 ## Outcomes & Retrospective (Live)
 
@@ -176,3 +177,9 @@
   - Preserved fail-closed posture when retries are exhausted (`Kill switch unavailable`).
   - Added regression tests for transient read/write failure recovery and retry semantics.
   - Evidence: `pytest tests/test_killswitch.py tests/test_gateway.py tests/test_main.py tests/test_quarantine.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-18: Completed `P0-008` with idempotent quarantine/rollout orchestration.
+  - Added runtime DB uniqueness indexes for active incidents and active rollout version pairs to protect against duplicate concurrent writes.
+  - Hardened quarantine flow to reuse persisted active incidents when in-memory state is stale and to recover from uniqueness races without duplicate revocation.
+  - Hardened rollout start flow to return an existing rollout for identical tenant/version pairs and gracefully resolve uniqueness races.
+  - Added regression tests for stale-memory quarantine idempotency and rollout start idempotency.
+  - Evidence: `pytest tests/test_quarantine.py tests/test_rollout.py tests/test_traces.py -v` pass, `pytest tests/test_main.py tests/test_gateway.py tests/test_killswitch.py -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-007 to P0-008 (distributed idempotency/locking).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-008 to P0-009 (asymmetric/KMS-backed evidence signatures).
 
 ## Status
 
@@ -45,17 +45,21 @@ In Progress
 35. [x] P0-007 GREEN: implement resilient Redis client behavior and recovery.
 36. [x] Run targeted tests for P0-007.
 37. [x] Re-run `make verify` and `scripts/doctor.sh`.
-38. [ ] P0-008 RED: add failing tests for distributed idempotency and lock semantics.
-39. [ ] P0-008 GREEN: implement idempotency/locking guarantees for quarantine and rollout orchestration.
-40. [ ] Run targeted tests for P0-008.
-41. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+38. [x] P0-008 RED: add failing tests for distributed idempotency and lock semantics.
+39. [x] P0-008 GREEN: implement idempotency/locking guarantees for quarantine and rollout orchestration.
+40. [x] Run targeted tests for P0-008.
+41. [x] Re-run `make verify` and `scripts/doctor.sh`.
+42. [ ] P0-009 RED: add failing tests for asymmetric evidence-signature verification path.
+43. [ ] P0-009 GREEN: implement signer/verifier with pluggable KMS-compatible key loading.
+44. [ ] Run targeted tests for P0-009.
+45. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-007 is complete and verified; next priority is distributed idempotency/locking (`P0-008`).
+- P0-008 is complete and verified; next priority is asymmetric/KMS-backed evidence signatures (`P0-009`).
 
 ## Open Questions
 
-- None blocking P0-008 implementation start.
+- None blocking P0-009 implementation start.
