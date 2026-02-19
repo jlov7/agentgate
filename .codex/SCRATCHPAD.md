@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-010 to P1-011 (Terraform baseline module).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-011 to P1-012 (OpenTelemetry distributed tracing).
 
 ## Status
 
@@ -133,17 +133,21 @@ In Progress
 123. [x] P1-010 GREEN: implement Helm chart + K8s deployment guide.
 124. [x] Run targeted tests for P1-010.
 125. [x] Re-run `make verify` and `scripts/doctor.sh`.
-126. [ ] P1-011 RED: add failing checks for Terraform baseline module scaffolding and documentation.
-127. [ ] P1-011 GREEN: implement Terraform baseline module for AgentGate deployment primitives.
-128. [ ] Run targeted tests for P1-011.
-129. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+126. [x] P1-011 RED: add failing checks for Terraform baseline module scaffolding and documentation.
+127. [x] P1-011 GREEN: implement Terraform baseline module for AgentGate deployment primitives.
+128. [x] Run targeted tests for P1-011.
+129. [x] Re-run `make verify` and `scripts/doctor.sh`.
+130. [ ] P1-012 RED: add failing checks for OpenTelemetry distributed tracing integration.
+131. [ ] P1-012 GREEN: implement OpenTelemetry tracing instrumentation and exporter wiring.
+132. [ ] Run targeted tests for P1-012.
+133. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-010 is fully complete with Helm chart + Kubernetes deployment guide support and full-gate verification; next execution item is `P1-011`.
+- P1-011 is fully complete with Terraform baseline module support and full-gate verification; next execution item is `P1-012`.
 
 ## Open Questions
 
-- None blocking commit for P1-010 and transition to P1-011.
+- None blocking commit for P1-011 and transition to P1-012.

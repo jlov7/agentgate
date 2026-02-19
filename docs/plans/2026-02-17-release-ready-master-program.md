@@ -100,7 +100,7 @@
 - [x] P1-008
 - [x] P1-009
 - [x] P1-010
-- [ ] P1-011
+- [x] P1-011
 - [ ] P1-012
 - [ ] P1-013
 - [ ] P1-014
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-011` Terraform baseline module.
-- Why now: Kubernetes packaging is now in place, so Terraform baseline provisioning is the next launch-quality lever for repeatable infrastructure onboarding.
+- Active item: `P1-012` OpenTelemetry distributed tracing.
+- Why now: deployment packaging and provisioning are in place, so distributed tracing is the next launch-quality lever for runtime operability and incident diagnostics.
 
 ## Surprises & Discoveries (Live)
 
@@ -154,6 +154,7 @@
 - 2026-02-19: Move next to P1-009 after P1-008 landed with official Python SDK support.
 - 2026-02-19: Move next to P1-010 after P1-009 landed with official TypeScript SDK support.
 - 2026-02-19: Move next to P1-011 after P1-010 landed with Helm chart and Kubernetes deployment support.
+- 2026-02-19: Move next to P1-012 after P1-011 landed with Terraform baseline provisioning support.
 
 ## Outcomes & Retrospective (Live)
 
@@ -327,3 +328,9 @@
   - Wired docs discovery through `mkdocs.yml` navigation and README links to the Kubernetes deployment guide.
   - Added regression tests (`tests/test_helm_chart.py`) to enforce chart metadata, workload templates, and docs publication requirements.
   - Evidence: `.venv/bin/pytest tests/test_helm_chart.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-011` with Terraform baseline module support.
+  - Added Terraform baseline module at `deploy/terraform/agentgate-baseline` with provider version locks, namespace provisioning, and Helm release orchestration for AgentGate deployment.
+  - Added example variable set (`terraform.tfvars.example`) and Terraform deployment runbook `docs/TERRAFORM_DEPLOYMENT.md` covering init/plan/apply/upgrade/destroy workflows.
+  - Wired docs discovery through `mkdocs.yml` navigation and README links to the Terraform deployment guide.
+  - Added regression tests (`tests/test_terraform_module.py`) to enforce module files, provider locks, helm-release wiring, and docs publication requirements.
+  - Evidence: `.venv/bin/pytest tests/test_terraform_module.py tests/test_helm_chart.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

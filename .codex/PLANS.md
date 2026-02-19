@@ -187,6 +187,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-008 official Python SDK.
 - [x] Implement P1-009 official TypeScript SDK.
 - [x] Implement P1-010 Helm chart + Kubernetes deployment guide.
+- [x] Implement P1-011 Terraform baseline module.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -225,6 +226,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-008 success, prioritize P1-009 official TypeScript SDK.
 - After P1-009 success, prioritize P1-010 Helm chart and Kubernetes deployment guide.
 - After P1-010 success, prioritize P1-011 Terraform baseline module.
+- After P1-011 success, prioritize P1-012 OpenTelemetry distributed tracing.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -349,3 +351,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added Kubernetes deployment guide (`docs/KUBERNETES_DEPLOYMENT.md`) with install/upgrade/rollback/runbook commands and wired it into MkDocs navigation and README discovery links.
 - Added regression tests (`tests/test_helm_chart.py`) to enforce chart metadata, core template presence, and published deployment documentation.
 - Evidence: `.venv/bin/pytest tests/test_helm_chart.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-011 completed with RED->GREEN->verify->doctor loop.
+- Added Terraform baseline module at `deploy/terraform/agentgate-baseline` with Kubernetes namespace provisioning and Helm release orchestration for AgentGate chart deployment.
+- Added Terraform deployment runbook (`docs/TERRAFORM_DEPLOYMENT.md`) and discovery links in MkDocs navigation + README.
+- Added regression tests (`tests/test_terraform_module.py`) to enforce module/provider wiring and published Terraform docs.
+- Evidence: `.venv/bin/pytest tests/test_terraform_module.py tests/test_helm_chart.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

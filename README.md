@@ -629,6 +629,20 @@ curl http://127.0.0.1:8000/health
 
 Full guide: [Kubernetes Deployment](docs/KUBERNETES_DEPLOYMENT.md)
 
+## Terraform Baseline Module
+
+Provision namespace + Helm release via Terraform:
+
+```bash
+cd deploy/terraform/agentgate-baseline
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan -out=tfplan
+terraform apply tfplan
+```
+
+Full guide: [Terraform Deployment](docs/TERRAFORM_DEPLOYMENT.md)
+
 ---
 
 ## Troubleshooting
@@ -723,6 +737,7 @@ This is a personal, independent project. It is not affiliated with any employer 
 | [Architecture](docs/ARCHITECTURE.md) | Data flow + policy decision diagrams |
 | [Threat Model](docs/THREAT_MODEL.md) | Threats, controls, evidence signals |
 | [Kubernetes Deployment](docs/KUBERNETES_DEPLOYMENT.md) | Helm-based cluster deployment and rollback guide |
+| [Terraform Deployment](docs/TERRAFORM_DEPLOYMENT.md) | Baseline namespace + Helm release provisioning |
 | [Showcase Artifacts](docs/showcase/README.md) | Evidence pack, metrics snapshot, logs |
 | [Docs Site](https://jlov7.github.io/agentgate/) | Executive-friendly documentation |
 | [API Documentation](http://localhost:8000/docs) | Interactive OpenAPI docs (when running) |
