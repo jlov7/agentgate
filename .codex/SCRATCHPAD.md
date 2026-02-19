@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-014 to P0-015 (PII redaction/tokenization for trace/evidence output).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-015 to P0-016 (retention/deletion/legal-hold policy controls).
 
 ## Status
 
@@ -73,17 +73,21 @@ In Progress
 63. [x] P0-014 GREEN: enforce tenant isolation across API/storage paths.
 64. [x] Run targeted tests for P0-014.
 65. [x] Re-run `make verify` and `scripts/doctor.sh`.
-66. [ ] P0-015 RED: add failing tests for PII redaction/tokenization in trace/evidence output.
-67. [ ] P0-015 GREEN: implement configurable PII redaction/tokenization pipeline.
-68. [ ] Run targeted tests for P0-015.
-69. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+66. [x] P0-015 RED: add failing tests for PII redaction/tokenization in trace/evidence output.
+67. [x] P0-015 GREEN: implement configurable PII redaction/tokenization pipeline.
+68. [x] Run targeted tests for P0-015.
+69. [x] Re-run `make verify` and `scripts/doctor.sh`.
+70. [ ] P0-016 RED: add failing tests for retention/deletion/legal-hold controls.
+71. [ ] P0-016 GREEN: implement retention policy enforcement + legal-hold bypass guards.
+72. [ ] Run targeted tests for P0-016.
+73. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-014 is complete and verified; next priority is PII redaction/tokenization (`P0-015`).
+- P0-015 is complete and verified; next priority is retention/deletion/legal-hold controls (`P0-016`).
 
 ## Open Questions
 
-- None blocking P0-015 implementation start.
+- None blocking P0-016 implementation start.

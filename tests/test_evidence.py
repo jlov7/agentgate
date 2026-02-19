@@ -94,6 +94,53 @@ def test_exporter_json_and_html(tmp_path) -> None:
         assert "Timeline" in html_output
 
 
+def test_exporter_redacts_pii_when_enabled(tmp_path, monkeypatch) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(
+            _build_trace(
+                "event-pii-redact",
+                "ALLOW",
+                "db_query",
+                user_id="alice@example.com",
+                agent_id="+1 (555) 123-4567",
+                error="Caller 192.168.1.10, ssn 123-45-6789",
+            )
+        )
+        monkeypatch.setenv("AGENTGATE_PII_MODE", "redact")
+
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-1")
+
+        assert pack.metadata["pii_mode"] == "redact"
+        assert pack.metadata["user_id"] == "[REDACTED_EMAIL]"
+        assert pack.metadata["agent_id"] == "[REDACTED_PHONE]"
+        assert "[REDACTED_IPV4]" in (pack.timeline[0]["error"] or "")
+        assert "[REDACTED_SSN]" in (pack.timeline[0]["error"] or "")
+
+
+def test_exporter_tokenizes_pii_when_enabled(tmp_path, monkeypatch) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as trace_store:
+        trace_store.append(
+            _build_trace(
+                "event-pii-token",
+                "ALLOW",
+                "db_query",
+                user_id="alice@example.com",
+                error="Contact alice@example.com",
+            )
+        )
+        monkeypatch.setenv("AGENTGATE_PII_MODE", "tokenize")
+        monkeypatch.setenv("AGENTGATE_PII_TOKEN_SALT", "salt")
+
+        exporter = EvidenceExporter(trace_store, version="0.1.0")
+        pack = exporter.export_session("sess-1")
+
+        token = str(pack.metadata["user_id"])
+        assert token.startswith("tok_email_")
+        assert "@" not in token
+        assert token in str(pack.timeline[0]["error"])
+
+
 def test_exporter_includes_replay_context(tmp_path) -> None:
     created_at = datetime(2026, 2, 15, 20, 0, tzinfo=UTC)
     run = ReplayRun(

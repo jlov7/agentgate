@@ -27,6 +27,7 @@ from agentgate.models import PolicyDecision, ToolCallRequest, ToolCallResponse
 from agentgate.policy import PolicyClient
 from agentgate.quarantine import QuarantineCoordinator
 from agentgate.rate_limit import RateLimiter
+from agentgate.redaction import get_pii_mode, scrub_text
 from agentgate.shadow import ShadowPolicyTwin
 from agentgate.taint import TaintTracker
 from agentgate.traces import TraceStore, build_trace_event, hash_arguments_safe
@@ -377,21 +378,22 @@ class Gateway:
         duration_ms: int | None,
         error: str | None,
     ) -> None:
+        pii_mode = get_pii_mode()
         event = build_trace_event(
             event_id=event_id,
             timestamp=timestamp,
             session_id=request.session_id,
-            user_id=user_id,
-            agent_id=agent_id,
+            user_id=scrub_text(user_id, mode=pii_mode) if user_id else None,
+            agent_id=scrub_text(agent_id, mode=pii_mode) if agent_id else None,
             tool_name=request.tool_name,
             arguments_hash=arguments_hash,
             policy_version=self.policy_version,
             policy_decision=decision.action,
-            policy_reason=decision.reason,
+            policy_reason=scrub_text(decision.reason, mode=pii_mode),
             matched_rule=decision.matched_rule,
             executed=executed,
             duration_ms=duration_ms,
-            error=error,
+            error=scrub_text(error, mode=pii_mode) if error else None,
             is_write_action=decision.is_write_action,
             approval_token_present=request.approval_token is not None,
         )

@@ -84,7 +84,7 @@
 - [x] P0-012
 - [x] P0-013
 - [x] P0-014
-- [ ] P0-015
+- [x] P0-015
 - [ ] P0-016
 - [x] P0-017
 - [ ] P0-018
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-015` PII redaction/tokenization pipeline for trace/evidence output.
-- Why now: tenant isolation controls are now gate-verified; next blocker is sensitive-data minimization/redaction for release readiness.
+- Active item: `P0-016` Retention/deletion/legal-hold policy controls.
+- Why now: redaction/tokenization controls are now gate-verified; next blocker is lifecycle governance and legal-hold-safe deletion behavior.
 
 ## Surprises & Discoveries (Live)
 
@@ -139,6 +139,7 @@
 - 2026-02-18: Move next to P0-013 after P0-012 landed with signed policy provenance enforcement.
 - 2026-02-18: Move next to P0-014 after P0-013 landed with mTLS service identity controls.
 - 2026-02-19: Move next to P0-015 after P0-014 landed with tenant data isolation enforcement.
+- 2026-02-19: Move next to P0-016 after P0-015 landed with PII redaction/tokenization controls.
 
 ## Outcomes & Retrospective (Live)
 
@@ -222,3 +223,9 @@
   - Added rollout guard ensuring replay runs cannot be used across tenant boundaries when isolation is enabled.
   - Added regression tests for cross-tenant denial paths and tenant-scoped session listing.
   - Evidence: `pytest tests/test_traces.py::test_trace_store_binds_session_tenant_and_filters_sessions tests/test_main.py::test_tools_call_requires_tenant_context_when_isolation_enabled tests/test_main.py::test_tools_call_rejects_cross_tenant_session_binding_when_isolation_enabled tests/test_main.py::test_tenant_isolation_filters_sessions_and_session_data_access tests/test_main.py::test_replay_and_incident_endpoints_enforce_tenant_isolation tests/test_main.py::test_create_tenant_rollout_rejects_run_from_other_tenant_when_isolation_enabled -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P0-015` with PII redaction/tokenization pipeline.
+  - Added shared `redaction` module with configurable mode control (`AGENTGATE_PII_MODE=off|redact|tokenize`) and deterministic token salts (`AGENTGATE_PII_TOKEN_SALT`).
+  - Applied PII controls at trace-write time in gateway (user/agent identity and error/reason fields) to prevent raw sensitive strings from persisting in new trace records.
+  - Applied PII controls at evidence export time for metadata/timeline/analysis/replay/incident/rollout payloads, including explicit `metadata.pii_mode`.
+  - Added regression tests for redact and tokenize modes in evidence exports and gateway trace persistence.
+  - Evidence: `pytest tests/test_evidence.py::test_exporter_redacts_pii_when_enabled tests/test_evidence.py::test_exporter_tokenizes_pii_when_enabled tests/test_gateway.py::test_tool_call_trace_tokenizes_pii_when_enabled -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

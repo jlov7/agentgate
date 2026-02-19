@@ -24,9 +24,10 @@ import os
 import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from agentgate.models import TraceEvent
+from agentgate.redaction import get_pii_mode, scrub_value
 from agentgate.replay import summarize_replay_deltas
 from agentgate.traces import TraceStore
 from agentgate.transparency import build_merkle_root, hash_leaf
@@ -222,8 +223,7 @@ class EvidenceExporter:
         replay = self._build_replay_context(session_id)
         incidents = self._build_incident_context(session_id)
         rollouts = self._build_rollout_context(session_id)
-
-        return EvidencePack(
+        pack = EvidencePack(
             metadata=metadata,
             summary=summary,
             timeline=timeline,
@@ -234,6 +234,34 @@ class EvidenceExporter:
             replay=replay,
             incidents=incidents,
             rollouts=rollouts,
+        )
+        pii_mode = get_pii_mode()
+        if pii_mode == "off":
+            return pack
+        return self._apply_pii_controls(pack, mode=pii_mode)
+
+    def _apply_pii_controls(self, pack: EvidencePack, *, mode: str) -> EvidencePack:
+        metadata = cast(dict[str, Any], scrub_value(dict(pack.metadata), mode=mode))
+        metadata["pii_mode"] = mode
+        return EvidencePack(
+            metadata=metadata,
+            summary=cast(dict[str, Any], scrub_value(pack.summary, mode=mode)),
+            timeline=cast(list[dict[str, Any]], scrub_value(pack.timeline, mode=mode)),
+            policy_analysis=cast(
+                dict[str, Any], scrub_value(pack.policy_analysis, mode=mode)
+            ),
+            write_action_log=cast(
+                list[dict[str, Any]], scrub_value(pack.write_action_log, mode=mode)
+            ),
+            anomalies=cast(list[dict[str, Any]], scrub_value(pack.anomalies, mode=mode)),
+            integrity=pack.integrity,
+            replay=cast(dict[str, Any] | None, scrub_value(pack.replay, mode=mode)),
+            incidents=cast(
+                list[dict[str, Any]] | None, scrub_value(pack.incidents, mode=mode)
+            ),
+            rollouts=cast(
+                list[dict[str, Any]] | None, scrub_value(pack.rollouts, mode=mode)
+            ),
         )
 
     def to_json(self, pack: EvidencePack) -> str:

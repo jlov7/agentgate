@@ -100,6 +100,31 @@ def test_tool_call_traces_allow(client, trace_store) -> None:
     assert event.timestamp.tzinfo.utcoffset(event.timestamp) == UTC.utcoffset(event.timestamp)
 
 
+def test_tool_call_trace_tokenizes_pii_when_enabled(client, trace_store, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_PII_MODE", "tokenize")
+    monkeypatch.setenv("AGENTGATE_PII_TOKEN_SALT", "salt")
+    session_id = "trace_pii_token"
+    response = client.post(
+        "/tools/call",
+        json={
+            "session_id": session_id,
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+            "context": {"user_id": "alice@example.com", "agent_id": "+1 (555) 123-4567"},
+        },
+    )
+    payload = response.json()
+    assert payload["success"] is True
+
+    events = trace_store.query(session_id=session_id)
+    assert len(events) == 1
+    event = events[0]
+    assert event.user_id is not None
+    assert event.agent_id is not None
+    assert event.user_id.startswith("tok_email_")
+    assert event.agent_id.startswith("tok_phone_")
+
+
 def test_tool_call_traces_approval_required(client, trace_store) -> None:
     session_id = "trace_approval_required"
     response = client.post(
