@@ -242,6 +242,49 @@ class RateLimitInfo(BaseModel):
     window_seconds: int = Field(..., description="Window duration in seconds")
 
 
+class ApprovalWorkflowCreateRequest(BaseModel):
+    """Request payload to create an approval workflow."""
+
+    session_id: str = Field(..., description="Session identifier bound to workflow token")
+    tool_name: str = Field(..., description="Tool name bound to workflow token")
+    required_steps: int = Field(
+        default=1,
+        ge=1,
+        le=10,
+        description="Number of approval steps required before token is valid",
+    )
+    required_approvers: list[str] = Field(
+        default_factory=list,
+        description="Optional explicit approver slots for role-based workflows",
+    )
+    expires_in_seconds: int | None = Field(
+        default=900,
+        ge=1,
+        le=86400,
+        description="Relative expiry for workflow token if expires_at is omitted",
+    )
+    expires_at: datetime | None = Field(
+        default=None,
+        description="Absolute expiry for workflow token (ISO datetime)",
+    )
+    requested_by: str | None = Field(
+        default=None, description="Operator identity creating the workflow"
+    )
+
+
+class ApprovalWorkflowApproveRequest(BaseModel):
+    """Request payload for recording one approval step."""
+
+    approver_id: str = Field(..., min_length=1, description="Approver identity")
+
+
+class ApprovalWorkflowDelegateRequest(BaseModel):
+    """Request payload for approver delegation."""
+
+    from_approver: str = Field(..., min_length=1, description="Original approver slot")
+    to_approver: str = Field(..., min_length=1, description="Delegate approver identity")
+
+
 class ReplayRun(BaseModel):
     """Replay job metadata for counterfactual policy analysis."""
 

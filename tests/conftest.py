@@ -56,7 +56,7 @@ class LocalPolicyClient:
         self.policy_data = policy_data
 
     async def evaluate(self, request: ToolCallRequest) -> PolicyDecision:
-        valid_token = has_valid_approval_token(request.approval_token)
+        valid_token = has_valid_approval_token(request.approval_token, request=request)
         return self.evaluator.evaluate_local(
             tool_name=request.tool_name,
             has_approval_token=valid_token,

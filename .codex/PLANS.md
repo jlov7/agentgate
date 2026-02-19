@@ -177,6 +177,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P0-018 SLO definitions + runtime alerting implementation.
 - [x] Implement P0-019 scale/perf validation at release target traffic.
 - [x] Implement P0-020 external security assessment closure package.
+- [x] Implement P1-001 approval workflow engine (multi-step, expiry, delegation).
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -205,6 +206,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P0-018 success, prioritize P0-019 scale/perf validation at release target traffic.
 - After P0-019 success, prioritize P0-020 external security assessment closure package.
 - After P0-020 success, prioritize P1-001 approval workflow engine.
+- After P1-001 success, prioritize P1-002 policy lifecycle system.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -277,3 +279,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added a baseline external assessment findings ledger (`security/external-assessment-findings.json`) and wired closure artifact generation into release gate `RG-02`.
 - Added `make security-closure` for operator-friendly artifact generation and required `artifacts/security-closure.json` in support bundle release evidence.
 - Evidence: `.venv/bin/pytest tests/test_security_closure.py tests/test_doctor.py::test_doctor_security_check_emits_security_closure_artifact -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-001 completed with RED->GREEN->verify->doctor loop.
+- Added approval workflow engine (`src/agentgate/approvals.py`) with multi-step approval thresholds, explicit expiry handling, and required-approver delegation semantics.
+- Added approval admin APIs for workflow create/get/approve/delegate and bound workflow tokens to session/tool pairs in policy evaluation.
+- Added approval workflow request models and runtime approval verifier wiring in policy client path while retaining existing static-token compatibility.
+- Evidence: `.venv/bin/pytest tests/test_approvals.py tests/test_gateway.py tests/test_policy.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

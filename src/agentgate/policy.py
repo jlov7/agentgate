@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,8 @@ from agentgate.models import PolicyDecision, ToolCallRequest
 from agentgate.policy_packages import PolicyPackageVerifier
 
 logger = get_logger(__name__)
+ApprovalTokenVerifier = Callable[[str, ToolCallRequest | None], bool]
+_APPROVAL_TOKEN_VERIFIER: ApprovalTokenVerifier | None = None
 
 
 def _is_truthy(value: str | None) -> bool:
@@ -54,13 +57,23 @@ def get_required_approval_token() -> str:
     return os.getenv("AGENTGATE_APPROVAL_TOKEN", "approved")
 
 
-def has_valid_approval_token(token: str | None) -> bool:
+def set_approval_token_verifier(verifier: ApprovalTokenVerifier | None) -> None:
+    """Set optional runtime verifier used for workflow-backed approval tokens."""
+    global _APPROVAL_TOKEN_VERIFIER
+    _APPROVAL_TOKEN_VERIFIER = verifier
+
+
+def has_valid_approval_token(
+    token: str | None, request: ToolCallRequest | None = None
+) -> bool:
     """Return True if the approval token matches the configured value.
 
     Uses constant-time comparison to prevent timing attacks.
     """
     if not token:
         return False
+    if _APPROVAL_TOKEN_VERIFIER and _APPROVAL_TOKEN_VERIFIER(token, request):
+        return True
     expected = get_required_approval_token()
     return secrets.compare_digest(token, expected)
 
@@ -75,7 +88,9 @@ class PolicyClient:
 
     async def evaluate(self, request: ToolCallRequest) -> PolicyDecision:
         """Evaluate a policy decision by calling OPA."""
-        has_valid_approval = has_valid_approval_token(request.approval_token)
+        has_valid_approval = has_valid_approval_token(
+            request.approval_token, request=request
+        )
         input_data = {
             "tool_name": request.tool_name,
             "arguments": request.arguments,

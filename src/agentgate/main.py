@@ -39,7 +39,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Never, cast
 
 from fastapi import Body, FastAPI, Header, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -50,6 +50,7 @@ from fastapi.openapi.docs import (
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from redis.asyncio import Redis
 
+from agentgate.approvals import ApprovalWorkflowEngine
 from agentgate.credentials import CredentialBroker
 from agentgate.evidence import EvidenceExporter
 from agentgate.gateway import Gateway, ToolExecutor
@@ -62,11 +63,20 @@ from agentgate.logging import (
     get_logger,
 )
 from agentgate.metrics import get_metrics
-from agentgate.models import KillRequest, ReplayRun, ToolCallRequest, ToolCallResponse
+from agentgate.models import (
+    ApprovalWorkflowApproveRequest,
+    ApprovalWorkflowCreateRequest,
+    ApprovalWorkflowDelegateRequest,
+    KillRequest,
+    ReplayRun,
+    ToolCallRequest,
+    ToolCallResponse,
+)
 from agentgate.policy import (
     PolicyClient,
     load_policy_data,
     require_signed_policy_packages,
+    set_approval_token_verifier,
 )
 from agentgate.policy_packages import PolicyPackageVerifier
 from agentgate.quarantine import QuarantineCoordinator
@@ -396,6 +406,7 @@ REPLAY_ADMIN_ROLE = "replay_admin"
 INCIDENT_ADMIN_ROLE = "incident_admin"
 ROLLOUT_ADMIN_ROLE = "rollout_admin"
 SHADOW_ADMIN_ROLE = "shadow_admin"
+APPROVAL_ADMIN_ROLE = "approval_admin"
 
 
 def _get_webhook_url() -> str | None:
@@ -486,6 +497,7 @@ def create_app(
     _reset_admin_api_key_override()
     configure_logging(_get_log_level())
     _validate_secret_baseline()
+    set_approval_token_verifier(None)
 
     # Print banner on startup
     print(BANNER)
@@ -570,6 +582,8 @@ def create_app(
         metrics=get_metrics(),
     )
     transparency_log = TransparencyLog(trace_store=trace_store)
+    approval_engine = ApprovalWorkflowEngine()
+    set_approval_token_verifier(approval_engine.verify_token)
 
     # Store components in app state
     app.state.gateway = gateway
@@ -580,6 +594,7 @@ def create_app(
     app.state.replay_evaluator = replay_evaluator
     app.state.rollout_controller = rollout_controller
     app.state.transparency_log = transparency_log
+    app.state.approval_engine = approval_engine
     app.state.quarantine = quarantine
     app.state.taint_tracker = taint_tracker
     app.state.shadow_twin = shadow_twin
@@ -1115,6 +1130,102 @@ def create_app(
         except RuntimeError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return JSONResponse({"status": "deleted", "session_id": session_id})
+
+    def _raise_approval_engine_error(exc: ValueError) -> Never:
+        message = str(exc)
+        if "not found" in message:
+            raise HTTPException(status_code=404, detail=message) from exc
+        if "expired" in message:
+            raise HTTPException(status_code=409, detail=message) from exc
+        raise HTTPException(status_code=400, detail=message) from exc
+
+    @app.post("/admin/approvals/workflows")
+    async def create_approval_workflow(
+        payload: ApprovalWorkflowCreateRequest,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Create an approval workflow token for a specific session/tool pair."""
+        _authorize_admin_request(
+            required_roles={APPROVAL_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        try:
+            workflow = app.state.approval_engine.create_workflow(
+                session_id=payload.session_id,
+                tool_name=payload.tool_name,
+                required_steps=payload.required_steps,
+                required_approvers=payload.required_approvers,
+                requested_by=payload.requested_by,
+                expires_in_seconds=payload.expires_in_seconds,
+                expires_at=payload.expires_at,
+            )
+        except ValueError as exc:
+            _raise_approval_engine_error(exc)
+        return JSONResponse(workflow)
+
+    @app.get("/admin/approvals/workflows/{workflow_id}")
+    async def get_approval_workflow(
+        workflow_id: str,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Fetch approval workflow status and current approvals."""
+        _authorize_admin_request(
+            required_roles={APPROVAL_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        try:
+            workflow = app.state.approval_engine.get_workflow(workflow_id)
+        except ValueError as exc:
+            _raise_approval_engine_error(exc)
+        return JSONResponse(workflow)
+
+    @app.post("/admin/approvals/workflows/{workflow_id}/approve")
+    async def approve_approval_workflow(
+        workflow_id: str,
+        payload: ApprovalWorkflowApproveRequest,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Record one approval step for a workflow."""
+        _authorize_admin_request(
+            required_roles={APPROVAL_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        try:
+            workflow = app.state.approval_engine.approve(
+                workflow_id, approver_id=payload.approver_id
+            )
+        except ValueError as exc:
+            _raise_approval_engine_error(exc)
+        return JSONResponse(workflow)
+
+    @app.post("/admin/approvals/workflows/{workflow_id}/delegate")
+    async def delegate_approval_workflow(
+        workflow_id: str,
+        payload: ApprovalWorkflowDelegateRequest,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Delegate a required approver slot to another identity."""
+        _authorize_admin_request(
+            required_roles={APPROVAL_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        try:
+            workflow = app.state.approval_engine.delegate(
+                workflow_id,
+                from_approver=payload.from_approver,
+                to_approver=payload.to_approver,
+            )
+        except ValueError as exc:
+            _raise_approval_engine_error(exc)
+        return JSONResponse(workflow)
 
     @app.post("/admin/policies/reload")
     async def reload_policies(

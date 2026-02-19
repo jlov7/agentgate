@@ -90,7 +90,7 @@
 - [x] P0-018
 - [x] P0-019
 - [x] P0-020
-- [ ] P1-001
+- [x] P1-001
 - [ ] P1-002
 - [ ] P1-003
 - [ ] P1-004
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-001` Approval workflow engine (multi-step, expiry, delegation).
-- Why now: all P0 release blockers are now closed with passing gate evidence, so execution moves to the first P1 launch-quality item.
+- Active item: `P1-002` Policy lifecycle system (draft/review/publish/rollback).
+- Why now: approval workflow quality bar is now closed with gate evidence, so execution moves to lifecycle governance for safe policy operations.
 
 ## Surprises & Discoveries (Live)
 
@@ -144,6 +144,7 @@
 - 2026-02-19: Move next to P0-019 after P0-018 landed with SLO definitions and runtime alerting.
 - 2026-02-19: Move next to P0-020 after P0-019 landed with release-target performance validation enforcement.
 - 2026-02-19: Move next to P1-001 after P0-020 landed with external security assessment closure artifacts.
+- 2026-02-19: Move next to P1-002 after P1-001 landed with approval workflow engine controls.
 
 ## Outcomes & Retrospective (Live)
 
@@ -257,3 +258,9 @@
   - Added `make security-closure` and required closure artifact inclusion in release support bundle evidence paths.
   - Added regression tests for closure pass/fail behavior and doctor security command wiring.
   - Evidence: `.venv/bin/pytest tests/test_security_closure.py tests/test_doctor.py::test_doctor_security_check_emits_security_closure_artifact -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-001` with approval workflow engine implementation.
+  - Added in-memory approval workflow engine with multi-step thresholds, expiry handling, and required-approver delegation (`src/agentgate/approvals.py`).
+  - Added admin approval workflow APIs (`/admin/approvals/workflows`, `/{id}`, `/{id}/approve`, `/{id}/delegate`) with role-based admin credential checks.
+  - Wired policy approval-token verification to support workflow-backed tokens while preserving existing static approval token compatibility.
+  - Added regression tests covering multi-step gating, expiry denial, and delegation completion behavior (`tests/test_approvals.py`).
+  - Evidence: `.venv/bin/pytest tests/test_approvals.py tests/test_gateway.py tests/test_policy.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

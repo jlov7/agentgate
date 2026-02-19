@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-020 to P1-001 (approval workflow engine with multi-step, expiry, and delegation support).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-001 to P1-002 (policy lifecycle system with draft/review/publish/rollback).
 
 ## Status
 
@@ -93,17 +93,21 @@ In Progress
 83. [x] P0-020 GREEN: implement closure package artifact generation and verification hooks.
 84. [x] Run targeted tests for P0-020.
 85. [x] Re-run `make verify` and `scripts/doctor.sh`.
-86. [ ] P1-001 RED: add failing tests for multi-step approvals, expiry, and delegated approval behavior.
-87. [ ] P1-001 GREEN: implement approval workflow engine in API/runtime paths.
-88. [ ] Run targeted tests for P1-001.
-89. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+86. [x] P1-001 RED: add failing tests for multi-step approvals, expiry, and delegated approval behavior.
+87. [x] P1-001 GREEN: implement approval workflow engine in API/runtime paths.
+88. [x] Run targeted tests for P1-001.
+89. [x] Re-run `make verify` and `scripts/doctor.sh`.
+90. [ ] P1-002 RED: add failing tests for policy lifecycle states and rollback behavior.
+91. [ ] P1-002 GREEN: implement policy lifecycle draft/review/publish/rollback APIs and storage.
+92. [ ] Run targeted tests for P1-002.
+93. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-020 is complete and verified; next priority is approval workflow engine (`P1-001`).
+- P1-001 is complete and verified; next priority is policy lifecycle management (`P1-002`).
 
 ## Open Questions
 
-- None blocking P1-001 implementation start.
+- None blocking P1-002 implementation start.
