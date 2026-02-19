@@ -610,6 +610,53 @@ def test_kill_switch_webhook_disabled(client, monkeypatch) -> None:
     assert called is False
 
 
+def test_slo_breach_emits_webhook_and_status(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    client.app.state.slo_monitor.enabled = True
+    client.app.state.slo_monitor.min_samples = 1
+    client.app.state.slo_monitor.availability_target = 1.0
+    client.app.state.slo_monitor.p95_latency_seconds = 10.0
+    client.app.state.slo_monitor.alert_cooldown_seconds = 0
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    class DummyWebhook:
+        enabled = True
+
+        async def notify(
+            self,
+            event_type: str,
+            payload: dict[str, object],
+            retry: bool = True,
+        ) -> bool:
+            calls.append((event_type, payload))
+            return True
+
+    monkeypatch.setattr("agentgate.main.get_webhook_notifier", lambda: DummyWebhook())
+
+    response = client.post(
+        "/tools/call",
+        json={
+            "session_id": "slo-breach-session",
+            "tool_name": "unknown_tool",
+            "arguments": {},
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["success"] is False
+
+    assert any(event_type == "slo.breach" for event_type, _ in calls)
+    slo_payload = next(payload for event_type, payload in calls if event_type == "slo.breach")
+    assert slo_payload["objective"] == "availability"
+
+    status = client.get(
+        "/admin/slo/status",
+        headers={"X-API-Key": "admin-key"},
+    )
+    assert status.status_code == 200
+    availability = status.json()["slo"]["objectives"]["availability"]
+    assert availability["breached"] is True
+
+
 def test_reload_policies_invalid_key(client, monkeypatch) -> None:
     monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "secret")
     response = client.post(

@@ -74,6 +74,7 @@ from agentgate.rate_limit import RateLimiter
 from agentgate.replay import PolicyReplayEvaluator, summarize_replay_deltas
 from agentgate.rollout import CanaryEvaluator, RolloutController
 from agentgate.shadow import ShadowPolicyTwin
+from agentgate.slo import SLOMonitor
 from agentgate.taint import TaintTracker
 from agentgate.traces import TraceStore
 from agentgate.transparency import TransparencyLog
@@ -402,6 +403,55 @@ def _get_webhook_url() -> str | None:
     return os.getenv("AGENTGATE_WEBHOOK_URL")
 
 
+def _is_slo_enabled() -> bool:
+    value = os.getenv("AGENTGATE_SLO_ENABLED", "").strip().lower()
+    if not value:
+        return False
+    return value in {"1", "true", "yes", "on"}
+
+
+def _get_slo_window_seconds() -> int:
+    raw = os.getenv("AGENTGATE_SLO_WINDOW_SECONDS", "300")
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 300
+
+
+def _get_slo_min_samples() -> int:
+    raw = os.getenv("AGENTGATE_SLO_MIN_SAMPLES", "50")
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 50
+
+
+def _get_slo_availability_target() -> float:
+    raw = os.getenv("AGENTGATE_SLO_AVAILABILITY_TARGET", "0.99")
+    try:
+        value = float(raw)
+    except ValueError:
+        return 0.99
+    return max(0.0, min(1.0, value))
+
+
+def _get_slo_p95_latency_seconds() -> float:
+    raw = os.getenv("AGENTGATE_SLO_P95_LATENCY_SECONDS", "1.0")
+    try:
+        value = float(raw)
+    except ValueError:
+        return 1.0
+    return max(0.001, value)
+
+
+def _get_slo_alert_cooldown_seconds() -> int:
+    raw = os.getenv("AGENTGATE_SLO_ALERT_COOLDOWN_SECONDS", "300")
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 300
+
+
 def _create_redis_client(redis_url: str) -> Redis:
     """Create Redis client with connection pooling."""
     kwargs: dict[str, Any] = {
@@ -484,6 +534,14 @@ def create_app(
 
     # Configure webhook notifier
     webhook_notifier = configure_webhook_notifier(webhook_url=_get_webhook_url())
+    slo_monitor = SLOMonitor(
+        enabled=_is_slo_enabled(),
+        window_seconds=_get_slo_window_seconds(),
+        min_samples=_get_slo_min_samples(),
+        availability_target=_get_slo_availability_target(),
+        p95_latency_seconds=_get_slo_p95_latency_seconds(),
+        alert_cooldown_seconds=_get_slo_alert_cooldown_seconds(),
+    )
 
     quarantine = QuarantineCoordinator(
         trace_store=trace_store,
@@ -527,6 +585,7 @@ def create_app(
     app.state.shadow_twin = shadow_twin
     app.state.rate_limiter = rate_limiter
     app.state.webhook_notifier = webhook_notifier
+    app.state.slo_monitor = slo_monitor
     app.state.policy_path = policy_path
     app.state.policy_data_path = policy_data_path
     swagger_oauth2_redirect_url = (
@@ -723,14 +782,25 @@ def create_app(
 
         gateway: Gateway = app.state.gateway
 
+        started_at = time.perf_counter()
         with metrics.request_duration_seconds.time("tools_call"):
             result = await gateway.call_tool(request)
+        latency_seconds = max(0.0, time.perf_counter() - started_at)
 
         # Record metrics
         decision = "ALLOW" if result.success else "DENY"
         if result.error and "approval" in result.error.lower():
             decision = "REQUIRE_APPROVAL"
         metrics.tool_calls_total.inc(request.tool_name, decision)
+        slo_events = app.state.slo_monitor.record_tool_call(
+            success=result.success,
+            latency_seconds=latency_seconds,
+        )
+        if slo_events:
+            webhook = get_webhook_notifier()
+            if webhook.enabled:
+                for event in slo_events:
+                    await webhook.notify(event.event_type, event.to_payload())
 
         return result
 
@@ -983,6 +1053,19 @@ def create_app(
             hold_reason=hold_reason,
         )
         return JSONResponse({"retention": policy})
+
+    @app.get("/admin/slo/status")
+    async def admin_slo_status(
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Return current SLO objective status (admin only)."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        return JSONResponse({"slo": app.state.slo_monitor.current_status()})
 
     @app.post("/admin/sessions/purge")
     async def purge_expired_sessions(
