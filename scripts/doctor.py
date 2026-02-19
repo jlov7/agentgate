@@ -88,6 +88,18 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         command=".venv/bin/ruff check scripts/",
     ),
     CheckSpec(
+        name="rego_quality",
+        gate="RG-12",
+        description="Rego lint/test/coverage quality gate",
+        command=(
+            ".venv/bin/python scripts/rego_quality.py "
+            "--policy-dir policies "
+            "--output artifacts/rego-quality.json "
+            "--coverage-threshold 0.90 "
+            "--require-pass"
+        ),
+    ),
+    CheckSpec(
         name="scorecard",
         gate="RG-08",
         description="10/10 scorecard and critical-gap closure enforcement",

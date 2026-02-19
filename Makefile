@@ -1,4 +1,4 @@
-.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker verify verify-strict doctor scorecard product-audit security-closure support-bundle
+.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker rego-quality verify verify-strict doctor scorecard product-audit security-closure support-bundle
 
 # ============================================================================
 # Development
@@ -119,6 +119,7 @@ verify:
 	.venv/bin/mypy src/
 	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term --cov-report=xml
 	$(MAKE) check-docker
+	$(MAKE) rego-quality
 	.venv/bin/pytest tests/integration -v -m integration
 	.venv/bin/pytest tests/evals -v -m evals
 	.venv/bin/python evals/run_evals.py
@@ -126,6 +127,9 @@ verify:
 
 check-docker:
 	scripts/check_docker.sh
+
+rego-quality:
+	.venv/bin/python scripts/rego_quality.py --policy-dir policies --output artifacts/rego-quality.json --coverage-threshold 0.90 --require-pass
 
 verify-strict: verify mutate
 
@@ -263,6 +267,7 @@ help:
 	@echo "  make load-test-remote Run a k6 load test against LOAD_TEST_URL"
 	@echo "  make staging-smoke   Run smoke + load against STAGING_URL"
 	@echo "  make check-docker    Fail fast when Docker daemon is unavailable"
+	@echo "  make rego-quality    Run Rego fmt/test/coverage scoring and emit artifacts/rego-quality.json"
 	@echo "  make test-all        Run all tests"
 	@echo "  make coverage        Run tests with coverage"
 	@echo "  make verify          Run lint, typecheck, unit, integration, evals, AI evals, and E2E tests"

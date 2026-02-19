@@ -48,6 +48,7 @@ def test_doctor_includes_controls_audit_check(tmp_path: Path) -> None:
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     check_names = {check["name"] for check in payload["checks"]}
     assert "controls" in check_names
+    assert "rego_quality" in check_names
 
 
 def test_doctor_perf_check_enforces_validation_artifact(tmp_path: Path) -> None:
@@ -72,3 +73,15 @@ def test_doctor_security_check_emits_security_closure_artifact(tmp_path: Path) -
     command = payload["checks"][0]["command"]
     assert "scripts/security_closure.py" in command
     assert "artifacts/security-closure.json" in command
+
+
+def test_doctor_rego_quality_check_emits_artifact(tmp_path: Path) -> None:
+    output_path = tmp_path / "doctor-rego-quality.json"
+    result = _run("--dry-run", "--checks", "rego_quality", "--output", str(output_path))
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert len(payload["checks"]) == 1
+    command = payload["checks"][0]["command"]
+    assert "scripts/rego_quality.py" in command
+    assert "artifacts/rego-quality.json" in command

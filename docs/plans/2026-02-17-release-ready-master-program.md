@@ -92,7 +92,7 @@
 - [x] P0-020
 - [x] P1-001
 - [x] P1-002
-- [ ] P1-003
+- [x] P1-003
 - [ ] P1-004
 - [ ] P1-005
 - [ ] P1-006
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-003` Rego quality gates (lint/test/coverage scoring).
-- Why now: lifecycle governance is now implemented with passing gate evidence, so execution moves to policy-quality scoring enforcement.
+- Active item: `P1-004` Replay explainability and root-cause diff details.
+- Why now: Rego quality gating is now release-enforced, so execution moves to richer replay diagnostics for operator decision support.
 
 ## Surprises & Discoveries (Live)
 
@@ -146,6 +146,7 @@
 - 2026-02-19: Move next to P1-001 after P0-020 landed with external security assessment closure artifacts.
 - 2026-02-19: Move next to P1-002 after P1-001 landed with approval workflow engine controls.
 - 2026-02-19: Move next to P1-003 after P1-002 landed with policy lifecycle state-management controls.
+- 2026-02-19: Move next to P1-004 after P1-003 landed with Rego quality gate automation and release enforcement.
 
 ## Outcomes & Retrospective (Live)
 
@@ -271,3 +272,9 @@
   - Added runtime policy application refresh on publish/rollback so policy decisions and rate limits update immediately without restart.
   - Added regression tests for publish-state gating, publish runtime effect, rollback restoration, and trace-store lifecycle persistence.
   - Evidence: `.venv/bin/pytest tests/test_policy_lifecycle.py tests/test_traces.py -q` pass, `.venv/bin/pytest tests/test_main.py tests/test_policy.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-003` with Rego quality gate enforcement.
+  - Added `scripts/rego_quality.py` for Rego fmt/test/coverage scoring with JSON artifact output (`artifacts/rego-quality.json`).
+  - Added Rego test coverage fixture (`policies/default_test.rego`) and formatted policy sources for `opa fmt --fail` compatibility.
+  - Integrated `rego-quality` into `make verify`, release gate matrix (`RG-12`), and doctor orchestration (`rego_quality` check).
+  - Added regression tests for script pass/fail behavior and doctor gate command wiring (`tests/test_rego_quality.py`, `tests/test_doctor.py`).
+  - Evidence: `.venv/bin/pytest tests/test_rego_quality.py tests/test_doctor.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

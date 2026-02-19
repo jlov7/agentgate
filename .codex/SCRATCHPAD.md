@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-002 to P1-003 (Rego quality gates: lint/test/coverage scoring).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-003 to P1-004 (replay explainability and root-cause diff details).
 
 ## Status
 
@@ -101,17 +101,21 @@ In Progress
 91. [x] P1-002 GREEN: implement policy lifecycle draft/review/publish/rollback APIs and storage.
 92. [x] Run targeted tests for P1-002.
 93. [x] Re-run `make verify` and `scripts/doctor.sh`.
-94. [ ] P1-003 RED: add failing checks for Rego lint/test/coverage scoring gates.
-95. [ ] P1-003 GREEN: implement Rego quality scoring automation + enforcement wiring.
-96. [ ] Run targeted tests for P1-003.
-97. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+94. [x] P1-003 RED: add failing checks for Rego lint/test/coverage scoring gates.
+95. [x] P1-003 GREEN: implement Rego quality scoring automation + enforcement wiring.
+96. [x] Run targeted tests for P1-003.
+97. [x] Re-run `make verify` and `scripts/doctor.sh`.
+98. [ ] P1-004 RED: add failing tests for replay explainability root-cause attribution payloads.
+99. [ ] P1-004 GREEN: implement replay explainability details in API/artifacts.
+100. [ ] Run targeted tests for P1-004.
+101. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-002 is complete and verified; next priority is Rego quality gate enforcement (`P1-003`).
+- P1-003 is complete and verified; next priority is replay explainability depth (`P1-004`).
 
 ## Open Questions
 
-- None blocking P1-003 implementation start.
+- None blocking P1-004 implementation start.

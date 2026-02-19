@@ -179,6 +179,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P0-020 external security assessment closure package.
 - [x] Implement P1-001 approval workflow engine (multi-step, expiry, delegation).
 - [x] Implement P1-002 policy lifecycle system (draft/review/publish/rollback).
+- [x] Implement P1-003 Rego quality gates (lint/test/coverage scoring).
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -209,6 +210,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P0-020 success, prioritize P1-001 approval workflow engine.
 - After P1-001 success, prioritize P1-002 policy lifecycle system.
 - After P1-002 success, prioritize P1-003 Rego quality gates.
+- After P1-003 success, prioritize P1-004 replay explainability.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -292,3 +294,9 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added runtime policy-application wiring on publish/rollback to refresh policy evaluation state and rate-limit controls without restart.
 - Added regression tests covering lifecycle transitions, publish gating, rollback restoration behavior, and trace-store lifecycle persistence.
 - Evidence: `.venv/bin/pytest tests/test_policy_lifecycle.py tests/test_traces.py -q` pass, `.venv/bin/pytest tests/test_main.py tests/test_policy.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-003 completed with RED->GREEN->verify->doctor loop.
+- Added `scripts/rego_quality.py` to run Rego fmt + test coverage scoring and emit `artifacts/rego-quality.json` with pass/fail quality checks.
+- Added Rego regression fixtures in `policies/default_test.rego` and integrated `rego-quality` into `make verify`.
+- Added release gate `RG-12` and doctor check `rego_quality` so Rego lint/test/coverage quality is release-enforced.
+- Added regression tests for quality script pass/fail behavior and doctor check wiring.
+- Evidence: `.venv/bin/pytest tests/test_rego_quality.py tests/test_doctor.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
