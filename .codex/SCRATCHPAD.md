@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-014 to P2-001 (hosted browser sandbox trial flow).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P2-001 to P2-002 (policy template library by risk/use-case).
 
 ## Status
 
@@ -149,17 +149,21 @@ In Progress
 139. [x] P1-014 GREEN: implement resettable staging automation + seeded scenario fixtures.
 140. [x] Run targeted tests for P1-014.
 141. [x] Re-run `make verify` and `scripts/doctor.sh`.
-142. [ ] P2-001 RED: add failing checks for hosted browser sandbox trial entrypoint and artifacts.
-143. [ ] P2-001 GREEN: implement hosted browser sandbox no-local-install trial path.
-144. [ ] Run targeted tests for P2-001.
-145. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+142. [x] P2-001 RED: add failing checks for hosted browser sandbox trial entrypoint and artifacts.
+143. [x] P2-001 GREEN: implement hosted browser sandbox no-local-install trial path.
+144. [x] Run targeted tests for P2-001.
+145. [x] Re-run `make verify` and `scripts/doctor.sh`.
+146. [ ] P2-002 RED: add failing checks for policy template library assets and docs publication.
+147. [ ] P2-002 GREEN: implement policy template library by risk/use-case.
+148. [ ] Run targeted tests for P2-002.
+149. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-014 is fully complete with staging reset automation, seeded scenarios, and full-gate verification; next execution item is `P2-001`.
+- P2-001 is fully complete with hosted browser sandbox trial support and full-gate verification; next execution item is `P2-002`.
 
 ## Open Questions
 
-- None blocking commit for P1-014 and transition to P2-001.
+- None blocking commit for P2-001 and transition to P2-002.

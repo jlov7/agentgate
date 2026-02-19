@@ -191,6 +191,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-012 OpenTelemetry distributed tracing.
 - [x] Implement P1-013 default Grafana dashboards + alert packs.
 - [x] Implement P1-014 resettable staging environment with seeded scenarios.
+- [x] Implement P2-001 hosted browser sandbox no-local-install trial flow.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -233,6 +234,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-012 success, prioritize P1-013 default Grafana dashboards + alert packs.
 - After P1-013 success, prioritize P1-014 resettable staging environment + seeded scenarios.
 - After P1-014 success, prioritize P2-001 hosted browser sandbox no-local-install trial flow.
+- After P2-001 success, prioritize P2-002 policy template library by risk/use-case.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -379,3 +381,9 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added staging reset runbook (`docs/STAGING_RESET.md`) and docs discovery links in MkDocs + README quick links.
 - Added regression tests (`tests/test_staging_reset.py`) validating reset pass/fail behavior and published assets/docs.
 - Evidence: `.venv/bin/pytest tests/test_staging_reset.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P2-001 completed with RED->GREEN->verify->doctor loop.
+- Added browser-native hosted sandbox page (`docs/HOSTED_SANDBOX.md`) with no-local-install trial workflow and transcript export.
+- Added seeded hosted trial flows (`docs/lab/sandbox/flows.json`) and runtime sandbox runner (`docs/javascripts/hosted-sandbox.js`) for deterministic health/list/read/write allow/deny exercises.
+- Added sandbox UI styling in docs theme, plus docs/README discoverability wiring via MkDocs nav and quick links.
+- Added regression tests (`tests/test_hosted_sandbox_assets.py`) validating flow assets, doc wiring, and discoverability.
+- Evidence: `.venv/bin/pytest tests/test_hosted_sandbox_assets.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

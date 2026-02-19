@@ -1,0 +1,74 @@
+[
+  {
+    "id": "health-check",
+    "title": "Health check",
+    "description": "Validate the hosted AgentGate endpoint is reachable.",
+    "request": {
+      "method": "GET",
+      "path": "/health"
+    },
+    "expected_status": 200
+  },
+  {
+    "id": "list-tools",
+    "title": "List tools",
+    "description": "Fetch available tools for a deterministic sandbox session.",
+    "request": {
+      "method": "GET",
+      "path": "/tools/list?session_id=sandbox-read"
+    },
+    "expected_status": 200
+  },
+  {
+    "id": "read-allow",
+    "title": "Read call allowed",
+    "description": "Run a read-only query that should pass policy.",
+    "request": {
+      "method": "POST",
+      "path": "/tools/call",
+      "body": {
+        "session_id": "sandbox-read",
+        "tool_name": "db_query",
+        "arguments": {
+          "query": "SELECT 1"
+        }
+      }
+    },
+    "expected_status": 200
+  },
+  {
+    "id": "write-deny-no-approval",
+    "title": "Write denied without approval",
+    "description": "Attempt a write request without approval token.",
+    "request": {
+      "method": "POST",
+      "path": "/tools/call",
+      "body": {
+        "session_id": "sandbox-write-deny",
+        "tool_name": "db_update",
+        "arguments": {
+          "table": "inventory"
+        }
+      }
+    },
+    "expected_status": 200
+  },
+  {
+    "id": "write-allow-approved",
+    "title": "Write allowed with approval",
+    "description": "Run the same write request with an approval token.",
+    "request": {
+      "method": "POST",
+      "path": "/tools/call",
+      "body": {
+        "session_id": "sandbox-write-allow",
+        "tool_name": "db_update",
+        "arguments": {
+          "table": "inventory"
+        },
+        "approval_token": "approved"
+      }
+    },
+    "expected_status": 200
+  }
+]

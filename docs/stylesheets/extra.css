@@ -278,6 +278,63 @@ body {
   color: var(--ag-accent);
 }
 
+.ag-sandbox-form {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.ag-sandbox-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ag-ink-muted);
+}
+
+.ag-sandbox-form input {
+  border: 1px solid var(--ag-line);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.92rem;
+  color: var(--ag-ink);
+  background: #fff;
+}
+
+.ag-sandbox-runs {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.ag-sandbox-run {
+  border: 1px solid var(--ag-line);
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.ag-sandbox-run--pass {
+  border-left: 4px solid var(--ag-accent);
+}
+
+.ag-sandbox-run--fail {
+  border-left: 4px solid #cf3e3e;
+}
+
+.ag-sandbox-run header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.ag-sandbox-run pre {
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;

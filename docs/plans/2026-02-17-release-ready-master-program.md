@@ -104,7 +104,7 @@
 - [x] P1-012
 - [x] P1-013
 - [x] P1-014
-- [ ] P2-001
+- [x] P2-001
 - [ ] P2-002
 - [ ] P2-003
 - [ ] P2-004
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P2-001` Hosted browser sandbox (no-local-install trial).
-- Why now: baseline launch quality is complete through `P1-014`, and reducing trial friction is now the highest-leverage product adoption step.
+- Active item: `P2-002` Policy template library by risk/use-case.
+- Why now: hosted onboarding friction is reduced through `P2-001`; the next leverage point is faster policy adoption with curated templates.
 
 ## Surprises & Discoveries (Live)
 
@@ -158,6 +158,7 @@
 - 2026-02-19: Move next to P1-013 after P1-012 landed with OpenTelemetry distributed tracing support.
 - 2026-02-19: Move next to P1-014 after P1-013 landed with default Grafana dashboards and alert packs.
 - 2026-02-19: Move next to P2-001 after P1-014 landed with staging reset automation and seeded scenario validation.
+- 2026-02-19: Move next to P2-002 after P2-001 landed with hosted browser sandbox no-install trial support.
 
 ## Outcomes & Retrospective (Live)
 
@@ -356,3 +357,9 @@
   - Added operator make target (`make staging-reset`) and runbook (`docs/STAGING_RESET.md`) with discovery links in `mkdocs.yml` and README quick links.
   - Added regression tests (`tests/test_staging_reset.py`) for pass/fail reset behavior and docs/asset publication checks.
   - Evidence: `.venv/bin/pytest tests/test_staging_reset.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P2-001` with hosted browser sandbox no-local-install trial support.
+  - Added hosted sandbox runbook (`docs/HOSTED_SANDBOX.md`) with browser-first trial instructions and transcript export workflow.
+  - Added seeded trial flow pack (`docs/lab/sandbox/flows.json`) and browser runner (`docs/javascripts/hosted-sandbox.js`) for deterministic hosted flow validation.
+  - Added docs styling + discoverability wiring via `docs/stylesheets/extra.css`, `mkdocs.yml`, and README quick links.
+  - Added regression tests (`tests/test_hosted_sandbox_assets.py`) to enforce asset schema, page wiring, and docs/readme discoverability.
+  - Evidence: `.venv/bin/pytest tests/test_hosted_sandbox_assets.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

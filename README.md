@@ -738,6 +738,7 @@ This is a personal, independent project. It is not affiliated with any employer 
 | Resource | Description |
 |----------|-------------|
 | [Try in 5 Minutes](docs/TRY_NOW.md) | One-command setup, showcase, and proof bundle |
+| [Hosted Browser Sandbox](docs/HOSTED_SANDBOX.md) | No-local-install browser trial against a hosted endpoint |
 | [Interactive Demo Lab](docs/DEMO_LAB.md) | Hosted scenario replay with blast-radius metrics |
 | [Demo Day Playbook](docs/DEMO_DAY.md) | 10-minute stakeholder + technical demo flow |
 | [Understanding AgentGate](docs/UNDERSTANDING_AGENTGATE.md) | Non-technical introduction |
