@@ -102,7 +102,7 @@ def test_trace_store_migrates_legacy_schema(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2, 3, 4, 5]
+        assert versions == [1, 2, 3, 4, 5, 6]
 
 
 def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
@@ -113,7 +113,7 @@ def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-    assert versions == [1, 2, 3, 4, 5]
+    assert versions == [1, 2, 3, 4, 5, 6]
 
 
 def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
@@ -138,7 +138,7 @@ def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2, 3, 4, 5]
+        assert versions == [1, 2, 3, 4, 5, 6]
 
 
 def test_trace_store_binds_session_tenant_and_filters_sessions(tmp_path) -> None:
@@ -305,3 +305,47 @@ def test_transparency_checkpoint_write_once_and_immutable(tmp_path) -> None:
                 "UPDATE transparency_checkpoints SET status = ? WHERE checkpoint_id = ?",
                 ("failed", checkpoint["checkpoint_id"]),
             )
+
+
+def test_session_retention_legal_hold_blocks_delete(tmp_path) -> None:
+    now = datetime(2026, 2, 19, 16, 30, tzinfo=UTC)
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        store.append(_build_event("evt-hold", "sess-hold", now))
+        policy = store.set_session_retention(
+            "sess-hold",
+            retain_until=now,
+            legal_hold=True,
+            hold_reason="litigation",
+        )
+        assert policy["legal_hold"] is True
+
+        with pytest.raises(RuntimeError, match="legal hold"):
+            store.delete_session_data("sess-hold")
+
+        store.delete_session_data("sess-hold", force=True)
+        assert store.query(session_id="sess-hold") == []
+
+
+def test_purge_expired_sessions_skips_legal_hold(tmp_path) -> None:
+    now = datetime(2026, 2, 19, 16, 30, tzinfo=UTC)
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        store.append(_build_event("evt-old", "sess-old", now))
+        store.append(_build_event("evt-held", "sess-held", now))
+
+        store.set_session_retention(
+            "sess-old",
+            retain_until=datetime(2026, 2, 19, 16, 0, tzinfo=UTC),
+            legal_hold=False,
+            hold_reason=None,
+        )
+        store.set_session_retention(
+            "sess-held",
+            retain_until=datetime(2026, 2, 19, 16, 0, tzinfo=UTC),
+            legal_hold=True,
+            hold_reason="investigation",
+        )
+
+        purged = store.purge_expired_sessions(now=now)
+        assert purged == ["sess-old"]
+        assert store.query(session_id="sess-old") == []
+        assert len(store.query(session_id="sess-held")) == 1

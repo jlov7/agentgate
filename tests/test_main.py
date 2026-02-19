@@ -321,6 +321,57 @@ def test_list_sessions_endpoint(client) -> None:
     assert session_id in response.json()["sessions"]
 
 
+def test_admin_session_retention_and_purge_flow(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    session_id = "sess-retention-api"
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": session_id,
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+        },
+    )
+
+    hold = client.post(
+        f"/admin/sessions/{session_id}/retention",
+        headers={"X-API-Key": "admin-key"},
+        json={
+            "retain_until": "2026-02-19T16:00:00+00:00",
+            "legal_hold": True,
+            "hold_reason": "litigation",
+        },
+    )
+    assert hold.status_code == 200
+    assert hold.json()["retention"]["legal_hold"] is True
+
+    blocked_delete = client.delete(
+        f"/admin/sessions/{session_id}",
+        headers={"X-API-Key": "admin-key"},
+    )
+    assert blocked_delete.status_code == 409
+
+    release_hold = client.post(
+        f"/admin/sessions/{session_id}/retention",
+        headers={"X-API-Key": "admin-key"},
+        json={
+            "retain_until": "2026-02-19T16:00:00+00:00",
+            "legal_hold": False,
+        },
+    )
+    assert release_hold.status_code == 200
+    assert release_hold.json()["retention"]["legal_hold"] is False
+
+    purge = client.post(
+        "/admin/sessions/purge",
+        headers={"X-API-Key": "admin-key"},
+        json={"purge_before": "2026-02-19T17:00:00+00:00"},
+    )
+    assert purge.status_code == 200
+    assert session_id in purge.json()["purged_sessions"]
+    assert client.app.state.trace_store.query(session_id=session_id) == []
+
+
 def test_tools_call_requires_tenant_context_when_isolation_enabled(
     client, monkeypatch
 ) -> None:

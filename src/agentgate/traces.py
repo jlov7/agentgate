@@ -132,6 +132,7 @@ class TraceStore:
             (3, "evidence_archives", self._migration_evidence_archives),
             (4, "transparency_checkpoints", self._migration_transparency_checkpoints),
             (5, "session_tenants", self._migration_session_tenants),
+            (6, "session_retention", self._migration_session_retention),
         ]
 
     def _ensure_migrations_table(self) -> None:
@@ -590,6 +591,27 @@ class TraceStore:
                 """
             )
 
+    def _migration_session_retention(self) -> None:
+        """Create session retention/legal-hold policy table."""
+        with self._lock:
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS session_retention (
+                    session_id TEXT PRIMARY KEY,
+                    retain_until TEXT,
+                    legal_hold INTEGER NOT NULL DEFAULT 0,
+                    hold_reason TEXT,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_session_retention_expiry
+                ON session_retention(retain_until, legal_hold)
+                """
+            )
+
     def archive_evidence_pack(
         self,
         *,
@@ -875,6 +897,144 @@ class TraceStore:
         if row is None:
             return None
         return str(row["tenant_id"])
+
+    def set_session_retention(
+        self,
+        session_id: str,
+        *,
+        retain_until: datetime | None,
+        legal_hold: bool,
+        hold_reason: str | None = None,
+    ) -> dict[str, Any]:
+        """Set retention and legal-hold policy for a session."""
+        retain_until_value = retain_until.isoformat() if retain_until else None
+        hold_reason_value = hold_reason or None
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT INTO session_retention (
+                    session_id, retain_until, legal_hold, hold_reason, updated_at
+                ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(session_id) DO UPDATE SET
+                    retain_until=excluded.retain_until,
+                    legal_hold=excluded.legal_hold,
+                    hold_reason=excluded.hold_reason,
+                    updated_at=CURRENT_TIMESTAMP
+                """,
+                (
+                    session_id,
+                    retain_until_value,
+                    1 if legal_hold else 0,
+                    hold_reason_value,
+                ),
+            )
+            row = self.conn.execute(
+                """
+                SELECT session_id, retain_until, legal_hold, hold_reason, updated_at
+                FROM session_retention
+                WHERE session_id = ?
+                """,
+                (session_id,),
+            ).fetchone()
+            self.conn.commit()
+        if row is None:
+            raise RuntimeError("Session retention persistence failed")
+        return {
+            "session_id": str(row["session_id"]),
+            "retain_until": row["retain_until"],
+            "legal_hold": bool(row["legal_hold"]),
+            "hold_reason": row["hold_reason"],
+            "updated_at": row["updated_at"],
+        }
+
+    def get_session_retention(self, session_id: str) -> dict[str, Any] | None:
+        """Fetch retention/legal-hold policy for a session."""
+        with self._lock:
+            row = self.conn.execute(
+                """
+                SELECT session_id, retain_until, legal_hold, hold_reason, updated_at
+                FROM session_retention
+                WHERE session_id = ?
+                """,
+                (session_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "session_id": str(row["session_id"]),
+            "retain_until": row["retain_until"],
+            "legal_hold": bool(row["legal_hold"]),
+            "hold_reason": row["hold_reason"],
+            "updated_at": row["updated_at"],
+        }
+
+    def delete_session_data(self, session_id: str, *, force: bool = False) -> bool:
+        """Delete all session-scoped data, unless blocked by legal hold."""
+        policy = self.get_session_retention(session_id)
+        if policy and policy["legal_hold"] and not force:
+            raise RuntimeError("Session is under legal hold")
+
+        with self._lock:
+            incident_rows = self.conn.execute(
+                """
+                SELECT incident_id
+                FROM incidents
+                WHERE session_id = ?
+                """,
+                (session_id,),
+            ).fetchall()
+            incident_ids = [str(row["incident_id"]) for row in incident_rows]
+            for incident_id in incident_ids:
+                self.conn.execute(
+                    "DELETE FROM incident_events WHERE incident_id = ?",
+                    (incident_id,),
+                )
+
+            self.conn.execute("DELETE FROM traces WHERE session_id = ?", (session_id,))
+            self.conn.execute("DELETE FROM replay_runs WHERE session_id = ?", (session_id,))
+            self.conn.execute("DELETE FROM session_taints WHERE session_id = ?", (session_id,))
+            self.conn.execute("DELETE FROM shadow_diffs WHERE session_id = ?", (session_id,))
+            self.conn.execute("DELETE FROM incidents WHERE session_id = ?", (session_id,))
+            self.conn.execute(
+                "DELETE FROM evidence_archives WHERE session_id = ?",
+                (session_id,),
+            )
+            self.conn.execute(
+                "DELETE FROM transparency_checkpoints WHERE session_id = ?",
+                (session_id,),
+            )
+            self.conn.execute(
+                "DELETE FROM session_tenants WHERE session_id = ?",
+                (session_id,),
+            )
+            self.conn.execute(
+                "DELETE FROM session_retention WHERE session_id = ?",
+                (session_id,),
+            )
+            self.conn.commit()
+        return True
+
+    def purge_expired_sessions(self, now: datetime | None = None) -> list[str]:
+        """Delete sessions with expired retention that are not under legal hold."""
+        effective_now = (now or datetime.now()).isoformat()
+        with self._lock:
+            rows = self.conn.execute(
+                """
+                SELECT session_id
+                FROM session_retention
+                WHERE retain_until IS NOT NULL
+                  AND retain_until <= ?
+                  AND legal_hold = 0
+                ORDER BY session_id ASC
+                """,
+                (effective_now,),
+            ).fetchall()
+        purged: list[str] = []
+        for row in rows:
+            session_id = str(row["session_id"])
+            self.delete_session_data(session_id, force=False)
+            purged.append(session_id)
+        return purged
 
     def query(
         self,

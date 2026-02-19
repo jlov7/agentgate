@@ -944,6 +944,95 @@ def create_app(
         )
         return JSONResponse(report)
 
+    @app.post("/admin/sessions/{session_id}/retention")
+    async def set_session_retention(
+        session_id: str,
+        payload: dict[str, Any],
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Configure retention/legal-hold policy for a session (admin only)."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        retain_until_raw = payload.get("retain_until")
+        retain_until: datetime | None = None
+        if retain_until_raw is not None:
+            if not isinstance(retain_until_raw, str):
+                raise HTTPException(status_code=400, detail="retain_until must be an ISO string")
+            try:
+                retain_until = datetime.fromisoformat(retain_until_raw)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=400, detail="retain_until must be an ISO datetime"
+                ) from exc
+
+        legal_hold_raw = payload.get("legal_hold", False)
+        if not isinstance(legal_hold_raw, bool):
+            raise HTTPException(status_code=400, detail="legal_hold must be boolean")
+        hold_reason = payload.get("hold_reason")
+        if hold_reason is not None and not isinstance(hold_reason, str):
+            raise HTTPException(status_code=400, detail="hold_reason must be string")
+
+        policy = app.state.trace_store.set_session_retention(
+            session_id,
+            retain_until=retain_until,
+            legal_hold=legal_hold_raw,
+            hold_reason=hold_reason,
+        )
+        return JSONResponse({"retention": policy})
+
+    @app.post("/admin/sessions/purge")
+    async def purge_expired_sessions(
+        payload: dict[str, Any],
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Purge sessions past retention window and not on legal hold (admin only)."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        purge_before_raw = payload.get("purge_before")
+        purge_before: datetime | None = None
+        if purge_before_raw is not None:
+            if not isinstance(purge_before_raw, str):
+                raise HTTPException(status_code=400, detail="purge_before must be an ISO string")
+            try:
+                purge_before = datetime.fromisoformat(purge_before_raw)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=400, detail="purge_before must be an ISO datetime"
+                ) from exc
+        purged_sessions = app.state.trace_store.purge_expired_sessions(now=purge_before)
+        return JSONResponse({
+            "status": "ok",
+            "purged_sessions": purged_sessions,
+            "purged_count": len(purged_sessions),
+        })
+
+    @app.delete("/admin/sessions/{session_id}")
+    async def delete_session(
+        session_id: str,
+        force: bool = False,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Delete all persisted data for a session (admin only)."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        try:
+            app.state.trace_store.delete_session_data(session_id, force=force)
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return JSONResponse({"status": "deleted", "session_id": session_id})
+
     @app.post("/admin/policies/reload")
     async def reload_policies(
         x_api_key: str | None = Header(None, alias="X-API-Key"),
