@@ -88,8 +88,8 @@
 - [x] P0-016
 - [x] P0-017
 - [x] P0-018
-- [ ] P0-019
-- [ ] P0-020
+- [x] P0-019
+- [x] P0-020
 - [ ] P1-001
 - [ ] P1-002
 - [ ] P1-003
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-019` Scale/perf validation at release target traffic.
-- Why now: runtime SLO monitoring is now implemented; the next P0 release blocker is proving performance against release-scale targets with reproducible evidence artifacts.
+- Active item: `P1-001` Approval workflow engine (multi-step, expiry, delegation).
+- Why now: all P0 release blockers are now closed with passing gate evidence, so execution moves to the first P1 launch-quality item.
 
 ## Surprises & Discoveries (Live)
 
@@ -142,6 +142,8 @@
 - 2026-02-19: Move next to P0-016 after P0-015 landed with PII redaction/tokenization controls.
 - 2026-02-19: Move next to P0-018 after P0-016 landed with retention/deletion/legal-hold controls.
 - 2026-02-19: Move next to P0-019 after P0-018 landed with SLO definitions and runtime alerting.
+- 2026-02-19: Move next to P0-020 after P0-019 landed with release-target performance validation enforcement.
+- 2026-02-19: Move next to P1-001 after P0-020 landed with external security assessment closure artifacts.
 
 ## Outcomes & Retrospective (Live)
 
@@ -243,3 +245,15 @@
   - Added admin endpoint `GET /admin/slo/status` to inspect current objective state and computed values.
   - Added regression tests for monitor breach/recovery behavior and end-to-end alert emission + status endpoint coverage.
   - Evidence: `.venv/bin/pytest tests/test_slo.py tests/test_main.py::test_slo_breach_emits_webhook_and_status -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P0-019` with release-target performance validation enforcement.
+  - Added `scripts/validate_load_test_summary.py` to validate load-test summary outputs against explicit release budgets (error rate, p95 latency, throughput, and request volume).
+  - Updated `RG-05` and doctor perf check execution to require `artifacts/perf-validation.json` and fail when budgets are missed.
+  - Hardened e2e runtime determinism in `scripts/e2e-server.sh` with per-run Redis DB and ephemeral trace DB isolation.
+  - Added regression tests covering perf validation script behavior, doctor perf gate command wiring, and e2e isolation configuration.
+  - Evidence: `.venv/bin/pytest tests/test_doctor.py tests/test_validate_load_test_summary.py tests/test_compose_platform_defaults.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P0-020` with external security assessment closure package automation.
+  - Added `scripts/security_closure.py` to generate `artifacts/security-closure.json` from pip-audit, Bandit, SBOM, and external assessment findings inputs.
+  - Added baseline external findings ledger `security/external-assessment-findings.json` and enforced closure artifact generation in `RG-02`.
+  - Added `make security-closure` and required closure artifact inclusion in release support bundle evidence paths.
+  - Added regression tests for closure pass/fail behavior and doctor security command wiring.
+  - Evidence: `.venv/bin/pytest tests/test_security_closure.py tests/test_doctor.py::test_doctor_security_check_emits_security_closure_artifact -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

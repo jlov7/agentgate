@@ -102,6 +102,7 @@ We maintain security through:
 
 - **Automated scanning**: `pip-audit` in CI pipeline
 - **SBOM generation**: CycloneDX bill of materials
+- **Assessment closure package**: `make security-closure` emits `artifacts/security-closure.json`
 - **Dependency updates**: Regular review of dependencies
 - **Pre-commit hooks**: Security checks before commit
 

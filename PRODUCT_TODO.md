@@ -27,6 +27,7 @@ All items must remain checked for `scripts/product_audit.py` to pass.
 
 - [x] Full strict verification (`make verify-strict`) passes
 - [x] Security, a11y, perf, docs gates are enforced in doctor
+- [x] External security assessment closure package is generated (`make security-closure`, `artifacts/security-closure.json`)
 - [x] Evidence export and metrics artifacts remain reproducible
 
 ## Next-Level Overnight Backlog (Non-Gating Roadmap)

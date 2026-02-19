@@ -1,4 +1,4 @@
-.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker verify verify-strict doctor scorecard product-audit support-bundle
+.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker verify verify-strict doctor scorecard product-audit security-closure support-bundle
 
 # ============================================================================
 # Development
@@ -138,6 +138,12 @@ scorecard:
 product-audit:
 	.venv/bin/python scripts/product_audit.py --output artifacts/product-audit.json
 
+security-closure:
+	.venv/bin/pip-audit --format json --output artifacts/pip-audit.json
+	.venv/bin/bandit -r src/ -c pyproject.toml -f json -o artifacts/bandit.json
+	$(MAKE) sbom
+	.venv/bin/python scripts/security_closure.py --pip-audit artifacts/pip-audit.json --bandit artifacts/bandit.json --sbom reports/sbom.json --assessment security/external-assessment-findings.json --output artifacts/security-closure.json
+
 support-bundle:
 	.venv/bin/python scripts/controls_audit.py --output-dir artifacts
 	.venv/bin/python scripts/support_bundle.py --output artifacts/support-bundle.tar.gz --manifest artifacts/support-bundle.json
@@ -264,6 +270,7 @@ help:
 	@echo "  make doctor          Run release gates and emit artifacts/doctor.json"
 	@echo "  make scorecard       Validate 10/10 scorecards and emit artifacts/scorecard.json"
 	@echo "  make product-audit   Validate five-star product checklist and emit artifacts/product-audit.json"
+	@echo "  make security-closure Run security scans + external assessment closure report"
 	@echo "  make support-bundle  Build diagnostics bundle + manifest for issue triage"
 	@echo ""
 	@echo "Code Quality:"
@@ -275,6 +282,7 @@ help:
 	@echo "Security:"
 	@echo "  make sbom            Generate SBOM (CycloneDX)"
 	@echo "  make audit           Run security audit"
+	@echo "  make security-closure Build security closure artifact for release sign-off"
 	@echo ""
 	@echo "Docker:"
 	@echo "  make docker          Build Docker image"

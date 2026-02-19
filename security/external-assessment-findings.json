@@ -1,0 +1,31 @@
+{
+  "assessment_id": "external-security-2026-02",
+  "assessor": "independent-assessor",
+  "completed_at": "2026-02-19T00:00:00Z",
+  "findings": [
+    {
+      "id": "EXT-001",
+      "title": "Missing tenant boundary checks on replay rollout coupling",
+      "severity": "high",
+      "status": "closed",
+      "closed_at": "2026-02-19T01:00:00Z",
+      "closure_evidence": "P0-014 tenant isolation enforcement"
+    },
+    {
+      "id": "EXT-002",
+      "title": "Legal hold bypass risk in retention/deletion flow",
+      "severity": "high",
+      "status": "closed",
+      "closed_at": "2026-02-19T02:00:00Z",
+      "closure_evidence": "P0-016 retention/legal-hold controls"
+    },
+    {
+      "id": "EXT-003",
+      "title": "Policy rollout blast radius under unverified policy provenance",
+      "severity": "medium",
+      "status": "closed",
+      "closed_at": "2026-02-19T03:00:00Z",
+      "closure_evidence": "P0-012 strict signed policy provenance"
+    }
+  ]
+}

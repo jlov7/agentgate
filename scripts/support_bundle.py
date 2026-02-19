@@ -27,6 +27,7 @@ DEFAULT_REQUIRED_PATTERNS = (
 DEFAULT_OPTIONAL_PATTERNS = (
     "artifacts/doctor.json",
     "artifacts/load-test-summary.json",
+    "artifacts/security-closure.json",
     "artifacts/logs/*.log",
 )
 

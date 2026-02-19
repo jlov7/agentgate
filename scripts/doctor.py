@@ -33,7 +33,17 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         name="security",
         gate="RG-02",
         description="Security audit and static analysis",
-        command=".venv/bin/pip-audit && .venv/bin/bandit -r src/ -c pyproject.toml && make sbom",
+        command=(
+            ".venv/bin/pip-audit --format json --output artifacts/pip-audit.json && "
+            ".venv/bin/bandit -r src/ -c pyproject.toml -f json -o artifacts/bandit.json && "
+            "make sbom && "
+            ".venv/bin/python scripts/security_closure.py "
+            "--pip-audit artifacts/pip-audit.json "
+            "--bandit artifacts/bandit.json "
+            "--sbom reports/sbom.json "
+            "--assessment security/external-assessment-findings.json "
+            "--output artifacts/security-closure.json"
+        ),
     ),
     CheckSpec(
         name="ux",
@@ -112,6 +122,7 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
             "--require README.md "
             "--require artifacts/scorecard.json "
             "--require artifacts/product-audit.json "
+            "--require artifacts/security-closure.json "
             "--require artifacts/replay-report.json "
             "--require artifacts/incident-report.json "
             "--require artifacts/rollout-report.json "

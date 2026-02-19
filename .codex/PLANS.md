@@ -175,7 +175,9 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P0-015 PII redaction/tokenization for trace and evidence outputs.
 - [x] Implement P0-016 retention/deletion/legal-hold policy controls.
 - [x] Implement P0-018 SLO definitions + runtime alerting implementation.
-- [ ] Continue sequential execution of P0 backlog to completion.
+- [x] Implement P0-019 scale/perf validation at release target traffic.
+- [x] Implement P0-020 external security assessment closure package.
+- [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
 - 2026-02-17: Docker daemon outage caused temporary doctor failures (`RG-01`, `RG-03`, `RG-04`, `RG-05`) unrelated to code changes.
@@ -201,6 +203,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P0-015 success, prioritize P0-016 retention/deletion/legal-hold controls.
 - After P0-016 success, prioritize P0-018 SLO definitions + runtime alerting implementation.
 - After P0-018 success, prioritize P0-019 scale/perf validation at release target traffic.
+- After P0-019 success, prioritize P0-020 external security assessment closure package.
+- After P0-020 success, prioritize P1-001 approval workflow engine.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -263,3 +267,13 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added runtime alert transitions (`slo.breach`, `slo.recovered`) emitted via existing webhook notifier on objective state change.
 - Added admin SLO status endpoint (`GET /admin/slo/status`) and regression coverage for monitor behavior plus alert emission.
 - Evidence: `.venv/bin/pytest tests/test_slo.py tests/test_main.py::test_slo_breach_emits_webhook_and_status -v` pass, `make verify` pass, `scripts/doctor.sh` pass.
+- P0-019 completed with RED->GREEN->verify->doctor loop.
+- Added explicit performance validation script (`scripts/validate_load_test_summary.py`) with target budgets for error rate, p95 latency, request rate, and total requests.
+- Added RG-05 enforcement wiring in doctor to require `artifacts/perf-validation.json` and fail release gating when validation misses targets.
+- Hardened E2E determinism by isolating runtime state in `scripts/e2e-server.sh` (ephemeral Redis DB + trace DB) and added coverage for this behavior.
+- Evidence: `.venv/bin/pytest tests/test_doctor.py tests/test_validate_load_test_summary.py tests/test_compose_platform_defaults.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P0-020 completed with RED->GREEN->verify->doctor loop.
+- Added external security assessment closure automation (`scripts/security_closure.py`) that validates pip-audit/Bandit/SBOM outputs and external finding closure state.
+- Added a baseline external assessment findings ledger (`security/external-assessment-findings.json`) and wired closure artifact generation into release gate `RG-02`.
+- Added `make security-closure` for operator-friendly artifact generation and required `artifacts/security-closure.json` in support bundle release evidence.
+- Evidence: `.venv/bin/pytest tests/test_security_closure.py tests/test_doctor.py::test_doctor_security_check_emits_security_closure_artifact -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

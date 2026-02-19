@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-018 to P0-019 (scale/perf validation at release target traffic).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-020 to P1-001 (approval workflow engine with multi-step, expiry, and delegation support).
 
 ## Status
 
@@ -85,17 +85,25 @@ In Progress
 75. [x] P0-018 GREEN: implement SLO definitions and runtime alert generation.
 76. [x] Run targeted tests for P0-018.
 77. [x] Re-run `make verify` and `scripts/doctor.sh`.
-78. [ ] P0-019 RED: add failing validation checks for release-target throughput/latency evidence.
-79. [ ] P0-019 GREEN: implement reproducible load-validation pipeline and report artifact.
-80. [ ] Run targeted tests for P0-019.
-81. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+78. [x] P0-019 RED: add failing validation checks for release-target throughput/latency evidence.
+79. [x] P0-019 GREEN: implement reproducible load-validation pipeline and report artifact.
+80. [x] Run targeted tests for P0-019.
+81. [x] Re-run `make verify` and `scripts/doctor.sh`.
+82. [x] P0-020 RED: add failing checks for external security assessment closure evidence package.
+83. [x] P0-020 GREEN: implement closure package artifact generation and verification hooks.
+84. [x] Run targeted tests for P0-020.
+85. [x] Re-run `make verify` and `scripts/doctor.sh`.
+86. [ ] P1-001 RED: add failing tests for multi-step approvals, expiry, and delegated approval behavior.
+87. [ ] P1-001 GREEN: implement approval workflow engine in API/runtime paths.
+88. [ ] Run targeted tests for P1-001.
+89. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-018 is complete and verified; next priority is release-target scale/perf validation (`P0-019`).
+- P0-020 is complete and verified; next priority is approval workflow engine (`P1-001`).
 
 ## Open Questions
 
-- None blocking P0-019 implementation start.
+- None blocking P1-001 implementation start.
