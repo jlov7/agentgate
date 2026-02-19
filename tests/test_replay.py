@@ -52,8 +52,15 @@ def test_replay_result_persists_per_event_delta(tmp_path) -> None:
         baseline_action="ALLOW",
         candidate_action="DENY",
         severity="critical",
+        baseline_rule="write_with_approval",
+        candidate_rule="default_deny",
         baseline_reason="write_with_approval",
         candidate_reason="deny_sensitive_write",
+        root_cause="access_restricted",
+        explanation=(
+            "Action changed from ALLOW to DENY because rule "
+            "write_with_approval shifted to default_deny."
+        ),
     )
 
     with TraceStore(str(tmp_path / "traces.db")) as store:
@@ -69,6 +76,10 @@ def test_replay_result_persists_per_event_delta(tmp_path) -> None:
     assert saved.baseline_action == "ALLOW"
     assert saved.candidate_action == "DENY"
     assert saved.severity == "critical"
+    assert saved.baseline_rule == "write_with_approval"
+    assert saved.candidate_rule == "default_deny"
+    assert saved.root_cause == "access_restricted"
+    assert saved.explanation
 
 
 def test_replay_detects_action_drift_allow_to_deny(tmp_path) -> None:
@@ -122,11 +133,17 @@ def test_replay_detects_action_drift_allow_to_deny(tmp_path) -> None:
             session_id=run.session_id,
         )
         deltas = store.list_replay_deltas(run.run_id)
+        summary = summarize_replay_deltas(run.run_id, deltas)
 
     assert len(deltas) == 1
     assert deltas[0].baseline_action == "ALLOW"
     assert deltas[0].candidate_action == "DENY"
     assert deltas[0].severity == "high"
+    assert deltas[0].baseline_rule == "read_only_tools"
+    assert deltas[0].candidate_rule == "default_deny"
+    assert deltas[0].root_cause == "access_restricted"
+    assert deltas[0].explanation
+    assert summary.by_root_cause["access_restricted"] == 1
 
 
 def test_replay_is_deterministic_for_identical_inputs(tmp_path) -> None:

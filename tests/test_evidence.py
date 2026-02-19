@@ -159,8 +159,15 @@ def test_exporter_includes_replay_context(tmp_path) -> None:
         baseline_action="ALLOW",
         candidate_action="DENY",
         severity="high",
+        baseline_rule="read_only_tools",
+        candidate_rule="default_deny",
         baseline_reason="read_only_tools",
         candidate_reason="deny_sensitive",
+        root_cause="access_restricted",
+        explanation=(
+            "Action changed from ALLOW to DENY because rule read_only_tools shifted to "
+            "default_deny."
+        ),
     )
 
     with TraceStore(str(tmp_path / "traces.db")) as trace_store:
@@ -174,6 +181,7 @@ def test_exporter_includes_replay_context(tmp_path) -> None:
         assert pack.replay is not None
         assert pack.replay["runs"][0]["run_id"] == "run-ctx"
         assert pack.replay["runs"][0]["summary"]["drifted_events"] == 1
+        assert pack.replay["runs"][0]["summary"]["by_root_cause"]["access_restricted"] == 1
 
 
 def test_exporter_includes_incident_timeline(tmp_path) -> None:

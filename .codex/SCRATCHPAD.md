@@ -105,17 +105,21 @@ In Progress
 95. [x] P1-003 GREEN: implement Rego quality scoring automation + enforcement wiring.
 96. [x] Run targeted tests for P1-003.
 97. [x] Re-run `make verify` and `scripts/doctor.sh`.
-98. [ ] P1-004 RED: add failing tests for replay explainability root-cause attribution payloads.
-99. [ ] P1-004 GREEN: implement replay explainability details in API/artifacts.
-100. [ ] Run targeted tests for P1-004.
-101. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+98. [x] P1-004 RED: add failing tests for replay explainability root-cause attribution payloads.
+99. [x] P1-004 GREEN: implement replay explainability details in API/artifacts.
+100. [x] Run targeted tests for P1-004.
+101. [x] Re-run `make verify` and `scripts/doctor.sh`.
+102. [ ] P1-005 RED: add failing tests for incident command-center enrichment (timeline context + rollback guidance).
+103. [ ] P1-005 GREEN: implement incident command-center API/reporting enhancements.
+104. [ ] Run targeted tests for P1-005.
+105. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-003 is complete and verified; next priority is replay explainability depth (`P1-004`).
+- P1-004 is fully complete with targeted + full-gate verification; next execution item is `P1-005`.
 
 ## Open Questions
 
-- None blocking P1-004 implementation start.
+- None blocking commit for P1-004 and transition to P1-005.

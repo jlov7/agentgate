@@ -93,7 +93,7 @@
 - [x] P1-001
 - [x] P1-002
 - [x] P1-003
-- [ ] P1-004
+- [x] P1-004
 - [ ] P1-005
 - [ ] P1-006
 - [ ] P1-007
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-004` Replay explainability and root-cause diff details.
-- Why now: Rego quality gating is now release-enforced, so execution moves to richer replay diagnostics for operator decision support.
+- Active item: `P1-005` Incident command-center API/reporting enhancements.
+- Why now: Replay explainability now captures root-cause attribution, so incident workflows can consume richer diagnostic context in operator reports.
 
 ## Surprises & Discoveries (Live)
 
@@ -147,6 +147,7 @@
 - 2026-02-19: Move next to P1-002 after P1-001 landed with approval workflow engine controls.
 - 2026-02-19: Move next to P1-003 after P1-002 landed with policy lifecycle state-management controls.
 - 2026-02-19: Move next to P1-004 after P1-003 landed with Rego quality gate automation and release enforcement.
+- 2026-02-19: Move next to P1-005 after P1-004 landed with replay explainability and root-cause attribution payloads.
 
 ## Outcomes & Retrospective (Live)
 
@@ -278,3 +279,9 @@
   - Integrated `rego-quality` into `make verify`, release gate matrix (`RG-12`), and doctor orchestration (`rego_quality` check).
   - Added regression tests for script pass/fail behavior and doctor gate command wiring (`tests/test_rego_quality.py`, `tests/test_doctor.py`).
   - Evidence: `.venv/bin/pytest tests/test_rego_quality.py tests/test_doctor.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-004` with replay explainability and root-cause diff details.
+  - Added replay explainability fields (`baseline_rule`, `candidate_rule`, `root_cause`, `explanation`) to per-event replay deltas.
+  - Added replay summary root-cause aggregation (`summary.by_root_cause`) for admin replay detail/report and evidence replay context.
+  - Added trace-store schema migration `v8` to persist replay explainability metadata for existing databases.
+  - Added regression tests covering replay persistence, replay admin API payload explainability, and migration/version expectations.
+  - Evidence: `.venv/bin/pytest tests/test_replay.py tests/test_main.py -k replay tests/test_traces.py tests/test_evidence.py::test_exporter_includes_replay_context -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

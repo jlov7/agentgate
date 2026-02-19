@@ -135,6 +135,7 @@ class TraceStore:
             (5, "session_tenants", self._migration_session_tenants),
             (6, "session_retention", self._migration_session_retention),
             (7, "policy_lifecycle", self._migration_policy_lifecycle),
+            (8, "replay_explainability", self._migration_replay_explainability),
         ]
 
     def _ensure_migrations_table(self) -> None:
@@ -271,8 +272,12 @@ class TraceStore:
                     baseline_action TEXT NOT NULL,
                     candidate_action TEXT NOT NULL,
                     severity TEXT NOT NULL,
+                    baseline_rule TEXT,
+                    candidate_rule TEXT,
                     baseline_reason TEXT,
                     candidate_reason TEXT,
+                    root_cause TEXT,
+                    explanation TEXT,
                     PRIMARY KEY (run_id, event_id)
                 )
                 """
@@ -649,6 +654,39 @@ class TraceStore:
                 ON policy_revisions(created_at)
                 """
             )
+
+    def _migration_replay_explainability(self) -> None:
+        """Add explainability columns for replay delta root-cause attribution."""
+        if self._is_postgres:
+            with self._lock:
+                self.conn.execute(
+                    "ALTER TABLE replay_deltas ADD COLUMN IF NOT EXISTS baseline_rule TEXT"
+                )
+                self.conn.execute(
+                    "ALTER TABLE replay_deltas ADD COLUMN IF NOT EXISTS candidate_rule TEXT"
+                )
+                self.conn.execute(
+                    "ALTER TABLE replay_deltas ADD COLUMN IF NOT EXISTS root_cause TEXT"
+                )
+                self.conn.execute(
+                    "ALTER TABLE replay_deltas ADD COLUMN IF NOT EXISTS explanation TEXT"
+                )
+            return
+
+        with self._lock:
+            columns = self.conn.execute("PRAGMA table_info(replay_deltas)").fetchall()
+            existing = {col[1] for col in columns}
+            missing: list[tuple[str, str]] = []
+            if "baseline_rule" not in existing:
+                missing.append(("baseline_rule", "TEXT"))
+            if "candidate_rule" not in existing:
+                missing.append(("candidate_rule", "TEXT"))
+            if "root_cause" not in existing:
+                missing.append(("root_cause", "TEXT"))
+            if "explanation" not in existing:
+                missing.append(("explanation", "TEXT"))
+            for name, col_type in missing:
+                self.conn.execute(f"ALTER TABLE replay_deltas ADD COLUMN {name} {col_type}")
 
     def archive_evidence_pack(
         self,
@@ -1480,15 +1518,20 @@ class TraceStore:
                 """
                 INSERT INTO replay_deltas (
                     run_id, event_id, tool_name, baseline_action,
-                    candidate_action, severity, baseline_reason, candidate_reason
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    candidate_action, severity, baseline_rule, candidate_rule,
+                    baseline_reason, candidate_reason, root_cause, explanation
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(run_id, event_id) DO UPDATE SET
                     tool_name=excluded.tool_name,
                     baseline_action=excluded.baseline_action,
                     candidate_action=excluded.candidate_action,
                     severity=excluded.severity,
+                    baseline_rule=excluded.baseline_rule,
+                    candidate_rule=excluded.candidate_rule,
                     baseline_reason=excluded.baseline_reason,
-                    candidate_reason=excluded.candidate_reason
+                    candidate_reason=excluded.candidate_reason,
+                    root_cause=excluded.root_cause,
+                    explanation=excluded.explanation
                 """,
                 (
                     delta.run_id,
@@ -1497,8 +1540,12 @@ class TraceStore:
                     delta.baseline_action,
                     delta.candidate_action,
                     delta.severity,
+                    delta.baseline_rule,
+                    delta.candidate_rule,
                     delta.baseline_reason,
                     delta.candidate_reason,
+                    delta.root_cause,
+                    delta.explanation,
                 ),
             )
             self.conn.commit()
@@ -1509,7 +1556,8 @@ class TraceStore:
             rows = self.conn.execute(
                 """
                 SELECT run_id, event_id, tool_name, baseline_action,
-                       candidate_action, severity, baseline_reason, candidate_reason
+                       candidate_action, severity, baseline_rule, candidate_rule,
+                       baseline_reason, candidate_reason, root_cause, explanation
                 FROM replay_deltas
                 WHERE run_id = ?
                 ORDER BY event_id ASC
@@ -1524,8 +1572,12 @@ class TraceStore:
                 baseline_action=row["baseline_action"],
                 candidate_action=row["candidate_action"],
                 severity=row["severity"],
+                baseline_rule=row["baseline_rule"],
+                candidate_rule=row["candidate_rule"],
                 baseline_reason=row["baseline_reason"],
                 candidate_reason=row["candidate_reason"],
+                root_cause=row["root_cause"],
+                explanation=row["explanation"],
             )
             for row in rows
         ]

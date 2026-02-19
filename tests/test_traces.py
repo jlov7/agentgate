@@ -102,7 +102,7 @@ def test_trace_store_migrates_legacy_schema(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2, 3, 4, 5, 6, 7]
+        assert versions == [1, 2, 3, 4, 5, 6, 7, 8]
 
 
 def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
@@ -113,7 +113,14 @@ def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-    assert versions == [1, 2, 3, 4, 5, 6, 7]
+        replay_delta_columns = {
+            row[1]
+            for row in store.conn.execute("PRAGMA table_info(replay_deltas)").fetchall()
+        }
+    assert versions == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert {"baseline_rule", "candidate_rule", "root_cause", "explanation"}.issubset(
+        replay_delta_columns
+    )
 
 
 def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
@@ -138,7 +145,7 @@ def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2, 3, 4, 5, 6, 7]
+        assert versions == [1, 2, 3, 4, 5, 6, 7, 8]
 
 
 def test_policy_lifecycle_revision_persistence(tmp_path) -> None:

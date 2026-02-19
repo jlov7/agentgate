@@ -825,7 +825,12 @@ def test_admin_replay_run_and_report(client, monkeypatch) -> None:
     assert report.status_code == 200
     report_payload = report.json()
     assert report_payload["summary"]["drifted_events"] >= 1
+    assert report_payload["summary"]["by_root_cause"]["access_restricted"] >= 1
     assert report_payload["deltas"]
+    assert report_payload["deltas"][0]["root_cause"] == "access_restricted"
+    assert report_payload["deltas"][0]["baseline_rule"] == "read_only_tools"
+    assert report_payload["deltas"][0]["candidate_rule"] == "default_deny"
+    assert report_payload["deltas"][0]["explanation"]
     assert report_payload["invariant_report"]["run_id"] == run_id
 
 
@@ -1015,6 +1020,7 @@ def test_admin_replay_run_detail(client, monkeypatch) -> None:
     detail_payload = detail.json()
     assert detail_payload["run"]["run_id"] == run_id
     assert detail_payload["run"]["status"] == "completed"
+    assert detail_payload["summary"]["by_root_cause"]["access_restricted"] >= 1
 
 
 def test_admin_incident_release_flow(client, monkeypatch) -> None:

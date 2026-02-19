@@ -347,11 +347,23 @@ class ReplayDelta(BaseModel):
     severity: Literal["critical", "high", "medium", "low"] = Field(
         ..., description="Normalized policy drift severity"
     )
+    baseline_rule: str | None = Field(
+        default=None, description="Baseline matched policy rule"
+    )
+    candidate_rule: str | None = Field(
+        default=None, description="Candidate matched policy rule"
+    )
     baseline_reason: str | None = Field(
         default=None, description="Baseline decision reason"
     )
     candidate_reason: str | None = Field(
         default=None, description="Candidate decision reason"
+    )
+    root_cause: str | None = Field(
+        default=None, description="Normalized root-cause category for this delta"
+    )
+    explanation: str | None = Field(
+        default=None, description="Human-readable root-cause explanation"
     )
 
 
@@ -363,6 +375,9 @@ class ReplaySummary(BaseModel):
     drifted_events: int = Field(..., ge=0, description="Events with action changes")
     by_severity: dict[str, int] = Field(
         default_factory=dict, description="Delta counts grouped by severity"
+    )
+    by_root_cause: dict[str, int] = Field(
+        default_factory=dict, description="Delta counts grouped by root-cause category"
     )
 
 
