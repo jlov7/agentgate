@@ -334,6 +334,46 @@ The demo exercises:
 
 To capture terminal output: `bash demo/record_demo.sh`
 
+### Python SDK Usage
+
+```python
+import asyncio
+
+from agentgate.client import AgentGateAPIError, AgentGateClient
+
+
+async def run() -> None:
+    client = AgentGateClient.from_env()  # AGENTGATE_URL + optional admin env vars
+    try:
+        health = await client.health()
+        print("health:", health["status"])
+
+        tool_result = await client.call_tool(
+            session_id="sdk-demo",
+            tool_name="db_query",
+            arguments={"query": "SELECT 1"},
+            context={"tenant_id": "tenant-a"},
+        )
+        print("tool call:", tool_result["success"])
+
+        # Admin API methods use client api_key or per-call override.
+        exception = await client.create_policy_exception(
+            tool_name="db_insert",
+            reason="temporary incident response",
+            expires_in_seconds=120,
+            session_id="sdk-demo",
+            created_by="ops-user",
+        )
+        print("exception:", exception["status"])
+    except AgentGateAPIError as exc:
+        print(exc.status_code, exc.payload)
+    finally:
+        await client.close()
+
+
+asyncio.run(run())
+```
+
 ### CLI Usage
 
 ```bash

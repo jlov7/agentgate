@@ -184,6 +184,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-005 incident command-center API/reporting enhancements.
 - [x] Implement P1-006 tenant rollout observability console surfaces.
 - [x] Implement P1-007 time-bound policy exceptions with auto-expiry.
+- [x] Implement P1-008 official Python SDK.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -219,6 +220,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-005 success, prioritize P1-006 tenant rollout observability surfaces.
 - After P1-006 success, prioritize P1-007 time-bound policy exceptions.
 - After P1-007 success, prioritize P1-008 official Python SDK.
+- After P1-008 success, prioritize P1-009 official TypeScript SDK.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -328,3 +330,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added policy exception admin APIs (`POST /admin/policies/exceptions`, `GET /admin/policies/exceptions`, `POST /admin/policies/exceptions/{exception_id}/revoke`) and gateway decision override wiring for active exceptions.
 - Added regression tests for write override while active, auto-expiry fallback to approval-required behavior, and revoke lifecycle behavior.
 - Evidence: `.venv/bin/pytest tests/test_main.py -k "policy_exception" -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-008 completed with RED->GREEN->verify->doctor loop.
+- Upgraded the Python client into an official SDK surface with environment bootstrap (`from_env`), structured API errors (`AgentGateAPIError`), default auth/tenant/version headers, and typed helper methods for policy exception and rollout observability flows.
+- Added regression tests for configured admin-header behavior, environment bootstrap path, and structured error handling on unsupported requested API versions.
+- Added README SDK usage documentation with an end-to-end async example for tool calls and policy exception workflows.
+- Evidence: `.venv/bin/pytest tests/test_client.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

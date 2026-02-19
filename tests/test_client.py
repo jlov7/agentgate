@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from agentgate.client import AgentGateClient
+from agentgate.client import AgentGateAPIError, AgentGateClient
 from agentgate.models import IncidentRecord
 from agentgate.policy_packages import hash_policy_bundle, sign_policy_package
 
@@ -142,5 +142,75 @@ async def test_client_admin_controls(app, monkeypatch) -> None:
             },
         )
         assert rollout["rollout"]["tenant_id"] == "tenant-a"
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_client_uses_configured_admin_key_and_policy_exception_apis(
+    app, monkeypatch
+) -> None:
+    admin_api_key = "client-admin-api-key-123456"
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", admin_api_key)
+    transport = ASGITransport(app=app)
+    client = AgentGateClient("http://test", api_key=admin_api_key)
+    await client._client.aclose()
+    client._client = AsyncClient(transport=transport, base_url="http://test")
+
+    try:
+        created = await client.create_policy_exception(
+            tool_name="db_insert",
+            reason="Client-managed override",
+            expires_in_seconds=120,
+            session_id="sdk-policy-exception",
+            created_by="sdk-user",
+        )
+        assert created["status"] == "active"
+        exception_id = created["exception_id"]
+
+        listed = await client.list_policy_exceptions()
+        assert any(item["exception_id"] == exception_id for item in listed["exceptions"])
+
+        revoked = await client.revoke_policy_exception(
+            exception_id=exception_id, revoked_by="sdk-user"
+        )
+        assert revoked["status"] == "revoked"
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_client_from_env_bootstrap_and_health(app, monkeypatch) -> None:
+    admin_api_key = "client-admin-api-key-123456"
+    monkeypatch.setenv("AGENTGATE_URL", "http://test")
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", admin_api_key)
+    transport = ASGITransport(app=app)
+    client = AgentGateClient.from_env()
+    await client._client.aclose()
+    client._client = AsyncClient(transport=transport, base_url="http://test")
+
+    try:
+        health = await client.health()
+        assert health["status"] == "ok"
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_client_raises_structured_api_error(app, monkeypatch) -> None:
+    admin_api_key = "client-admin-api-key-123456"
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", admin_api_key)
+    transport = ASGITransport(app=app)
+    client = AgentGateClient(
+        "http://test", api_key=admin_api_key, requested_api_version="v2"
+    )
+    await client._client.aclose()
+    client._client = AsyncClient(transport=transport, base_url="http://test")
+
+    try:
+        with pytest.raises(AgentGateAPIError) as exc_info:
+            await client.health()
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.payload["error"] == "Unsupported API version"
     finally:
         await client.close()

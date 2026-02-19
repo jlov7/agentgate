@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-007 to P1-008 (official Python SDK).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-008 to P1-009 (official TypeScript SDK).
 
 ## Status
 
@@ -121,17 +121,21 @@ In Progress
 111. [x] P1-007 GREEN: implement policy exception API with expiry enforcement.
 112. [x] Run targeted tests for P1-007.
 113. [x] Re-run `make verify` and `scripts/doctor.sh`.
-114. [ ] P1-008 RED: add failing tests for official Python SDK endpoints/workflows.
-115. [ ] P1-008 GREEN: implement Python SDK package and client coverage.
-116. [ ] Run targeted tests for P1-008.
-117. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+114. [x] P1-008 RED: add failing tests for official Python SDK endpoints/workflows.
+115. [x] P1-008 GREEN: implement Python SDK package and client coverage.
+116. [x] Run targeted tests for P1-008.
+117. [x] Re-run `make verify` and `scripts/doctor.sh`.
+118. [ ] P1-009 RED: add failing tests for official TypeScript SDK workflows.
+119. [ ] P1-009 GREEN: implement TypeScript SDK package and client coverage.
+120. [ ] Run targeted tests for P1-009.
+121. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-007 is fully complete with policy exception lifecycle controls + full-gate verification; next execution item is `P1-008`.
+- P1-008 is fully complete with official Python SDK ergonomics + full-gate verification; next execution item is `P1-009`.
 
 ## Open Questions
 
-- None blocking commit for P1-007 and transition to P1-008.
+- None blocking commit for P1-008 and transition to P1-009.

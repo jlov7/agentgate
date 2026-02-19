@@ -97,7 +97,7 @@
 - [x] P1-005
 - [x] P1-006
 - [x] P1-007
-- [ ] P1-008
+- [x] P1-008
 - [ ] P1-009
 - [ ] P1-010
 - [ ] P1-011
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-008` Official Python SDK.
-- Why now: Core API controls and policy exception lifecycle are now in place, so SDK ergonomics is the next launch-quality lever for adoption.
+- Active item: `P1-009` Official TypeScript SDK.
+- Why now: Python SDK ergonomics is now release-ready, so TypeScript parity is the next launch-quality lever for integrator adoption.
 
 ## Surprises & Discoveries (Live)
 
@@ -151,6 +151,7 @@
 - 2026-02-19: Move next to P1-006 after P1-005 landed with incident command-center API/reporting enrichment.
 - 2026-02-19: Move next to P1-007 after P1-006 landed with tenant rollout observability surfaces.
 - 2026-02-19: Move next to P1-008 after P1-007 landed with time-bound policy exception lifecycle controls.
+- 2026-02-19: Move next to P1-009 after P1-008 landed with official Python SDK support.
 
 ## Outcomes & Retrospective (Live)
 
@@ -306,3 +307,9 @@
   - Wired gateway policy evaluation to honor active exceptions for matching blocked tool calls and preserve normal policy enforcement after expiry or revocation.
   - Added regression tests for active exception write override, auto-expiry fallback to approval-required behavior, and revoke lifecycle behavior.
   - Evidence: `.venv/bin/pytest tests/test_main.py -k "policy_exception" -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-008` with official Python SDK support.
+  - Upgraded the Python client to include environment bootstrap (`AgentGateClient.from_env`), structured SDK errors (`AgentGateAPIError`), and default auth/tenant/version header handling.
+  - Added SDK helper methods for health/list-tools and admin policy-exception/rollout-observability workflows with consistent request handling.
+  - Added regression tests for configured admin header usage, environment bootstrap behavior, and structured error propagation on unsupported API version requests.
+  - Added README Python SDK usage section with an end-to-end async integration example.
+  - Evidence: `.venv/bin/pytest tests/test_client.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
