@@ -23,6 +23,13 @@ def test_e2e_server_sets_docker_default_platform_from_daemon_arch() -> None:
     assert OPA_PULL_SNIPPET in script
 
 
+def test_e2e_server_uses_ephemeral_runtime_state() -> None:
+    script = _read_script("scripts/e2e-server.sh")
+    assert 'export AGENTGATE_REDIS_URL="redis://localhost:6379/${redis_db}"' in script
+    assert 'export AGENTGATE_TRACE_DB="${TMPDIR:-/tmp}/agentgate-e2e-${$}.db"' in script
+    assert 'rm -f "${AGENTGATE_TRACE_DB}"' in script
+
+
 def test_load_server_sets_docker_default_platform_from_daemon_arch() -> None:
     script = _read_script("scripts/load_server.sh")
     assert "DOCKER_DEFAULT_PLATFORM" in script

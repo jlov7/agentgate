@@ -57,7 +57,12 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         command=(
             "LOAD_TEST_VUS=20 LOAD_TEST_DURATION=15s LOAD_TEST_RAMP_UP=5s "
             "LOAD_TEST_RAMP_DOWN=5s LOAD_TEST_P95=2500 "
-            "LOAD_TEST_SUMMARY=artifacts/load-test-summary.json make load-test"
+            "LOAD_TEST_SUMMARY=artifacts/load-test-summary.json make load-test && "
+            ".venv/bin/python scripts/validate_load_test_summary.py "
+            "artifacts/load-test-summary.json "
+            "--output artifacts/perf-validation.json "
+            "--max-error-rate 0.01 --max-p95-ms 2500 --min-rps 20 "
+            "--min-total-requests 500 --require-pass"
         ),
     ),
     CheckSpec(
@@ -227,7 +232,12 @@ def run() -> int:
     root = _repo_root()
     logs_dir = _log_dir(output_path)
 
-    results = [_run_check(check, root, logs_dir, args.dry_run) for check in checks]
+    results: list[dict[str, Any]] = []
+    for check in checks:
+        print(f"running {check.name} ({check.gate})")
+        result = _run_check(check, root, logs_dir, args.dry_run)
+        print(f"{check.name}: {result['status']} (exit_code={result['exit_code']})")
+        results.append(result)
     required_results = [result for result in results if result["required"]]
     required_passed = sum(
         1 for result in required_results if result["status"] in {"pass", "dry-run"}

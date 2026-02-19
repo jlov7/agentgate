@@ -48,3 +48,15 @@ def test_doctor_includes_controls_audit_check(tmp_path: Path) -> None:
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     check_names = {check["name"] for check in payload["checks"]}
     assert "controls" in check_names
+
+
+def test_doctor_perf_check_enforces_validation_artifact(tmp_path: Path) -> None:
+    output_path = tmp_path / "doctor-perf.json"
+    result = _run("--dry-run", "--checks", "perf", "--output", str(output_path))
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert len(payload["checks"]) == 1
+    command = payload["checks"][0]["command"]
+    assert "scripts/validate_load_test_summary.py" in command
+    assert "artifacts/perf-validation.json" in command

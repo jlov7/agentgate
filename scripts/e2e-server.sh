@@ -25,7 +25,14 @@ fi
 
 "${compose_cmd[@]}" up -d
 
+# Isolate test state across runs so deny-path assertions remain deterministic.
+redis_db="$((RANDOM % 16))"
+export AGENTGATE_REDIS_URL="redis://localhost:6379/${redis_db}"
+export AGENTGATE_TRACE_DB="${TMPDIR:-/tmp}/agentgate-e2e-${$}.db"
+rm -f "${AGENTGATE_TRACE_DB}"
+
 cleanup() {
+  rm -f "${AGENTGATE_TRACE_DB}"
   "${compose_cmd[@]}" down
 }
 trap cleanup EXIT
