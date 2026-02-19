@@ -109,17 +109,21 @@ In Progress
 99. [x] P1-004 GREEN: implement replay explainability details in API/artifacts.
 100. [x] Run targeted tests for P1-004.
 101. [x] Re-run `make verify` and `scripts/doctor.sh`.
-102. [ ] P1-005 RED: add failing tests for incident command-center enrichment (timeline context + rollback guidance).
-103. [ ] P1-005 GREEN: implement incident command-center API/reporting enhancements.
-104. [ ] Run targeted tests for P1-005.
-105. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+102. [x] P1-005 RED: add failing tests for incident command-center enrichment (timeline context + rollback guidance).
+103. [x] P1-005 GREEN: implement incident command-center API/reporting enhancements.
+104. [x] Run targeted tests for P1-005.
+105. [x] Re-run `make verify` and `scripts/doctor.sh`.
+106. [ ] P1-006 RED: add failing tests for tenant rollout observability console payloads.
+107. [ ] P1-006 GREEN: implement tenant rollout observability API/reporting surfaces.
+108. [ ] Run targeted tests for P1-006.
+109. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-004 is fully complete with targeted + full-gate verification; next execution item is `P1-005`.
+- P1-005 is fully complete with command-center enrichment + full-gate verification; next execution item is `P1-006`.
 
 ## Open Questions
 
-- None blocking commit for P1-004 and transition to P1-005.
+- None blocking commit for P1-005 and transition to P1-006.

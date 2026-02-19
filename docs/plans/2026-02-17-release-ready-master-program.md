@@ -94,7 +94,7 @@
 - [x] P1-002
 - [x] P1-003
 - [x] P1-004
-- [ ] P1-005
+- [x] P1-005
 - [ ] P1-006
 - [ ] P1-007
 - [ ] P1-008
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-005` Incident command-center API/reporting enhancements.
-- Why now: Replay explainability now captures root-cause attribution, so incident workflows can consume richer diagnostic context in operator reports.
+- Active item: `P1-006` Tenant rollout observability console surfaces.
+- Why now: Incident command-center payloads are now enriched, so rollout operators need dedicated tenant-level observability to make promotion/rollback calls quickly.
 
 ## Surprises & Discoveries (Live)
 
@@ -148,6 +148,7 @@
 - 2026-02-19: Move next to P1-003 after P1-002 landed with policy lifecycle state-management controls.
 - 2026-02-19: Move next to P1-004 after P1-003 landed with Rego quality gate automation and release enforcement.
 - 2026-02-19: Move next to P1-005 after P1-004 landed with replay explainability and root-cause attribution payloads.
+- 2026-02-19: Move next to P1-006 after P1-005 landed with incident command-center API/reporting enrichment.
 
 ## Outcomes & Retrospective (Live)
 
@@ -285,3 +286,9 @@
   - Added trace-store schema migration `v8` to persist replay explainability metadata for existing databases.
   - Added regression tests covering replay persistence, replay admin API payload explainability, and migration/version expectations.
   - Evidence: `.venv/bin/pytest tests/test_replay.py tests/test_main.py -k replay tests/test_traces.py tests/test_evidence.py::test_exporter_includes_replay_context -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-005` with incident command-center API/reporting enhancements.
+  - Enriched incident API payloads with command-center context: event summaries, rollback steps, recent trace context, and related replay run diagnostics.
+  - Added dedicated command-center endpoint (`GET /admin/incidents/{incident_id}/command-center`) for operational workflows.
+  - Preserved tenant-isolation enforcement on command-center access alongside existing incident endpoint authorization.
+  - Added regression tests validating enriched payload fields, release-state rollback-step transitions, and tenant-scoped access controls.
+  - Evidence: `.venv/bin/pytest tests/test_main.py::test_admin_incident_release_flow tests/test_main.py::test_replay_and_incident_endpoints_enforce_tenant_isolation -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

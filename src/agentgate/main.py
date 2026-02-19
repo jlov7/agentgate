@@ -35,6 +35,7 @@ import re
 import secrets
 import time
 import uuid
+from collections import Counter
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -67,6 +68,8 @@ from agentgate.models import (
     ApprovalWorkflowApproveRequest,
     ApprovalWorkflowCreateRequest,
     ApprovalWorkflowDelegateRequest,
+    IncidentEvent,
+    IncidentRecord,
     KillRequest,
     PolicyLifecycleDraftRequest,
     PolicyLifecyclePublishRequest,
@@ -610,6 +613,113 @@ def create_app(
     swagger_oauth2_redirect_url = (
         app.swagger_ui_oauth2_redirect_url or "/docs/oauth2-redirect"
     )
+
+    def _build_incident_rollback_steps(
+        *,
+        record: IncidentRecord,
+        event_type_counts: Counter[str],
+    ) -> list[dict[str, str]]:
+        active = record.status in {"quarantined", "revoked", "failed"}
+        quarantined = event_type_counts.get("quarantined", 0) > 0 or active
+        revoked = event_type_counts.get("revoked", 0) > 0
+        revocation_failed = event_type_counts.get("revocation_failed", 0) > 0
+        released = record.status == "released" or event_type_counts.get("released", 0) > 0
+
+        return [
+            {
+                "id": "containment_applied",
+                "title": "Contain session access",
+                "status": "done" if quarantined else "pending",
+                "description": "Session is quarantined and blocked from new tool calls.",
+            },
+            {
+                "id": "credential_revocation",
+                "title": "Revoke scoped credentials",
+                "status": "failed" if revocation_failed else ("done" if revoked else "pending"),
+                "description": "Session-bound credentials are revoked and cannot be reused.",
+            },
+            {
+                "id": "session_release",
+                "title": "Execute controlled release",
+                "status": "done" if released else "pending",
+                "description": "Release only after operator validation and rollback confirmation.",
+            },
+            {
+                "id": "post_release_monitoring",
+                "title": "Monitor for relapse",
+                "status": "done" if released else "pending",
+                "description": (
+                    "Track immediate post-release events for recurring high-risk behavior."
+                ),
+            },
+        ]
+
+    def _build_incident_command_center_payload(
+        *,
+        record: IncidentRecord,
+        events: list[IncidentEvent],
+    ) -> dict[str, Any]:
+        event_type_counts: Counter[str] = Counter(event.event_type for event in events)
+        latest_event = events[-1] if events else None
+        terminal_time = record.released_at or record.updated_at
+        duration_seconds = max(
+            0, int((terminal_time - record.created_at).total_seconds())
+        )
+
+        recent_traces = app.state.trace_store.query(session_id=record.session_id)
+        recent_trace_context = [
+            {
+                "event_id": trace.event_id,
+                "timestamp": trace.timestamp.isoformat(),
+                "tool_name": trace.tool_name,
+                "decision": trace.policy_decision,
+                "reason": trace.policy_reason,
+                "executed": trace.executed,
+                "error": trace.error,
+            }
+            for trace in recent_traces[-10:]
+        ]
+
+        replay_runs = app.state.trace_store.list_replay_runs(session_id=record.session_id)
+        related_replay_runs: list[dict[str, Any]] = []
+        for run in replay_runs[-5:]:
+            deltas = app.state.trace_store.list_replay_deltas(run.run_id)
+            summary = summarize_replay_deltas(run_id=run.run_id, deltas=deltas)
+            related_replay_runs.append(
+                {
+                    "run_id": run.run_id,
+                    "status": run.status,
+                    "baseline_policy_version": run.baseline_policy_version,
+                    "candidate_policy_version": run.candidate_policy_version,
+                    "summary": summary.model_dump(mode="json"),
+                }
+            )
+
+        rollback_steps = _build_incident_rollback_steps(
+            record=record,
+            event_type_counts=event_type_counts,
+        )
+        pending_or_failed_steps = sum(
+            1 for step in rollback_steps if step["status"] in {"pending", "failed"}
+        )
+        summary_payload: dict[str, Any] = {
+            "active": record.status in {"quarantined", "revoked", "failed"},
+            "event_count": len(events),
+            "by_event_type": dict(event_type_counts),
+            "latest_event_type": latest_event.event_type if latest_event else None,
+            "latest_event_at": latest_event.timestamp.isoformat() if latest_event else None,
+            "duration_seconds": duration_seconds,
+            "replay_runs_count": len(related_replay_runs),
+            "pending_or_failed_steps": pending_or_failed_steps,
+        }
+        return {
+            "incident": record.model_dump(mode="json"),
+            "events": [event.model_dump(mode="json") for event in events],
+            "summary": summary_payload,
+            "rollback_steps": rollback_steps,
+            "recent_trace_context": recent_trace_context,
+            "related_replay_runs": related_replay_runs,
+        }
 
     @app.middleware("http")
     async def request_size_middleware(
@@ -1650,10 +1760,33 @@ def create_app(
             tenant_id=tenant_id,
         )
         events = app.state.trace_store.list_incident_events(incident_id)
-        return JSONResponse({
-            "incident": record.model_dump(mode="json"),
-            "events": [event.model_dump(mode="json") for event in events],
-        })
+        return JSONResponse(_build_incident_command_center_payload(record=record, events=events))
+
+    @app.get("/admin/incidents/{incident_id}/command-center")
+    async def get_incident_command_center(
+        incident_id: str,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+        x_agentgate_tenant_id: str | None = Header(None, alias="X-AgentGate-Tenant-ID"),
+    ) -> JSONResponse:
+        """Fetch enriched incident command-center payload (admin only)."""
+        _authorize_admin_request(
+            required_roles={INCIDENT_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+
+        record = app.state.trace_store.get_incident(incident_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="Incident not found")
+        tenant_id = _require_tenant_header(x_agentgate_tenant_id)
+        _enforce_session_tenant_access(
+            trace_store=app.state.trace_store,
+            session_id=record.session_id,
+            tenant_id=tenant_id,
+        )
+        events = app.state.trace_store.list_incident_events(incident_id)
+        return JSONResponse(_build_incident_command_center_payload(record=record, events=events))
 
     @app.post("/admin/incidents/{incident_id}/release")
     async def release_incident(

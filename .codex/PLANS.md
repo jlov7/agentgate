@@ -181,6 +181,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-002 policy lifecycle system (draft/review/publish/rollback).
 - [x] Implement P1-003 Rego quality gates (lint/test/coverage scoring).
 - [x] Implement P1-004 replay explainability and root-cause diff details.
+- [x] Implement P1-005 incident command-center API/reporting enhancements.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -213,6 +214,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-002 success, prioritize P1-003 Rego quality gates.
 - After P1-003 success, prioritize P1-004 replay explainability.
 - After P1-004 success, prioritize P1-005 incident command-center enhancements.
+- After P1-005 success, prioritize P1-006 tenant rollout observability surfaces.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -307,3 +309,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added root-cause aggregation (`summary.by_root_cause`) for admin replay detail/report APIs and evidence replay context payloads.
 - Added regression coverage for replay model persistence, API payload explainability, and trace schema version/column expectations.
 - Evidence: `.venv/bin/pytest tests/test_replay.py tests/test_main.py -k replay tests/test_traces.py tests/test_evidence.py::test_exporter_includes_replay_context -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-005 completed with RED->GREEN->verify->doctor loop.
+- Added incident command-center payload enrichment (summary, rollback steps, recent trace context, related replay runs) on `/admin/incidents/{incident_id}`.
+- Added dedicated command-center endpoint (`/admin/incidents/{incident_id}/command-center`) with tenant-isolation enforcement.
+- Added regression tests for command-center payload fields, release-state transitions, and tenant-scoped access behavior.
+- Evidence: `.venv/bin/pytest tests/test_main.py::test_admin_incident_release_flow tests/test_main.py::test_replay_and_incident_endpoints_enforce_tenant_isolation -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

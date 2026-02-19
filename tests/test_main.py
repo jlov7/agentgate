@@ -927,6 +927,24 @@ def test_replay_and_incident_endpoints_enforce_tenant_isolation(
     )
     assert same_tenant.status_code == 200
 
+    cross_tenant_command = client.get(
+        "/admin/incidents/incident-tenant-b/command-center",
+        headers={
+            "X-API-Key": "admin-key",
+            "X-AgentGate-Tenant-ID": "tenant-a",
+        },
+    )
+    assert cross_tenant_command.status_code == 404
+
+    same_tenant_command = client.get(
+        "/admin/incidents/incident-tenant-b/command-center",
+        headers={
+            "X-API-Key": "admin-key",
+            "X-AgentGate-Tenant-ID": "tenant-b",
+        },
+    )
+    assert same_tenant_command.status_code == 200
+
 
 def test_session_transparency_report_endpoint(client) -> None:
     session_id = "transparency-session"
@@ -1026,6 +1044,15 @@ def test_admin_replay_run_detail(client, monkeypatch) -> None:
 def test_admin_incident_release_flow(client, monkeypatch) -> None:
     monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
     now = datetime(2026, 2, 15, 18, 0, tzinfo=UTC)
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-incident",
+            "tool_name": "db_insert",
+            "arguments": {"item": "x"},
+            "approval_token": "approved",
+        },
+    )
     incident = IncidentRecord(
         incident_id="incident-1",
         session_id="sess-incident",
@@ -1046,6 +1073,26 @@ def test_admin_incident_release_flow(client, monkeypatch) -> None:
             timestamp=now,
         )
     )
+    replay_response = client.post(
+        "/admin/replay/runs",
+        headers={"X-API-Key": "admin-key"},
+        json={
+            "session_id": "sess-incident",
+            "baseline_policy_version": "v1",
+            "candidate_policy_version": "v2",
+            "baseline_policy_data": {
+                "read_only_tools": ["db_query"],
+                "write_tools": ["db_insert"],
+                "all_known_tools": ["db_query", "db_insert"],
+            },
+            "candidate_policy_data": {
+                "read_only_tools": ["db_query"],
+                "write_tools": [],
+                "all_known_tools": ["db_query", "db_insert"],
+            },
+        },
+    )
+    assert replay_response.status_code == 200
 
     response = client.get(
         "/admin/incidents/incident-1", headers={"X-API-Key": "admin-key"}
@@ -1054,6 +1101,24 @@ def test_admin_incident_release_flow(client, monkeypatch) -> None:
     payload = response.json()
     assert payload["incident"]["incident_id"] == "incident-1"
     assert payload["events"]
+    assert payload["summary"]["active"] is True
+    assert payload["summary"]["event_count"] >= 1
+    assert payload["summary"]["duration_seconds"] >= 0
+    assert payload["rollback_steps"]
+    assert payload["rollback_steps"][0]["status"] in {"pending", "done"}
+    assert payload["recent_trace_context"]
+    assert payload["related_replay_runs"]
+    assert payload["related_replay_runs"][0]["summary"]["by_root_cause"]
+
+    command_center = client.get(
+        "/admin/incidents/incident-1/command-center",
+        headers={"X-API-Key": "admin-key"},
+    )
+    assert command_center.status_code == 200
+    command_payload = command_center.json()
+    assert command_payload["incident"]["incident_id"] == "incident-1"
+    assert command_payload["rollback_steps"]
+    assert command_payload["summary"]["event_count"] >= 1
 
     release = client.post(
         "/admin/incidents/incident-1/release",
@@ -1063,6 +1128,18 @@ def test_admin_incident_release_flow(client, monkeypatch) -> None:
     assert release.status_code == 200
     release_payload = release.json()
     assert release_payload["status"] == "released"
+
+    after_release = client.get(
+        "/admin/incidents/incident-1/command-center",
+        headers={"X-API-Key": "admin-key"},
+    )
+    assert after_release.status_code == 200
+    released_payload = after_release.json()
+    assert released_payload["summary"]["active"] is False
+    release_step = {
+        step["id"]: step["status"] for step in released_payload["rollback_steps"]
+    }
+    assert release_step["session_release"] == "done"
 
 
 def test_create_tenant_rollout_returns_canary_plan(client, monkeypatch) -> None:
