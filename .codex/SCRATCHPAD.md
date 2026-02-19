@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-016 to P0-018 (SLO definitions + runtime alerting implementation).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-018 to P0-019 (scale/perf validation at release target traffic).
 
 ## Status
 
@@ -81,17 +81,21 @@ In Progress
 71. [x] P0-016 GREEN: implement retention policy enforcement + legal-hold bypass guards.
 72. [x] Run targeted tests for P0-016.
 73. [x] Re-run `make verify` and `scripts/doctor.sh`.
-74. [ ] P0-018 RED: add failing tests for SLO policy evaluation and alert emission.
-75. [ ] P0-018 GREEN: implement SLO definitions and runtime alert generation.
-76. [ ] Run targeted tests for P0-018.
-77. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+74. [x] P0-018 RED: add failing tests for SLO policy evaluation and alert emission.
+75. [x] P0-018 GREEN: implement SLO definitions and runtime alert generation.
+76. [x] Run targeted tests for P0-018.
+77. [x] Re-run `make verify` and `scripts/doctor.sh`.
+78. [ ] P0-019 RED: add failing validation checks for release-target throughput/latency evidence.
+79. [ ] P0-019 GREEN: implement reproducible load-validation pipeline and report artifact.
+80. [ ] Run targeted tests for P0-019.
+81. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-016 is complete and verified; next priority is SLO definitions and runtime alerting (`P0-018`).
+- P0-018 is complete and verified; next priority is release-target scale/perf validation (`P0-019`).
 
 ## Open Questions
 
-- None blocking P0-018 implementation start.
+- None blocking P0-019 implementation start.

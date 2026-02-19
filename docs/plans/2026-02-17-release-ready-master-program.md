@@ -87,7 +87,7 @@
 - [x] P0-015
 - [x] P0-016
 - [x] P0-017
-- [ ] P0-018
+- [x] P0-018
 - [ ] P0-019
 - [ ] P0-020
 - [ ] P1-001
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-018` SLO definitions + runtime alerting implementation.
-- Why now: lifecycle governance controls are now complete; the next P0 release blocker is explicit SLO policy + automated runtime alert generation.
+- Active item: `P0-019` Scale/perf validation at release target traffic.
+- Why now: runtime SLO monitoring is now implemented; the next P0 release blocker is proving performance against release-scale targets with reproducible evidence artifacts.
 
 ## Surprises & Discoveries (Live)
 
@@ -141,6 +141,7 @@
 - 2026-02-19: Move next to P0-015 after P0-014 landed with tenant data isolation enforcement.
 - 2026-02-19: Move next to P0-016 after P0-015 landed with PII redaction/tokenization controls.
 - 2026-02-19: Move next to P0-018 after P0-016 landed with retention/deletion/legal-hold controls.
+- 2026-02-19: Move next to P0-019 after P0-018 landed with SLO definitions and runtime alerting.
 
 ## Outcomes & Retrospective (Live)
 
@@ -236,3 +237,9 @@
   - Added admin lifecycle endpoints: `POST /admin/sessions/{session_id}/retention`, `POST /admin/sessions/purge`, and `DELETE /admin/sessions/{session_id}` with `409` conflict on held sessions.
   - Added regression tests covering legal-hold block semantics, purge skipping held sessions, and end-to-end admin retention/purge flow.
   - Evidence: `pytest tests/test_traces.py::test_session_retention_legal_hold_blocks_delete tests/test_traces.py::test_purge_expired_sessions_skips_legal_hold tests/test_main.py::test_admin_session_retention_and_purge_flow -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P0-018` with SLO definitions and runtime alerting.
+  - Added rolling SLO objective monitor (`availability`, `latency_p95_seconds`) with configurable thresholds/sample windows via `AGENTGATE_SLO_*`.
+  - Added runtime breach/recovery alert transitions (`slo.breach`, `slo.recovered`) emitted over webhook integration.
+  - Added admin endpoint `GET /admin/slo/status` to inspect current objective state and computed values.
+  - Added regression tests for monitor breach/recovery behavior and end-to-end alert emission + status endpoint coverage.
+  - Evidence: `.venv/bin/pytest tests/test_slo.py tests/test_main.py::test_slo_breach_emits_webhook_and_status -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

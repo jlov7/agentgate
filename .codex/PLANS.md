@@ -174,6 +174,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P0-014 tenant data isolation enforcement.
 - [x] Implement P0-015 PII redaction/tokenization for trace and evidence outputs.
 - [x] Implement P0-016 retention/deletion/legal-hold policy controls.
+- [x] Implement P0-018 SLO definitions + runtime alerting implementation.
 - [ ] Continue sequential execution of P0 backlog to completion.
 
 ## Surprises & Discoveries
@@ -199,6 +200,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P0-014 success, prioritize P0-015 PII redaction/tokenization pipeline.
 - After P0-015 success, prioritize P0-016 retention/deletion/legal-hold controls.
 - After P0-016 success, prioritize P0-018 SLO definitions + runtime alerting implementation.
+- After P0-018 success, prioritize P0-019 scale/perf validation at release target traffic.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -256,3 +258,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added trace-store retention APIs (`set_session_retention`, `delete_session_data`, `purge_expired_sessions`) with legal-hold-safe deletion guards and force-delete override.
 - Added admin lifecycle endpoints for retention policy set, timed purge, and explicit session deletion with `409` legal-hold conflict semantics.
 - Evidence: `pytest tests/test_traces.py::test_session_retention_legal_hold_blocks_delete tests/test_traces.py::test_purge_expired_sessions_skips_legal_hold tests/test_main.py::test_admin_session_retention_and_purge_flow -v` pass, `make verify` pass, `scripts/doctor.sh` pass.
+- P0-018 completed with RED->GREEN->verify->doctor loop.
+- Added rolling SLO monitor with configurable availability and latency objectives (`AGENTGATE_SLO_*`), including objective-state introspection.
+- Added runtime alert transitions (`slo.breach`, `slo.recovered`) emitted via existing webhook notifier on objective state change.
+- Added admin SLO status endpoint (`GET /admin/slo/status`) and regression coverage for monitor behavior plus alert emission.
+- Evidence: `.venv/bin/pytest tests/test_slo.py tests/test_main.py::test_slo_breach_emits_webhook_and_status -v` pass, `make verify` pass, `scripts/doctor.sh` pass.
