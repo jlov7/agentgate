@@ -1,0 +1,16 @@
+package agentgate
+
+import future.keywords.if
+import future.keywords.in
+
+default decision := {"action": "DENY", "reason": "Tool not allowlisted"}
+
+decision := {
+	"action": "ALLOW",
+	"reason": "Read-only tool",
+	"matched_rule": "read_only_tools",
+	"allowed_scope": "read",
+	"is_write_action": false,
+} if {
+	input.tool_name in data.read_only_tools
+}

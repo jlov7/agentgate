@@ -192,6 +192,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-013 default Grafana dashboards + alert packs.
 - [x] Implement P1-014 resettable staging environment with seeded scenarios.
 - [x] Implement P2-001 hosted browser sandbox no-local-install trial flow.
+- [x] Implement P2-002 policy template library by risk/use-case.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -235,6 +236,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-013 success, prioritize P1-014 resettable staging environment + seeded scenarios.
 - After P1-014 success, prioritize P2-001 hosted browser sandbox no-local-install trial flow.
 - After P2-001 success, prioritize P2-002 policy template library by risk/use-case.
+- After P2-002 success, prioritize P2-003 adaptive risk model tuning loop.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -387,3 +389,9 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added sandbox UI styling in docs theme, plus docs/README discoverability wiring via MkDocs nav and quick links.
 - Added regression tests (`tests/test_hosted_sandbox_assets.py`) validating flow assets, doc wiring, and discoverability.
 - Evidence: `.venv/bin/pytest tests/test_hosted_sandbox_assets.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P2-002 completed with RED->GREEN->verify->doctor loop.
+- Added a policy template catalog (`policies/templates/catalog.json`) with four risk/use-case profiles.
+- Added reusable Rego template files for low-risk read-only, approval-gated write, PII strict tokenized, and expiring breakglass operations.
+- Added template library runbook (`docs/POLICY_TEMPLATE_LIBRARY.md`) with catalog guidance and `rego-quality` validation workflow.
+- Added regression tests (`tests/test_policy_template_library.py`) validating catalog schema, template files, and docs/readme discoverability wiring.
+- Evidence: `.venv/bin/pytest tests/test_policy_template_library.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

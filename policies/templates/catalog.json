@@ -1,0 +1,30 @@
+[
+  {
+    "id": "read_only_low_risk",
+    "name": "Read-Only Low Risk",
+    "risk_level": "low",
+    "use_case": "Assistants that only query data sources and never mutate state.",
+    "rego_path": "policies/templates/read_only_low_risk.rego.template"
+  },
+  {
+    "id": "write_with_approval",
+    "name": "Write Requires Approval",
+    "risk_level": "medium",
+    "use_case": "Operational copilots that may execute write tools after human approval.",
+    "rego_path": "policies/templates/write_with_approval.rego.template"
+  },
+  {
+    "id": "pii_strict_tokenized",
+    "name": "PII Strict Tokenized",
+    "risk_level": "high",
+    "use_case": "Sensitive environments where PII-bearing requests require tokenization controls.",
+    "rego_path": "policies/templates/pii_strict_tokenized.rego.template"
+  },
+  {
+    "id": "ops_breakglass_expiring",
+    "name": "Ops Breakglass Expiring",
+    "risk_level": "critical",
+    "use_case": "Emergency operations with expiring breakglass approvals.",
+    "rego_path": "policies/templates/ops_breakglass_expiring.rego.template"
+  }
+]

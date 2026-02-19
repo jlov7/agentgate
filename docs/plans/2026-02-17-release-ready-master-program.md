@@ -105,7 +105,7 @@
 - [x] P1-013
 - [x] P1-014
 - [x] P2-001
-- [ ] P2-002
+- [x] P2-002
 - [ ] P2-003
 - [ ] P2-004
 - [ ] P2-005
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P2-002` Policy template library by risk/use-case.
-- Why now: hosted onboarding friction is reduced through `P2-001`; the next leverage point is faster policy adoption with curated templates.
+- Active item: `P2-003` Adaptive risk model tuning loop.
+- Why now: template-driven policy onboarding is now in place, so continuous risk threshold tuning is the next step for production adaptivity.
 
 ## Surprises & Discoveries (Live)
 
@@ -159,6 +159,7 @@
 - 2026-02-19: Move next to P1-014 after P1-013 landed with default Grafana dashboards and alert packs.
 - 2026-02-19: Move next to P2-001 after P1-014 landed with staging reset automation and seeded scenario validation.
 - 2026-02-19: Move next to P2-002 after P2-001 landed with hosted browser sandbox no-install trial support.
+- 2026-02-19: Move next to P2-003 after P2-002 landed with risk-tier policy template library support.
 
 ## Outcomes & Retrospective (Live)
 
@@ -363,3 +364,9 @@
   - Added docs styling + discoverability wiring via `docs/stylesheets/extra.css`, `mkdocs.yml`, and README quick links.
   - Added regression tests (`tests/test_hosted_sandbox_assets.py`) to enforce asset schema, page wiring, and docs/readme discoverability.
   - Evidence: `.venv/bin/pytest tests/test_hosted_sandbox_assets.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P2-002` with policy template library by risk/use-case.
+  - Added catalog metadata (`policies/templates/catalog.json`) covering low/medium/high/critical risk templates.
+  - Added reusable Rego template files for read-only, approval-gated writes, strict PII tokenization, and expiring breakglass operations.
+  - Added policy template runbook (`docs/POLICY_TEMPLATE_LIBRARY.md`) and discoverability wiring in `mkdocs.yml` + README quick links.
+  - Added regression tests (`tests/test_policy_template_library.py`) for catalog schema, template file presence, and docs/readme discoverability.
+  - Evidence: `.venv/bin/pytest tests/test_policy_template_library.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

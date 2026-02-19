@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P2-001 to P2-002 (policy template library by risk/use-case).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P2-002 to P2-003 (adaptive risk model tuning loop).
 
 ## Status
 
@@ -153,17 +153,21 @@ In Progress
 143. [x] P2-001 GREEN: implement hosted browser sandbox no-local-install trial path.
 144. [x] Run targeted tests for P2-001.
 145. [x] Re-run `make verify` and `scripts/doctor.sh`.
-146. [ ] P2-002 RED: add failing checks for policy template library assets and docs publication.
-147. [ ] P2-002 GREEN: implement policy template library by risk/use-case.
-148. [ ] Run targeted tests for P2-002.
-149. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+146. [x] P2-002 RED: add failing checks for policy template library assets and docs publication.
+147. [x] P2-002 GREEN: implement policy template library by risk/use-case.
+148. [x] Run targeted tests for P2-002.
+149. [x] Re-run `make verify` and `scripts/doctor.sh`.
+150. [ ] P2-003 RED: add failing checks for adaptive risk model tuning artifact generation.
+151. [ ] P2-003 GREEN: implement adaptive risk model tuning loop.
+152. [ ] Run targeted tests for P2-003.
+153. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P2-001 is fully complete with hosted browser sandbox trial support and full-gate verification; next execution item is `P2-002`.
+- P2-002 is fully complete with policy template library coverage and full-gate verification; next execution item is `P2-003`.
 
 ## Open Questions
 
-- None blocking commit for P2-001 and transition to P2-002.
+- None blocking commit for P2-002 and transition to P2-003.

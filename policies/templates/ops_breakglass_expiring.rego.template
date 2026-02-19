@@ -1,0 +1,59 @@
+package agentgate
+
+import future.keywords.if
+import future.keywords.in
+
+default decision := {"action": "DENY", "reason": "No matching rule"}
+
+decision := {
+	"action": "ALLOW",
+	"reason": "Read-only tool",
+	"matched_rule": "read_only_tools",
+	"allowed_scope": "read",
+	"is_write_action": false,
+} if {
+	input.tool_name in data.read_only_tools
+}
+
+decision := {
+	"action": "DENY",
+	"reason": "Breakglass expired",
+	"matched_rule": "breakglass_expired",
+} if {
+	input.breakglass_session
+	input.breakglass_expired
+}
+
+decision := {
+	"action": "REQUIRE_APPROVAL",
+	"reason": "Write action requires breakglass approval",
+	"matched_rule": "write_requires_breakglass",
+	"is_write_action": true,
+} if {
+	input.tool_name in data.write_tools
+	not input.breakglass_session
+}
+
+decision := {
+	"action": "REQUIRE_APPROVAL",
+	"reason": "Breakglass write missing approval token",
+	"matched_rule": "breakglass_requires_approval_token",
+	"is_write_action": true,
+} if {
+	input.tool_name in data.write_tools
+	input.breakglass_session
+	not input.has_approval_token
+}
+
+decision := {
+	"action": "ALLOW",
+	"reason": "Breakglass write approved",
+	"matched_rule": "breakglass_write_approved",
+	"allowed_scope": "write",
+	"is_write_action": true,
+} if {
+	input.tool_name in data.write_tools
+	input.breakglass_session
+	input.has_approval_token
+	not input.breakglass_expired
+}
