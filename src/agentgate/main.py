@@ -178,6 +178,52 @@ def _is_mtls_enabled() -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
+def _is_tenant_isolation_enabled() -> bool:
+    explicit = os.getenv("AGENTGATE_ENFORCE_TENANT_ISOLATION")
+    if explicit is not None:
+        value = explicit.strip().lower()
+        return value in {"1", "true", "yes", "on"}
+    env = os.getenv("AGENTGATE_ENV", "").strip().lower()
+    return env in {"prod", "production"}
+
+
+def _require_tenant_header(x_agentgate_tenant_id: str | None) -> str | None:
+    if not _is_tenant_isolation_enabled():
+        return None
+    if (
+        not isinstance(x_agentgate_tenant_id, str)
+        or not _valid_tenant_id(x_agentgate_tenant_id)
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="X-AgentGate-Tenant-ID required when tenant isolation is enabled",
+        )
+    return x_agentgate_tenant_id
+
+
+def _require_context_tenant(context: dict[str, Any]) -> str:
+    tenant_id = context.get("tenant_id")
+    if not isinstance(tenant_id, str) or not _valid_tenant_id(tenant_id):
+        raise HTTPException(
+            status_code=400,
+            detail="tenant_id required in request context when tenant isolation is enabled",
+        )
+    return tenant_id
+
+
+def _enforce_session_tenant_access(
+    *,
+    trace_store: TraceStore,
+    session_id: str,
+    tenant_id: str | None,
+) -> None:
+    if tenant_id is None:
+        return
+    session_tenant = trace_store.get_session_tenant(session_id)
+    if session_tenant != tenant_id:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+
 def _get_mtls_client_material() -> tuple[str, str, str]:
     ca_file = os.getenv("AGENTGATE_MTLS_CA_FILE", "").strip()
     cert_file = os.getenv("AGENTGATE_MTLS_CLIENT_CERT_FILE", "").strip()
@@ -649,6 +695,14 @@ def create_app(
     async def tools_call(request: ToolCallRequest, response: Response) -> ToolCallResponse:
         """Evaluate policy and execute a tool call if allowed."""
         metrics = get_metrics()
+        if _is_tenant_isolation_enabled():
+            tenant_id = _require_context_tenant(request.context)
+            try:
+                app.state.trace_store.bind_session_tenant(request.session_id, tenant_id)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=403, detail="Session tenant mismatch"
+                ) from exc
 
         logger.info(
             "tool_call_received",
@@ -681,16 +735,27 @@ def create_app(
         return result
 
     @app.get("/sessions")
-    async def list_sessions() -> JSONResponse:
+    async def list_sessions(
+        x_agentgate_tenant_id: str | None = Header(None, alias="X-AgentGate-Tenant-ID")
+    ) -> JSONResponse:
         """List active sessions recorded in the trace store."""
-        sessions = app.state.trace_store.list_sessions()
+        tenant_id = _require_tenant_header(x_agentgate_tenant_id)
+        sessions = app.state.trace_store.list_sessions(tenant_id=tenant_id)
         return JSONResponse({"sessions": sessions})
 
     @app.post("/sessions/{session_id}/kill")
     async def kill_session(
-        session_id: str, body: KillRequest | None = BODY_NONE
+        session_id: str,
+        body: KillRequest | None = BODY_NONE,
+        x_agentgate_tenant_id: str | None = Header(None, alias="X-AgentGate-Tenant-ID"),
     ) -> JSONResponse:
         """Kill a session immediately."""
+        tenant_id = _require_tenant_header(x_agentgate_tenant_id)
+        _enforce_session_tenant_access(
+            trace_store=app.state.trace_store,
+            session_id=session_id,
+            tenant_id=tenant_id,
+        )
         metrics = get_metrics()
         reason = body.reason if body else None
         ok = await app.state.kill_switch.kill_session(session_id, reason)
@@ -763,6 +828,7 @@ def create_app(
         format: str = "json",
         theme: str = "studio",
         archive: bool = False,
+        x_agentgate_tenant_id: str | None = Header(None, alias="X-AgentGate-Tenant-ID"),
     ) -> Response:
         """Export an evidence pack for a session.
 
@@ -772,6 +838,12 @@ def create_app(
             archive: Persist immutable archive record for exported payload
         """
         metrics = get_metrics()
+        tenant_id = _require_tenant_header(x_agentgate_tenant_id)
+        _enforce_session_tenant_access(
+            trace_store=app.state.trace_store,
+            session_id=session_id,
+            tenant_id=tenant_id,
+        )
         exporter = app.state.evidence_exporter
         pack = exporter.export_session(session_id)
         archive_record: dict[str, Any] | None = None
@@ -856,9 +928,17 @@ def create_app(
 
     @app.get("/sessions/{session_id}/transparency")
     async def get_transparency_report(
-        session_id: str, anchor: bool = False
+        session_id: str,
+        anchor: bool = False,
+        x_agentgate_tenant_id: str | None = Header(None, alias="X-AgentGate-Tenant-ID"),
     ) -> JSONResponse:
         """Return the transparency proof report for a session."""
+        tenant_id = _require_tenant_header(x_agentgate_tenant_id)
+        _enforce_session_tenant_access(
+            trace_store=app.state.trace_store,
+            session_id=session_id,
+            tenant_id=tenant_id,
+        )
         report = app.state.transparency_log.build_session_report(
             session_id, anchor=anchor
         )
@@ -972,6 +1052,7 @@ def create_app(
         payload: dict[str, Any],
         x_api_key: str | None = Header(None, alias="X-API-Key"),
         authorization: str | None = Header(None, alias="Authorization"),
+        x_agentgate_tenant_id: str | None = Header(None, alias="X-AgentGate-Tenant-ID"),
     ) -> JSONResponse:
         """Create and execute a replay run (admin only)."""
         _authorize_admin_request(
@@ -984,8 +1065,18 @@ def create_app(
         baseline_policy_data = payload.get("baseline_policy_data")
         candidate_policy_data = payload.get("candidate_policy_data")
         selected_invariants = payload.get("invariants")
+        tenant_id = _require_tenant_header(x_agentgate_tenant_id)
         if not isinstance(session_id, str):
             raise HTTPException(status_code=400, detail="session_id required")
+        if tenant_id is not None:
+            payload_tenant_id = payload.get("tenant_id")
+            if payload_tenant_id != tenant_id:
+                raise HTTPException(status_code=400, detail="tenant_id mismatch")
+            _enforce_session_tenant_access(
+                trace_store=app.state.trace_store,
+                session_id=session_id,
+                tenant_id=tenant_id,
+            )
         if not isinstance(baseline_policy_data, dict) or not isinstance(
             candidate_policy_data, dict
         ):
@@ -1035,6 +1126,7 @@ def create_app(
         run_id: str,
         x_api_key: str | None = Header(None, alias="X-API-Key"),
         authorization: str | None = Header(None, alias="Authorization"),
+        x_agentgate_tenant_id: str | None = Header(None, alias="X-AgentGate-Tenant-ID"),
     ) -> JSONResponse:
         """Fetch replay run metadata and summary (admin only)."""
         _authorize_admin_request(
@@ -1045,6 +1137,15 @@ def create_app(
 
         run = app.state.trace_store.get_replay_run(run_id)
         if run is None:
+            raise HTTPException(status_code=404, detail="Replay run not found")
+        tenant_id = _require_tenant_header(x_agentgate_tenant_id)
+        if run.session_id:
+            _enforce_session_tenant_access(
+                trace_store=app.state.trace_store,
+                session_id=run.session_id,
+                tenant_id=tenant_id,
+            )
+        elif tenant_id is not None:
             raise HTTPException(status_code=404, detail="Replay run not found")
         deltas = app.state.trace_store.list_replay_deltas(run_id)
         summary = summarize_replay_deltas(run_id=run_id, deltas=deltas)
@@ -1060,6 +1161,7 @@ def create_app(
         run_id: str,
         x_api_key: str | None = Header(None, alias="X-API-Key"),
         authorization: str | None = Header(None, alias="Authorization"),
+        x_agentgate_tenant_id: str | None = Header(None, alias="X-AgentGate-Tenant-ID"),
     ) -> JSONResponse:
         """Return replay summary and per-event deltas (admin only)."""
         _authorize_admin_request(
@@ -1070,6 +1172,15 @@ def create_app(
 
         run = app.state.trace_store.get_replay_run(run_id)
         if run is None:
+            raise HTTPException(status_code=404, detail="Replay run not found")
+        tenant_id = _require_tenant_header(x_agentgate_tenant_id)
+        if run.session_id:
+            _enforce_session_tenant_access(
+                trace_store=app.state.trace_store,
+                session_id=run.session_id,
+                tenant_id=tenant_id,
+            )
+        elif tenant_id is not None:
             raise HTTPException(status_code=404, detail="Replay run not found")
         deltas = app.state.trace_store.list_replay_deltas(run_id)
         summary = summarize_replay_deltas(run_id=run_id, deltas=deltas)
@@ -1086,6 +1197,7 @@ def create_app(
         incident_id: str,
         x_api_key: str | None = Header(None, alias="X-API-Key"),
         authorization: str | None = Header(None, alias="Authorization"),
+        x_agentgate_tenant_id: str | None = Header(None, alias="X-AgentGate-Tenant-ID"),
     ) -> JSONResponse:
         """Fetch incident record and timeline (admin only)."""
         _authorize_admin_request(
@@ -1097,6 +1209,12 @@ def create_app(
         record = app.state.trace_store.get_incident(incident_id)
         if record is None:
             raise HTTPException(status_code=404, detail="Incident not found")
+        tenant_id = _require_tenant_header(x_agentgate_tenant_id)
+        _enforce_session_tenant_access(
+            trace_store=app.state.trace_store,
+            session_id=record.session_id,
+            tenant_id=tenant_id,
+        )
         events = app.state.trace_store.list_incident_events(incident_id)
         return JSONResponse({
             "incident": record.model_dump(mode="json"),
@@ -1109,6 +1227,7 @@ def create_app(
         payload: dict[str, Any],
         x_api_key: str | None = Header(None, alias="X-API-Key"),
         authorization: str | None = Header(None, alias="Authorization"),
+        x_agentgate_tenant_id: str | None = Header(None, alias="X-AgentGate-Tenant-ID"),
     ) -> JSONResponse:
         """Release a quarantined incident (admin only)."""
         _authorize_admin_request(
@@ -1119,6 +1238,15 @@ def create_app(
         released_by = payload.get("released_by")
         if not isinstance(released_by, str):
             raise HTTPException(status_code=400, detail="released_by required")
+        tenant_id = _require_tenant_header(x_agentgate_tenant_id)
+        record = app.state.trace_store.get_incident(incident_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="Incident not found")
+        _enforce_session_tenant_access(
+            trace_store=app.state.trace_store,
+            session_id=record.session_id,
+            tenant_id=tenant_id,
+        )
         ok = await app.state.quarantine.release_incident(
             incident_id, released_by=released_by
         )
@@ -1198,6 +1326,15 @@ def create_app(
 
         run = app.state.trace_store.get_replay_run(run_id)
         if run is None:
+            raise HTTPException(status_code=404, detail="Replay run not found")
+        rollout_tenant_scope = tenant_id if _is_tenant_isolation_enabled() else None
+        if run.session_id:
+            _enforce_session_tenant_access(
+                trace_store=app.state.trace_store,
+                session_id=run.session_id,
+                tenant_id=rollout_tenant_scope,
+            )
+        elif _is_tenant_isolation_enabled():
             raise HTTPException(status_code=404, detail="Replay run not found")
         deltas = app.state.trace_store.list_replay_deltas(run_id)
         summary = summarize_replay_deltas(run_id=run_id, deltas=deltas)

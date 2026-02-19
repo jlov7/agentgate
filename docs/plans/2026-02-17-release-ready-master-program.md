@@ -83,7 +83,7 @@
 - [x] P0-011
 - [x] P0-012
 - [x] P0-013
-- [ ] P0-014
+- [x] P0-014
 - [ ] P0-015
 - [ ] P0-016
 - [x] P0-017
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-014` Tenant data isolation enforcement across APIs/storage.
-- Why now: mTLS service identity controls now pass full gates; next blocker is strict tenant data boundary enforcement.
+- Active item: `P0-015` PII redaction/tokenization pipeline for trace/evidence output.
+- Why now: tenant isolation controls are now gate-verified; next blocker is sensitive-data minimization/redaction for release readiness.
 
 ## Surprises & Discoveries (Live)
 
@@ -138,6 +138,7 @@
 - 2026-02-18: Move next to P0-012 after P0-011 landed with external transparency checkpoint anchoring.
 - 2026-02-18: Move next to P0-013 after P0-012 landed with signed policy provenance enforcement.
 - 2026-02-18: Move next to P0-014 after P0-013 landed with mTLS service identity controls.
+- 2026-02-19: Move next to P0-015 after P0-014 landed with tenant data isolation enforcement.
 
 ## Outcomes & Retrospective (Live)
 
@@ -215,3 +216,9 @@
   - Added mTLS material enforcement for Redis client creation used by kill-switch/quarantine control-plane paths.
   - Added regression tests for missing mTLS material failures and positive mTLS wiring for both OPA and Redis client constructors.
   - Evidence: `pytest tests/test_policy.py::test_policy_client_requires_mtls_material_when_enabled tests/test_policy.py::test_policy_client_uses_mtls_httpx_kwargs tests/test_main.py::test_create_redis_client_requires_mtls_material tests/test_main.py::test_create_redis_client_uses_mtls_kwargs -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P0-014` with tenant data isolation enforcement.
+  - Added rollback-safe schema migration `v5` for `session_tenants` bindings and strict one-tenant-per-session enforcement in trace storage.
+  - Added tenant-isolation enforcement for tool calls (`tenant_id` context binding), session endpoints (`/sessions`, evidence export, transparency, kill), and admin replay/incident flows.
+  - Added rollout guard ensuring replay runs cannot be used across tenant boundaries when isolation is enabled.
+  - Added regression tests for cross-tenant denial paths and tenant-scoped session listing.
+  - Evidence: `pytest tests/test_traces.py::test_trace_store_binds_session_tenant_and_filters_sessions tests/test_main.py::test_tools_call_requires_tenant_context_when_isolation_enabled tests/test_main.py::test_tools_call_rejects_cross_tenant_session_binding_when_isolation_enabled tests/test_main.py::test_tenant_isolation_filters_sessions_and_session_data_access tests/test_main.py::test_replay_and_incident_endpoints_enforce_tenant_isolation tests/test_main.py::test_create_tenant_rollout_rejects_run_from_other_tenant_when_isolation_enabled -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

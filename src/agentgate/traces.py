@@ -131,6 +131,7 @@ class TraceStore:
             (2, "trace_columns_backfill", self._migrate_schema),
             (3, "evidence_archives", self._migration_evidence_archives),
             (4, "transparency_checkpoints", self._migration_transparency_checkpoints),
+            (5, "session_tenants", self._migration_session_tenants),
         ]
 
     def _ensure_migrations_table(self) -> None:
@@ -570,6 +571,25 @@ class TraceStore:
                 """
             )
 
+    def _migration_session_tenants(self) -> None:
+        """Create session-to-tenant binding table."""
+        with self._lock:
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS session_tenants (
+                    session_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_session_tenants_tenant
+                ON session_tenants(tenant_id)
+                """
+            )
+
     def archive_evidence_pack(
         self,
         *,
@@ -815,6 +835,47 @@ class TraceStore:
             )
             self.conn.commit()
 
+    def bind_session_tenant(self, session_id: str, tenant_id: str) -> None:
+        """Bind a session to exactly one tenant."""
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT INTO session_tenants (session_id, tenant_id)
+                VALUES (?, ?)
+                ON CONFLICT(session_id) DO NOTHING
+                """,
+                (session_id, tenant_id),
+            )
+            row = self.conn.execute(
+                """
+                SELECT tenant_id
+                FROM session_tenants
+                WHERE session_id = ?
+                """,
+                (session_id,),
+            ).fetchone()
+            self.conn.commit()
+        if row is None:
+            raise RuntimeError("Session tenant binding failed")
+        current = str(row["tenant_id"])
+        if current != tenant_id:
+            raise ValueError("Session tenant mismatch")
+
+    def get_session_tenant(self, session_id: str) -> str | None:
+        """Return the tenant bound to the session."""
+        with self._lock:
+            row = self.conn.execute(
+                """
+                SELECT tenant_id
+                FROM session_tenants
+                WHERE session_id = ?
+                """,
+                (session_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return str(row["tenant_id"])
+
     def query(
         self,
         session_id: str | None = None,
@@ -864,12 +925,25 @@ class TraceStore:
             )
         return events
 
-    def list_sessions(self) -> list[str]:
+    def list_sessions(self, tenant_id: str | None = None) -> list[str]:
         """List distinct session IDs seen in the trace store."""
         with self._lock:
-            rows = self.conn.execute(
-                "SELECT DISTINCT session_id FROM traces ORDER BY session_id ASC"
-            ).fetchall()
+            if tenant_id:
+                rows = self.conn.execute(
+                    """
+                    SELECT DISTINCT traces.session_id
+                    FROM traces
+                    INNER JOIN session_tenants
+                    ON session_tenants.session_id = traces.session_id
+                    WHERE session_tenants.tenant_id = ?
+                    ORDER BY traces.session_id ASC
+                    """,
+                    (tenant_id,),
+                ).fetchall()
+            else:
+                rows = self.conn.execute(
+                    "SELECT DISTINCT session_id FROM traces ORDER BY session_id ASC"
+                ).fetchall()
         return [row["session_id"] for row in rows]
 
     def save_replay_run(self, run: ReplayRun) -> None:

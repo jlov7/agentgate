@@ -171,6 +171,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P0-011 external transparency checkpoint anchoring.
 - [x] Implement P0-012 signed policy provenance enforcement on load.
 - [x] Implement P0-013 mTLS service identity hardening.
+- [x] Implement P0-014 tenant data isolation enforcement.
 - [ ] Continue sequential execution of P0 backlog to completion.
 
 ## Surprises & Discoveries
@@ -193,6 +194,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P0-011 success, prioritize P0-012 signed policy provenance enforcement.
 - After P0-012 success, prioritize P0-013 mTLS service identity hardening.
 - After P0-013 success, prioritize P0-014 tenant data isolation enforcement.
+- After P0-014 success, prioritize P0-015 PII redaction/tokenization pipeline.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -237,3 +239,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added mTLS material enforcement and client wiring for OPA policy evaluation traffic.
 - Added mTLS material enforcement and TLS client wiring for Redis control-plane connections.
 - Evidence: targeted mTLS tests pass, `make verify` pass, `scripts/doctor.sh` pass.
+- P0-014 completed with RED->GREEN->verify->doctor loop.
+- Added trace-store session-to-tenant binding migration (`v5`) with one-tenant-per-session enforcement and tenant-scoped session listing.
+- Added tenant isolation controls for session, replay, incident, and rollout APIs (strict via `AGENTGATE_ENFORCE_TENANT_ISOLATION` or production env fallback).
+- Evidence: `pytest tests/test_traces.py::test_trace_store_binds_session_tenant_and_filters_sessions tests/test_main.py::test_tools_call_requires_tenant_context_when_isolation_enabled tests/test_main.py::test_tools_call_rejects_cross_tenant_session_binding_when_isolation_enabled tests/test_main.py::test_tenant_isolation_filters_sessions_and_session_data_access tests/test_main.py::test_replay_and_incident_endpoints_enforce_tenant_isolation tests/test_main.py::test_create_tenant_rollout_rejects_run_from_other_tenant_when_isolation_enabled -v` pass, `make verify` pass, `scripts/doctor.sh` pass.

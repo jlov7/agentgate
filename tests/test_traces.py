@@ -102,7 +102,7 @@ def test_trace_store_migrates_legacy_schema(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2, 3, 4]
+        assert versions == [1, 2, 3, 4, 5]
 
 
 def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
@@ -113,7 +113,7 @@ def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-    assert versions == [1, 2, 3, 4]
+    assert versions == [1, 2, 3, 4, 5]
 
 
 def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
@@ -138,7 +138,23 @@ def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2, 3, 4]
+        assert versions == [1, 2, 3, 4, 5]
+
+
+def test_trace_store_binds_session_tenant_and_filters_sessions(tmp_path) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        store.bind_session_tenant("sess-a", "tenant-a")
+        store.bind_session_tenant("sess-b", "tenant-b")
+        store.append(_build_event("evt-1", "sess-a", datetime(2026, 1, 1, tzinfo=UTC)))
+        store.append(_build_event("evt-2", "sess-b", datetime(2026, 1, 2, tzinfo=UTC)))
+
+        assert store.get_session_tenant("sess-a") == "tenant-a"
+        assert store.get_session_tenant("sess-b") == "tenant-b"
+        assert store.list_sessions(tenant_id="tenant-a") == ["sess-a"]
+        assert store.list_sessions(tenant_id="tenant-b") == ["sess-b"]
+
+        with pytest.raises(ValueError, match="tenant mismatch"):
+            store.bind_session_tenant("sess-a", "tenant-b")
 
 
 def test_hash_arguments_deterministic() -> None:

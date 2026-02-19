@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-013 to P0-014 (tenant data isolation enforcement across APIs/storage).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-014 to P0-015 (PII redaction/tokenization for trace/evidence output).
 
 ## Status
 
@@ -69,17 +69,21 @@ In Progress
 59. [x] P0-013 GREEN: implement mTLS client/server identity validation.
 60. [x] Run targeted tests for P0-013.
 61. [x] Re-run `make verify` and `scripts/doctor.sh`.
-62. [ ] P0-014 RED: add failing tests for tenant data isolation enforcement.
-63. [ ] P0-014 GREEN: enforce tenant isolation across API/storage paths.
-64. [ ] Run targeted tests for P0-014.
-65. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+62. [x] P0-014 RED: add failing tests for tenant data isolation enforcement.
+63. [x] P0-014 GREEN: enforce tenant isolation across API/storage paths.
+64. [x] Run targeted tests for P0-014.
+65. [x] Re-run `make verify` and `scripts/doctor.sh`.
+66. [ ] P0-015 RED: add failing tests for PII redaction/tokenization in trace/evidence output.
+67. [ ] P0-015 GREEN: implement configurable PII redaction/tokenization pipeline.
+68. [ ] Run targeted tests for P0-015.
+69. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-013 is complete and verified; next priority is tenant isolation enforcement (`P0-014`).
+- P0-014 is complete and verified; next priority is PII redaction/tokenization (`P0-015`).
 
 ## Open Questions
 
-- None blocking P0-014 implementation start.
+- None blocking P0-015 implementation start.

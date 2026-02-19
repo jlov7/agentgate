@@ -321,6 +321,104 @@ def test_list_sessions_endpoint(client) -> None:
     assert session_id in response.json()["sessions"]
 
 
+def test_tools_call_requires_tenant_context_when_isolation_enabled(
+    client, monkeypatch
+) -> None:
+    monkeypatch.setenv("AGENTGATE_ENFORCE_TENANT_ISOLATION", "true")
+    missing = client.post(
+        "/tools/call",
+        json={
+            "session_id": "tenant-required",
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+        },
+    )
+    assert missing.status_code == 400
+    assert "tenant_id" in missing.json()["detail"]
+
+    valid = client.post(
+        "/tools/call",
+        json={
+            "session_id": "tenant-required",
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+            "context": {"tenant_id": "tenant-a"},
+        },
+    )
+    assert valid.status_code == 200
+
+
+def test_tools_call_rejects_cross_tenant_session_binding_when_isolation_enabled(
+    client, monkeypatch
+) -> None:
+    monkeypatch.setenv("AGENTGATE_ENFORCE_TENANT_ISOLATION", "true")
+    first = client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-shared",
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+            "context": {"tenant_id": "tenant-a"},
+        },
+    )
+    assert first.status_code == 200
+
+    second = client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-shared",
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+            "context": {"tenant_id": "tenant-b"},
+        },
+    )
+    assert second.status_code == 403
+    assert "tenant mismatch" in second.json()["detail"].lower()
+
+
+def test_tenant_isolation_filters_sessions_and_session_data_access(
+    client, monkeypatch
+) -> None:
+    monkeypatch.setenv("AGENTGATE_ENFORCE_TENANT_ISOLATION", "true")
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-a",
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+            "context": {"tenant_id": "tenant-a"},
+        },
+    )
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-b",
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+            "context": {"tenant_id": "tenant-b"},
+        },
+    )
+
+    missing_header = client.get("/sessions")
+    assert missing_header.status_code == 400
+
+    list_a = client.get("/sessions", headers={"X-AgentGate-Tenant-ID": "tenant-a"})
+    assert list_a.status_code == 200
+    assert list_a.json()["sessions"] == ["sess-a"]
+
+    evidence_cross = client.get(
+        "/sessions/sess-b/evidence",
+        headers={"X-AgentGate-Tenant-ID": "tenant-a"},
+    )
+    assert evidence_cross.status_code == 404
+
+    transparency_cross = client.get(
+        "/sessions/sess-b/transparency",
+        headers={"X-AgentGate-Tenant-ID": "tenant-a"},
+    )
+    assert transparency_cross.status_code == 404
+
+
 def test_rate_limit_headers_use_context_user_id(client, monkeypatch) -> None:
     class DummyLimiter:
         def __init__(self) -> None:
@@ -633,6 +731,100 @@ def test_admin_replay_run_and_report(client, monkeypatch) -> None:
     assert report_payload["invariant_report"]["run_id"] == run_id
 
 
+def test_replay_and_incident_endpoints_enforce_tenant_isolation(
+    client, monkeypatch
+) -> None:
+    monkeypatch.setenv("AGENTGATE_ENFORCE_TENANT_ISOLATION", "true")
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    now = datetime(2026, 2, 15, 20, 0, tzinfo=UTC)
+
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-tenant-b",
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+            "context": {"tenant_id": "tenant-b"},
+        },
+    )
+
+    payload = {
+        "tenant_id": "tenant-b",
+        "session_id": "sess-tenant-b",
+        "baseline_policy_version": "v1",
+        "candidate_policy_version": "v2",
+        "baseline_policy_data": {
+            "read_only_tools": ["db_query"],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+        "candidate_policy_data": {
+            "read_only_tools": ["db_query"],
+            "write_tools": ["db_insert"],
+            "all_known_tools": ["db_query", "db_insert"],
+        },
+    }
+    create = client.post(
+        "/admin/replay/runs",
+        headers={
+            "X-API-Key": "admin-key",
+            "X-AgentGate-Tenant-ID": "tenant-b",
+        },
+        json=payload,
+    )
+    assert create.status_code == 200
+    run_id = create.json()["run_id"]
+
+    denied = client.get(
+        f"/admin/replay/runs/{run_id}",
+        headers={
+            "X-API-Key": "admin-key",
+            "X-AgentGate-Tenant-ID": "tenant-a",
+        },
+    )
+    assert denied.status_code == 404
+
+    allowed = client.get(
+        f"/admin/replay/runs/{run_id}",
+        headers={
+            "X-API-Key": "admin-key",
+            "X-AgentGate-Tenant-ID": "tenant-b",
+        },
+    )
+    assert allowed.status_code == 200
+
+    incident = IncidentRecord(
+        incident_id="incident-tenant-b",
+        session_id="sess-tenant-b",
+        status="quarantined",
+        risk_score=9,
+        reason="Risk threshold exceeded",
+        created_at=now,
+        updated_at=now,
+        released_by=None,
+        released_at=None,
+    )
+    client.app.state.trace_store.save_incident(incident)
+
+    cross_tenant = client.get(
+        "/admin/incidents/incident-tenant-b",
+        headers={
+            "X-API-Key": "admin-key",
+            "X-AgentGate-Tenant-ID": "tenant-a",
+        },
+    )
+    assert cross_tenant.status_code == 404
+
+    same_tenant = client.get(
+        "/admin/incidents/incident-tenant-b",
+        headers={
+            "X-API-Key": "admin-key",
+            "X-AgentGate-Tenant-ID": "tenant-b",
+        },
+    )
+    assert same_tenant.status_code == 200
+
+
 def test_session_transparency_report_endpoint(client) -> None:
     session_id = "transparency-session"
     client.post(
@@ -815,6 +1007,63 @@ def test_create_tenant_rollout_returns_canary_plan(client, monkeypatch) -> None:
     payload = response.json()
     assert payload["rollout"]["tenant_id"] == "tenant-a"
     assert payload["rollout"]["status"] == "promoting"
+
+
+def test_create_tenant_rollout_rejects_run_from_other_tenant_when_isolation_enabled(
+    client, monkeypatch
+) -> None:
+    monkeypatch.setenv("AGENTGATE_ENFORCE_TENANT_ISOLATION", "true")
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    monkeypatch.setenv("AGENTGATE_POLICY_PACKAGE_SECRET", "secret")
+    now = datetime(2026, 2, 15, 23, 30, tzinfo=UTC)
+
+    client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-tenant-a",
+            "tool_name": "db_query",
+            "arguments": {"query": "SELECT 1"},
+            "context": {"tenant_id": "tenant-a"},
+        },
+    )
+    run = ReplayRun(
+        run_id="run-cross-tenant",
+        session_id="sess-tenant-a",
+        baseline_policy_version="v1",
+        candidate_policy_version="v2",
+        status="completed",
+        created_at=now,
+        completed_at=now,
+    )
+    client.app.state.trace_store.save_replay_run(run)
+    bundle = {"read_only_tools": ["db_query"], "write_tools": ["db_insert"]}
+    bundle_hash = hash_policy_bundle(bundle)
+    signature = sign_policy_package(
+        secret="secret",
+        tenant_id="tenant-b",
+        version="v2",
+        bundle=bundle,
+        signer="ops",
+    )
+
+    response = client.post(
+        "/admin/tenants/tenant-b/rollouts",
+        headers={"X-API-Key": "admin-key"},
+        json={
+            "run_id": "run-cross-tenant",
+            "baseline_version": "v1",
+            "candidate_version": "v2",
+            "candidate_package": {
+                "tenant_id": "tenant-b",
+                "version": "v2",
+                "signer": "ops",
+                "bundle_hash": bundle_hash,
+                "bundle": bundle,
+                "signature": signature,
+            },
+        },
+    )
+    assert response.status_code == 404
 
 
 def test_admin_shadow_config_and_report(client, monkeypatch) -> None:
