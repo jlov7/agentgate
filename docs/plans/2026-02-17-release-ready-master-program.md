@@ -106,15 +106,15 @@
 - [x] P1-014
 - [x] P2-001
 - [x] P2-002
-- [ ] P2-003
+- [x] P2-003
 - [ ] P2-004
 - [ ] P2-005
 - [ ] P2-006
 
 ## Current Execution Slice
 
-- Active item: `P2-003` Adaptive risk model tuning loop.
-- Why now: template-driven policy onboarding is now in place, so continuous risk threshold tuning is the next step for production adaptivity.
+- Active item: `P2-004` Compliance control mapping exports (SOC2/ISO/NIST).
+- Why now: adaptive risk tuning is now wired, so compliance evidence portability is the next release differentiator.
 
 ## Surprises & Discoveries (Live)
 
@@ -160,6 +160,7 @@
 - 2026-02-19: Move next to P2-001 after P1-014 landed with staging reset automation and seeded scenario validation.
 - 2026-02-19: Move next to P2-002 after P2-001 landed with hosted browser sandbox no-install trial support.
 - 2026-02-19: Move next to P2-003 after P2-002 landed with risk-tier policy template library support.
+- 2026-02-19: Move next to P2-004 after P2-003 landed with adaptive risk tuning loop automation.
 
 ## Outcomes & Retrospective (Live)
 
@@ -370,3 +371,9 @@
   - Added policy template runbook (`docs/POLICY_TEMPLATE_LIBRARY.md`) and discoverability wiring in `mkdocs.yml` + README quick links.
   - Added regression tests (`tests/test_policy_template_library.py`) for catalog schema, template file presence, and docs/readme discoverability.
   - Evidence: `.venv/bin/pytest tests/test_policy_template_library.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P2-003` with adaptive risk model tuning loop automation.
+  - Added adaptive tuning script (`scripts/adaptive_risk_tuning.py`) to convert incident/replay/rollout evidence into threshold recommendations.
+  - Added make entrypoint (`make risk-tune`) that writes `artifacts/risk-tuning.json` for operator review.
+  - Added adaptive tuning runbook (`docs/ADAPTIVE_RISK_TUNING.md`) and discoverability wiring in `mkdocs.yml` + README quick links.
+  - Added regression tests (`tests/test_adaptive_risk_tuning.py`) covering tighten/relax recommendation paths and docs publication checks.
+  - Evidence: `.venv/bin/pytest tests/test_adaptive_risk_tuning.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

@@ -193,6 +193,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-014 resettable staging environment with seeded scenarios.
 - [x] Implement P2-001 hosted browser sandbox no-local-install trial flow.
 - [x] Implement P2-002 policy template library by risk/use-case.
+- [x] Implement P2-003 adaptive risk model tuning loop.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -237,6 +238,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-014 success, prioritize P2-001 hosted browser sandbox no-local-install trial flow.
 - After P2-001 success, prioritize P2-002 policy template library by risk/use-case.
 - After P2-002 success, prioritize P2-003 adaptive risk model tuning loop.
+- After P2-003 success, prioritize P2-004 compliance control mapping exports.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -395,3 +397,9 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added template library runbook (`docs/POLICY_TEMPLATE_LIBRARY.md`) with catalog guidance and `rego-quality` validation workflow.
 - Added regression tests (`tests/test_policy_template_library.py`) validating catalog schema, template files, and docs/readme discoverability wiring.
 - Evidence: `.venv/bin/pytest tests/test_policy_template_library.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P2-003 completed with RED->GREEN->verify->doctor loop.
+- Added adaptive tuning automation (`scripts/adaptive_risk_tuning.py`) to translate incident/replay/rollout evidence into threshold recommendations.
+- Added operator entrypoint (`make risk-tune`) for deterministic generation of `artifacts/risk-tuning.json`.
+- Added adaptive tuning runbook (`docs/ADAPTIVE_RISK_TUNING.md`) with input/output contract and usage commands.
+- Added regression tests (`tests/test_adaptive_risk_tuning.py`) validating tighten/relax recommendation behavior and docs/readme discoverability.
+- Evidence: `.venv/bin/pytest tests/test_adaptive_risk_tuning.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

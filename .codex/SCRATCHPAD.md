@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P2-002 to P2-003 (adaptive risk model tuning loop).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P2-003 to P2-004 (compliance control mapping exports).
 
 ## Status
 
@@ -157,17 +157,21 @@ In Progress
 147. [x] P2-002 GREEN: implement policy template library by risk/use-case.
 148. [x] Run targeted tests for P2-002.
 149. [x] Re-run `make verify` and `scripts/doctor.sh`.
-150. [ ] P2-003 RED: add failing checks for adaptive risk model tuning artifact generation.
-151. [ ] P2-003 GREEN: implement adaptive risk model tuning loop.
-152. [ ] Run targeted tests for P2-003.
-153. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+150. [x] P2-003 RED: add failing checks for adaptive risk model tuning artifact generation.
+151. [x] P2-003 GREEN: implement adaptive risk model tuning loop.
+152. [x] Run targeted tests for P2-003.
+153. [x] Re-run `make verify` and `scripts/doctor.sh`.
+154. [ ] P2-004 RED: add failing checks for compliance control mapping export artifacts.
+155. [ ] P2-004 GREEN: implement SOC2/ISO/NIST control mapping exports.
+156. [ ] Run targeted tests for P2-004.
+157. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P2-002 is fully complete with policy template library coverage and full-gate verification; next execution item is `P2-003`.
+- P2-003 is fully complete with adaptive risk tuning loop coverage and full-gate verification; next execution item is `P2-004`.
 
 ## Open Questions
 
-- None blocking commit for P2-002 and transition to P2-003.
+- None blocking commit for P2-003 and transition to P2-004.
