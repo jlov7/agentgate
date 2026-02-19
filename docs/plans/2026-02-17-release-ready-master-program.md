@@ -102,7 +102,7 @@
 - [x] P1-010
 - [x] P1-011
 - [x] P1-012
-- [ ] P1-013
+- [x] P1-013
 - [ ] P1-014
 - [ ] P2-001
 - [ ] P2-002
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-013` Default Grafana dashboards + alert packs.
-- Why now: distributed tracing is now in place, so dashboard and alert-pack defaults are the next launch-quality lever for operations visibility.
+- Active item: `P1-014` Resettable staging environment with seeded scenarios.
+- Why now: observability defaults are now in place, so a deterministic resettable staging path is the next launch-quality lever for pre-release confidence and demo reproducibility.
 
 ## Surprises & Discoveries (Live)
 
@@ -156,6 +156,7 @@
 - 2026-02-19: Move next to P1-011 after P1-010 landed with Helm chart and Kubernetes deployment support.
 - 2026-02-19: Move next to P1-012 after P1-011 landed with Terraform baseline provisioning support.
 - 2026-02-19: Move next to P1-013 after P1-012 landed with OpenTelemetry distributed tracing support.
+- 2026-02-19: Move next to P1-014 after P1-013 landed with default Grafana dashboards and alert packs.
 
 ## Outcomes & Retrospective (Live)
 
@@ -341,3 +342,10 @@
   - Added tracing operations runbook `docs/OBSERVABILITY_TRACING.md` and wired docs discovery via `mkdocs.yml` + README config tables/links.
   - Added regression tests (`tests/test_otel.py`) covering enabled/disabled `traceparent` behavior and tracing docs publication.
   - Evidence: `.venv/bin/pytest tests/test_otel.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-013` with default Grafana dashboards and alert packs.
+  - Added Grafana dashboard baseline (`deploy/observability/grafana/agentgate-overview.json`) covering core decision, latency, kill-switch, and rate-limit metrics.
+  - Added Prometheus alert pack (`deploy/observability/prometheus/agentgate-alerts.yaml`) for high deny ratio, latency breach, and kill-switch activation events.
+  - Added observability pack runbook `docs/OBSERVABILITY_PACK.md` with import and alert-integration instructions.
+  - Wired docs discovery through `mkdocs.yml` navigation and README links.
+  - Added regression tests (`tests/test_observability_pack.py`) for artifact and docs enforcement.
+  - Evidence: `.venv/bin/pytest tests/test_observability_pack.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

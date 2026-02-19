@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-012 to P1-013 (default Grafana dashboards + alert packs).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-013 to P1-014 (resettable staging environment with seeded scenarios).
 
 ## Status
 
@@ -141,17 +141,21 @@ In Progress
 131. [x] P1-012 GREEN: implement OpenTelemetry tracing instrumentation and exporter wiring.
 132. [x] Run targeted tests for P1-012.
 133. [x] Re-run `make verify` and `scripts/doctor.sh`.
-134. [ ] P1-013 RED: add failing checks for default Grafana dashboards and alert packs.
-135. [ ] P1-013 GREEN: implement Grafana dashboard + alert pack artifacts.
-136. [ ] Run targeted tests for P1-013.
-137. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+134. [x] P1-013 RED: add failing checks for default Grafana dashboards and alert packs.
+135. [x] P1-013 GREEN: implement Grafana dashboard + alert pack artifacts.
+136. [x] Run targeted tests for P1-013.
+137. [x] Re-run `make verify` and `scripts/doctor.sh`.
+138. [ ] P1-014 RED: add failing checks for resettable staging environment workflow and seeded scenarios.
+139. [ ] P1-014 GREEN: implement resettable staging automation + seeded scenario fixtures.
+140. [ ] Run targeted tests for P1-014.
+141. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-012 is fully complete with OpenTelemetry distributed tracing support and full-gate verification; next execution item is `P1-013`.
+- P1-013 is fully complete with default Grafana dashboard + alert pack support and full-gate verification; next execution item is `P1-014`.
 
 ## Open Questions
 
-- None blocking commit for P1-012 and transition to P1-013.
+- None blocking commit for P1-013 and transition to P1-014.

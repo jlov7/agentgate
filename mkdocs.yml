@@ -19,6 +19,7 @@ nav:
   - Kubernetes Deployment: KUBERNETES_DEPLOYMENT.md
   - Terraform Deployment: TERRAFORM_DEPLOYMENT.md
   - Distributed Tracing: OBSERVABILITY_TRACING.md
+  - Observability Pack: OBSERVABILITY_PACK.md
   - Threat Model: THREAT_MODEL.md
   - UX Audit: UX_AUDIT.md
   - Showcase Artifacts: showcase/README.md

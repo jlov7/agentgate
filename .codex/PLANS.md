@@ -189,6 +189,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-010 Helm chart + Kubernetes deployment guide.
 - [x] Implement P1-011 Terraform baseline module.
 - [x] Implement P1-012 OpenTelemetry distributed tracing.
+- [x] Implement P1-013 default Grafana dashboards + alert packs.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -229,6 +230,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-010 success, prioritize P1-011 Terraform baseline module.
 - After P1-011 success, prioritize P1-012 OpenTelemetry distributed tracing.
 - After P1-012 success, prioritize P1-013 default Grafana dashboards + alert packs.
+- After P1-013 success, prioritize P1-014 resettable staging environment + seeded scenarios.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -364,3 +366,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added distributed tracing docs (`docs/OBSERVABILITY_TRACING.md`), README configuration updates, and docs navigation wiring.
 - Added regression tests (`tests/test_otel.py`) for trace header behavior and docs publication.
 - Evidence: `.venv/bin/pytest tests/test_otel.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-013 completed with RED->GREEN->verify->doctor loop.
+- Added observability deployment artifacts under `deploy/observability/` including Grafana dashboard JSON (`agentgate-overview.json`) and Prometheus alert pack (`agentgate-alerts.yaml`).
+- Added observability pack runbook (`docs/OBSERVABILITY_PACK.md`) and discovery links in docs navigation + README quick links.
+- Added regression tests (`tests/test_observability_pack.py`) validating artifact existence, metric coverage, alert names, and docs publication.
+- Evidence: `.venv/bin/pytest tests/test_observability_pack.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

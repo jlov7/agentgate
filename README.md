@@ -748,6 +748,7 @@ This is a personal, independent project. It is not affiliated with any employer 
 | [Kubernetes Deployment](docs/KUBERNETES_DEPLOYMENT.md) | Helm-based cluster deployment and rollback guide |
 | [Terraform Deployment](docs/TERRAFORM_DEPLOYMENT.md) | Baseline namespace + Helm release provisioning |
 | [Distributed Tracing](docs/OBSERVABILITY_TRACING.md) | OpenTelemetry-compatible tracing setup and validation |
+| [Observability Pack](docs/OBSERVABILITY_PACK.md) | Default Grafana dashboard and Prometheus alert pack |
 | [Showcase Artifacts](docs/showcase/README.md) | Evidence pack, metrics snapshot, logs |
 | [Docs Site](https://jlov7.github.io/agentgate/) | Executive-friendly documentation |
 | [API Documentation](http://localhost:8000/docs) | Interactive OpenAPI docs (when running) |

@@ -1,0 +1,41 @@
+groups:
+  - name: agentgate.core
+    rules:
+      - alert: AgentGateHighErrorRate
+        expr: |
+          (
+            sum(rate(agentgate_tool_calls_total{decision="DENY"}[5m]))
+            /
+            clamp_min(sum(rate(agentgate_tool_calls_total[5m])), 0.001)
+          ) > 0.35
+        for: 10m
+        labels:
+          severity: warning
+          service: agentgate
+        annotations:
+          summary: "AgentGate deny ratio is elevated"
+          description: "Denied tool calls exceeded 35% of all decisions for 10m."
+
+      - alert: AgentGateP95LatencyBreach
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(agentgate_request_duration_seconds_bucket[5m]))
+          ) > 1.0
+        for: 10m
+        labels:
+          severity: warning
+          service: agentgate
+        annotations:
+          summary: "AgentGate request latency is above SLO"
+          description: "P95 request latency exceeded 1.0s for 10m."
+
+      - alert: AgentGateKillSwitchTriggered
+        expr: sum(increase(agentgate_kill_switch_activations_total[5m])) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: agentgate
+        annotations:
+          summary: "AgentGate kill switch activated"
+          description: "A session, tool, or global kill switch activation occurred in the last 5 minutes."
