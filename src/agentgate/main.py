@@ -79,6 +79,12 @@ from agentgate.models import (
     ToolCallRequest,
     ToolCallResponse,
 )
+from agentgate.otel import (
+    configure_tracing,
+    current_traceparent,
+    set_span_attribute,
+    start_span,
+)
 from agentgate.policy import (
     PolicyClient,
     load_policy_data,
@@ -538,6 +544,7 @@ def create_app(
         openapi_url="/openapi.json",
         lifespan=lifespan,
     )
+    configure_tracing()
 
     policy_path = _get_policy_path()
     policy_data_path = policy_path / "data.json"
@@ -779,9 +786,25 @@ def create_app(
         """Add correlation ID to requests for distributed tracing."""
         correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
         bind_correlation_id(correlation_id)
-        response = await call_next(request)
+        traceparent: str | None = None
+        try:
+            with start_span(
+                "http.request",
+                attributes={
+                    "http.method": request.method,
+                    "http.route": request.url.path,
+                    "agentgate.correlation_id": correlation_id,
+                },
+            ) as span:
+                response = await call_next(request)
+                set_span_attribute(span, "http.status_code", response.status_code)
+                traceparent = current_traceparent()
+        finally:
+            clear_logging_context()
+
         response.headers["X-Correlation-ID"] = correlation_id
-        clear_logging_context()
+        if traceparent is not None:
+            response.headers["traceparent"] = traceparent
         return response
 
     @app.exception_handler(RequestValidationError)
@@ -923,8 +946,19 @@ def create_app(
         gateway: Gateway = app.state.gateway
 
         started_at = time.perf_counter()
-        with metrics.request_duration_seconds.time("tools_call"):
+        with metrics.request_duration_seconds.time("tools_call"), start_span(
+            "gateway.tool_call",
+            attributes={
+                "agentgate.session_id": request.session_id,
+                "agentgate.tool_name": request.tool_name,
+            },
+        ) as span:
             result = await gateway.call_tool(request)
+            span_decision = "ALLOW" if result.success else "DENY"
+            if result.error and "approval" in result.error.lower():
+                span_decision = "REQUIRE_APPROVAL"
+            set_span_attribute(span, "agentgate.decision", span_decision)
+            set_span_attribute(span, "agentgate.success", result.success)
         latency_seconds = max(0.0, time.perf_counter() - started_at)
 
         # Record metrics

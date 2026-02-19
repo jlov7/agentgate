@@ -18,6 +18,7 @@ nav:
   - Tenant Rollouts: TENANT_ROLLOUTS.md
   - Kubernetes Deployment: KUBERNETES_DEPLOYMENT.md
   - Terraform Deployment: TERRAFORM_DEPLOYMENT.md
+  - Distributed Tracing: OBSERVABILITY_TRACING.md
   - Threat Model: THREAT_MODEL.md
   - UX Audit: UX_AUDIT.md
   - Showcase Artifacts: showcase/README.md

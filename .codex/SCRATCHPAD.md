@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-011 to P1-012 (OpenTelemetry distributed tracing).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-012 to P1-013 (default Grafana dashboards + alert packs).
 
 ## Status
 
@@ -137,17 +137,21 @@ In Progress
 127. [x] P1-011 GREEN: implement Terraform baseline module for AgentGate deployment primitives.
 128. [x] Run targeted tests for P1-011.
 129. [x] Re-run `make verify` and `scripts/doctor.sh`.
-130. [ ] P1-012 RED: add failing checks for OpenTelemetry distributed tracing integration.
-131. [ ] P1-012 GREEN: implement OpenTelemetry tracing instrumentation and exporter wiring.
-132. [ ] Run targeted tests for P1-012.
-133. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+130. [x] P1-012 RED: add failing checks for OpenTelemetry distributed tracing integration.
+131. [x] P1-012 GREEN: implement OpenTelemetry tracing instrumentation and exporter wiring.
+132. [x] Run targeted tests for P1-012.
+133. [x] Re-run `make verify` and `scripts/doctor.sh`.
+134. [ ] P1-013 RED: add failing checks for default Grafana dashboards and alert packs.
+135. [ ] P1-013 GREEN: implement Grafana dashboard + alert pack artifacts.
+136. [ ] Run targeted tests for P1-013.
+137. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-011 is fully complete with Terraform baseline module support and full-gate verification; next execution item is `P1-012`.
+- P1-012 is fully complete with OpenTelemetry distributed tracing support and full-gate verification; next execution item is `P1-013`.
 
 ## Open Questions
 
-- None blocking commit for P1-011 and transition to P1-012.
+- None blocking commit for P1-012 and transition to P1-013.

@@ -188,6 +188,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-009 official TypeScript SDK.
 - [x] Implement P1-010 Helm chart + Kubernetes deployment guide.
 - [x] Implement P1-011 Terraform baseline module.
+- [x] Implement P1-012 OpenTelemetry distributed tracing.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -227,6 +228,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-009 success, prioritize P1-010 Helm chart and Kubernetes deployment guide.
 - After P1-010 success, prioritize P1-011 Terraform baseline module.
 - After P1-011 success, prioritize P1-012 OpenTelemetry distributed tracing.
+- After P1-012 success, prioritize P1-013 default Grafana dashboards + alert packs.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -356,3 +358,9 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added Terraform deployment runbook (`docs/TERRAFORM_DEPLOYMENT.md`) and discovery links in MkDocs navigation + README.
 - Added regression tests (`tests/test_terraform_module.py`) to enforce module/provider wiring and published Terraform docs.
 - Evidence: `.venv/bin/pytest tests/test_terraform_module.py tests/test_helm_chart.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-012 completed with RED->GREEN->verify->doctor loop.
+- Added OTEL-compatible tracing module (`src/agentgate/otel.py`) with safe fallback behavior plus configurable enablement/exporter settings.
+- Instrumented HTTP middleware and gateway tool-call path to emit tracing spans and `traceparent` headers when tracing is enabled.
+- Added distributed tracing docs (`docs/OBSERVABILITY_TRACING.md`), README configuration updates, and docs navigation wiring.
+- Added regression tests (`tests/test_otel.py`) for trace header behavior and docs publication.
+- Evidence: `.venv/bin/pytest tests/test_otel.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

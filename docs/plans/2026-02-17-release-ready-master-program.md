@@ -101,7 +101,7 @@
 - [x] P1-009
 - [x] P1-010
 - [x] P1-011
-- [ ] P1-012
+- [x] P1-012
 - [ ] P1-013
 - [ ] P1-014
 - [ ] P2-001
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-012` OpenTelemetry distributed tracing.
-- Why now: deployment packaging and provisioning are in place, so distributed tracing is the next launch-quality lever for runtime operability and incident diagnostics.
+- Active item: `P1-013` Default Grafana dashboards + alert packs.
+- Why now: distributed tracing is now in place, so dashboard and alert-pack defaults are the next launch-quality lever for operations visibility.
 
 ## Surprises & Discoveries (Live)
 
@@ -155,6 +155,7 @@
 - 2026-02-19: Move next to P1-010 after P1-009 landed with official TypeScript SDK support.
 - 2026-02-19: Move next to P1-011 after P1-010 landed with Helm chart and Kubernetes deployment support.
 - 2026-02-19: Move next to P1-012 after P1-011 landed with Terraform baseline provisioning support.
+- 2026-02-19: Move next to P1-013 after P1-012 landed with OpenTelemetry distributed tracing support.
 
 ## Outcomes & Retrospective (Live)
 
@@ -334,3 +335,9 @@
   - Wired docs discovery through `mkdocs.yml` navigation and README links to the Terraform deployment guide.
   - Added regression tests (`tests/test_terraform_module.py`) to enforce module files, provider locks, helm-release wiring, and docs publication requirements.
   - Evidence: `.venv/bin/pytest tests/test_terraform_module.py tests/test_helm_chart.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-012` with OpenTelemetry distributed tracing support.
+  - Added OTEL-compatible tracing helpers (`src/agentgate/otel.py`) with optional SDK integration and safe fallback trace context handling.
+  - Instrumented request middleware and tool-call execution path to produce tracing spans and emit `traceparent` response headers when tracing is enabled.
+  - Added tracing operations runbook `docs/OBSERVABILITY_TRACING.md` and wired docs discovery via `mkdocs.yml` + README config tables/links.
+  - Added regression tests (`tests/test_otel.py`) covering enabled/disabled `traceparent` behavior and tracing docs publication.
+  - Evidence: `.venv/bin/pytest tests/test_otel.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

@@ -521,6 +521,15 @@ make pre-commit
 | `AGENTGATE_WEBHOOK_URL` | *(none)* | URL for webhook notifications |
 | `AGENTGATE_WEBHOOK_SECRET` | *(none)* | Shared secret for webhook HMAC |
 
+### Distributed Tracing Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENTGATE_OTEL_ENABLED` | `false` | Enable OTEL-compatible tracing instrumentation |
+| `AGENTGATE_OTEL_SERVICE_NAME` | `agentgate` | Service name for traces |
+| `AGENTGATE_OTEL_EXPORTER` | `none` | Export mode: `none`, `console`, `otlp` |
+| `AGENTGATE_OTEL_EXPORTER_OTLP_ENDPOINT` | *(none)* | OTLP HTTP endpoint when exporter is `otlp` |
+
 ---
 
 ## Project Structure
@@ -738,6 +747,7 @@ This is a personal, independent project. It is not affiliated with any employer 
 | [Threat Model](docs/THREAT_MODEL.md) | Threats, controls, evidence signals |
 | [Kubernetes Deployment](docs/KUBERNETES_DEPLOYMENT.md) | Helm-based cluster deployment and rollback guide |
 | [Terraform Deployment](docs/TERRAFORM_DEPLOYMENT.md) | Baseline namespace + Helm release provisioning |
+| [Distributed Tracing](docs/OBSERVABILITY_TRACING.md) | OpenTelemetry-compatible tracing setup and validation |
 | [Showcase Artifacts](docs/showcase/README.md) | Evidence pack, metrics snapshot, logs |
 | [Docs Site](https://jlov7.github.io/agentgate/) | Executive-friendly documentation |
 | [API Documentation](http://localhost:8000/docs) | Interactive OpenAPI docs (when running) |
