@@ -7,7 +7,7 @@ import hashlib
 import hmac
 import json
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -229,6 +229,143 @@ def test_reload_policies_rejects_unsigned_bundle_in_strict_mode(
     )
     assert response.status_code == 500
     assert "provenance" in response.json()["detail"].lower()
+
+
+def test_policy_exception_allows_write_without_approval(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    create_response = client.post(
+        "/admin/policies/exceptions",
+        headers={"X-API-Key": "admin-key"},
+        json={
+            "tool_name": "db_insert",
+            "reason": "Incident mitigation window",
+            "session_id": "sess-policy-exception",
+            "expires_in_seconds": 300,
+            "created_by": "ops-user",
+        },
+    )
+    assert create_response.status_code == 200
+    create_payload = create_response.json()
+    assert create_payload["status"] == "active"
+    assert create_payload["session_id"] == "sess-policy-exception"
+
+    call_response = client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-policy-exception",
+            "tool_name": "db_insert",
+            "arguments": {"table": "products", "data": {"name": "x"}},
+        },
+    )
+    assert call_response.status_code == 200
+    call_payload = call_response.json()
+    assert call_payload["success"] is True
+
+    events = client.app.state.trace_store.query(session_id="sess-policy-exception")
+    assert events
+    assert events[-1].policy_decision == "ALLOW"
+    assert "Policy exception active" in events[-1].policy_reason
+
+    list_response = client.get(
+        "/admin/policies/exceptions", headers={"X-API-Key": "admin-key"}
+    )
+    assert list_response.status_code == 200
+    listed = list_response.json()["exceptions"]
+    assert any(item["exception_id"] == create_payload["exception_id"] for item in listed)
+
+
+def test_policy_exception_auto_expiry_stops_override(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    now = datetime(2026, 2, 19, 12, 0, tzinfo=UTC)
+    manager = client.app.state.policy_exception_manager
+    manager.set_now_fn(lambda: now)
+
+    create_response = client.post(
+        "/admin/policies/exceptions",
+        headers={"X-API-Key": "admin-key"},
+        json={
+            "tool_name": "db_insert",
+            "reason": "Short-lived emergency window",
+            "session_id": "sess-policy-expiry",
+            "expires_in_seconds": 10,
+            "created_by": "ops-user",
+        },
+    )
+    assert create_response.status_code == 200
+
+    while_active = client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-policy-expiry",
+            "tool_name": "db_insert",
+            "arguments": {"table": "products", "data": {"name": "x"}},
+        },
+    )
+    assert while_active.status_code == 200
+    assert while_active.json()["success"] is True
+
+    manager.set_now_fn(lambda: now + timedelta(seconds=20))
+    after_expiry = client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-policy-expiry",
+            "tool_name": "db_insert",
+            "arguments": {"table": "products", "data": {"name": "x"}},
+        },
+    )
+    assert after_expiry.status_code == 200
+    assert after_expiry.json()["success"] is False
+    assert "approval required" in after_expiry.json()["error"].lower()
+
+
+def test_policy_exception_revoke_endpoint_stops_override(client, monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_ADMIN_API_KEY", "admin-key")
+    create_response = client.post(
+        "/admin/policies/exceptions",
+        headers={"X-API-Key": "admin-key"},
+        json={
+            "tool_name": "db_insert",
+            "reason": "Temporary incident override",
+            "session_id": "sess-policy-revoke",
+            "expires_in_seconds": 120,
+            "created_by": "ops-user",
+        },
+    )
+    assert create_response.status_code == 200
+    exception_id = create_response.json()["exception_id"]
+
+    revoke_response = client.post(
+        f"/admin/policies/exceptions/{exception_id}/revoke",
+        headers={"X-API-Key": "admin-key"},
+        json={"revoked_by": "sec-ops"},
+    )
+    assert revoke_response.status_code == 200
+    revoke_payload = revoke_response.json()
+    assert revoke_payload["status"] == "revoked"
+    assert revoke_payload["revoked_by"] == "sec-ops"
+
+    call_response = client.post(
+        "/tools/call",
+        json={
+            "session_id": "sess-policy-revoke",
+            "tool_name": "db_insert",
+            "arguments": {"table": "products", "data": {"name": "x"}},
+        },
+    )
+    assert call_response.status_code == 200
+    assert call_response.json()["success"] is False
+    assert "approval required" in call_response.json()["error"].lower()
+
+    inactive = client.get(
+        "/admin/policies/exceptions?include_inactive=true",
+        headers={"X-API-Key": "admin-key"},
+    )
+    assert inactive.status_code == 200
+    inactive_entries = inactive.json()["exceptions"]
+    assert any(
+        item["exception_id"] == exception_id and item["status"] == "revoked"
+        for item in inactive_entries
+    )
 
 
 def test_rate_limit_window_seconds_invalid(monkeypatch) -> None:

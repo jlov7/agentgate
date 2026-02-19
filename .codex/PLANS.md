@@ -183,6 +183,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-004 replay explainability and root-cause diff details.
 - [x] Implement P1-005 incident command-center API/reporting enhancements.
 - [x] Implement P1-006 tenant rollout observability console surfaces.
+- [x] Implement P1-007 time-bound policy exceptions with auto-expiry.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -217,6 +218,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-004 success, prioritize P1-005 incident command-center enhancements.
 - After P1-005 success, prioritize P1-006 tenant rollout observability surfaces.
 - After P1-006 success, prioritize P1-007 time-bound policy exceptions.
+- After P1-007 success, prioritize P1-008 official Python SDK.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -321,3 +323,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added per-rollout drift-budget metadata and tenant-level summary metrics (active, pass/fail, rollback rate, risk distribution, latest update).
 - Added regression tests validating observability payload availability in rollout lifecycle flow.
 - Evidence: `.venv/bin/pytest tests/test_main.py::test_create_tenant_rollout_returns_canary_plan -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-007 completed with RED->GREEN->verify->doctor loop.
+- Added time-bound policy exception manager with session/tenant scoping, deterministic auto-expiry, and explicit revoke support.
+- Added policy exception admin APIs (`POST /admin/policies/exceptions`, `GET /admin/policies/exceptions`, `POST /admin/policies/exceptions/{exception_id}/revoke`) and gateway decision override wiring for active exceptions.
+- Added regression tests for write override while active, auto-expiry fallback to approval-required behavior, and revoke lifecycle behavior.
+- Evidence: `.venv/bin/pytest tests/test_main.py -k "policy_exception" -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

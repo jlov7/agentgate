@@ -25,6 +25,7 @@ from agentgate.killswitch import KillSwitch
 from agentgate.logging import get_logger
 from agentgate.models import PolicyDecision, ToolCallRequest, ToolCallResponse
 from agentgate.policy import PolicyClient
+from agentgate.policy_exceptions import PolicyExceptionManager
 from agentgate.quarantine import QuarantineCoordinator
 from agentgate.rate_limit import RateLimiter
 from agentgate.redaction import get_pii_mode, scrub_text
@@ -107,6 +108,7 @@ class Gateway:
         quarantine: QuarantineCoordinator | None = None,
         taint_tracker: TaintTracker | None = None,
         shadow_twin: ShadowPolicyTwin | None = None,
+        policy_exceptions: PolicyExceptionManager | None = None,
     ) -> None:
         self.policy_client = policy_client
         self.kill_switch = kill_switch
@@ -118,6 +120,7 @@ class Gateway:
         self.quarantine = quarantine
         self.taint_tracker = taint_tracker
         self.shadow_twin = shadow_twin
+        self.policy_exceptions = policy_exceptions
 
     async def call_tool(self, request: ToolCallRequest) -> ToolCallResponse:
         """Handle a tool call with policy enforcement and tracing."""
@@ -224,6 +227,16 @@ class Gateway:
                 return response
 
         decision = await self.policy_client.evaluate(request)
+        if self.policy_exceptions and decision.action != "ALLOW":
+            exception = self.policy_exceptions.match_request(request)
+            if exception is not None:
+                decision = PolicyDecision(
+                    action="ALLOW",
+                    reason=f"Policy exception active: {exception.reason}",
+                    matched_rule="policy_exception",
+                    allowed_scope="write" if decision.is_write_action else "read",
+                    is_write_action=decision.is_write_action,
+                )
         if self.shadow_twin:
             self.shadow_twin.observe_decision(
                 request=request,

@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-003 to P1-004 (replay explainability and root-cause diff details).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-007 to P1-008 (official Python SDK).
 
 ## Status
 
@@ -117,17 +117,21 @@ In Progress
 107. [x] P1-006 GREEN: implement tenant rollout observability API/reporting surfaces.
 108. [x] Run targeted tests for P1-006.
 109. [x] Re-run `make verify` and `scripts/doctor.sh`.
-110. [ ] P1-007 RED: add failing tests for time-bound policy exception lifecycles and auto-expiry.
-111. [ ] P1-007 GREEN: implement policy exception API with expiry enforcement.
-112. [ ] Run targeted tests for P1-007.
-113. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+110. [x] P1-007 RED: add failing tests for time-bound policy exception lifecycles and auto-expiry.
+111. [x] P1-007 GREEN: implement policy exception API with expiry enforcement.
+112. [x] Run targeted tests for P1-007.
+113. [x] Re-run `make verify` and `scripts/doctor.sh`.
+114. [ ] P1-008 RED: add failing tests for official Python SDK endpoints/workflows.
+115. [ ] P1-008 GREEN: implement Python SDK package and client coverage.
+116. [ ] Run targeted tests for P1-008.
+117. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-006 is fully complete with rollout observability surfaces + full-gate verification; next execution item is `P1-007`.
+- P1-007 is fully complete with policy exception lifecycle controls + full-gate verification; next execution item is `P1-008`.
 
 ## Open Questions
 
-- None blocking commit for P1-006 and transition to P1-007.
+- None blocking commit for P1-007 and transition to P1-008.

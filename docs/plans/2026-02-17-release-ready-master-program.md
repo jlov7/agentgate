@@ -96,7 +96,7 @@
 - [x] P1-004
 - [x] P1-005
 - [x] P1-006
-- [ ] P1-007
+- [x] P1-007
 - [ ] P1-008
 - [ ] P1-009
 - [ ] P1-010
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-007` Time-bound policy exceptions with auto-expiry.
-- Why now: Rollout observability is now in place, so controlled exception handling is the next launch-quality control needed for operational safety.
+- Active item: `P1-008` Official Python SDK.
+- Why now: Core API controls and policy exception lifecycle are now in place, so SDK ergonomics is the next launch-quality lever for adoption.
 
 ## Surprises & Discoveries (Live)
 
@@ -150,6 +150,7 @@
 - 2026-02-19: Move next to P1-005 after P1-004 landed with replay explainability and root-cause attribution payloads.
 - 2026-02-19: Move next to P1-006 after P1-005 landed with incident command-center API/reporting enrichment.
 - 2026-02-19: Move next to P1-007 after P1-006 landed with tenant rollout observability surfaces.
+- 2026-02-19: Move next to P1-008 after P1-007 landed with time-bound policy exception lifecycle controls.
 
 ## Outcomes & Retrospective (Live)
 
@@ -299,3 +300,9 @@
   - Added per-rollout risk-level and drift-budget annotations to support promotion vs rollback decisions.
   - Added regression tests validating observability payload exposure in tenant rollout flow.
   - Evidence: `.venv/bin/pytest tests/test_main.py::test_create_tenant_rollout_returns_canary_plan -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-007` with time-bound policy exceptions and auto-expiry controls.
+  - Added a policy exception lifecycle manager with strict session/tenant scope requirements, deterministic auto-expiry transitions, and explicit revoke semantics.
+  - Added policy exception admin APIs: `POST /admin/policies/exceptions`, `GET /admin/policies/exceptions`, and `POST /admin/policies/exceptions/{exception_id}/revoke`.
+  - Wired gateway policy evaluation to honor active exceptions for matching blocked tool calls and preserve normal policy enforcement after expiry or revocation.
+  - Added regression tests for active exception write override, auto-expiry fallback to approval-required behavior, and revoke lifecycle behavior.
+  - Evidence: `.venv/bin/pytest tests/test_main.py -k "policy_exception" -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

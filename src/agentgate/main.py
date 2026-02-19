@@ -85,6 +85,7 @@ from agentgate.policy import (
     require_signed_policy_packages,
     set_approval_token_verifier,
 )
+from agentgate.policy_exceptions import PolicyExceptionManager
 from agentgate.policy_packages import PolicyPackageVerifier
 from agentgate.quarantine import QuarantineCoordinator
 from agentgate.rate_limit import RateLimiter
@@ -569,6 +570,7 @@ def create_app(
     )
     taint_tracker = TaintTracker(trace_store=trace_store)
     shadow_twin = ShadowPolicyTwin(trace_store=trace_store)
+    policy_exception_manager = PolicyExceptionManager()
     gateway = Gateway(
         policy_client=policy_client,
         kill_switch=kill_switch,
@@ -580,6 +582,7 @@ def create_app(
         quarantine=quarantine,
         taint_tracker=taint_tracker,
         shadow_twin=shadow_twin,
+        policy_exceptions=policy_exception_manager,
     )
     evidence_exporter = EvidenceExporter(trace_store=trace_store, version=app.version)
     replay_evaluator = PolicyReplayEvaluator(trace_store=trace_store)
@@ -605,6 +608,7 @@ def create_app(
     app.state.quarantine = quarantine
     app.state.taint_tracker = taint_tracker
     app.state.shadow_twin = shadow_twin
+    app.state.policy_exception_manager = policy_exception_manager
     app.state.rate_limiter = rate_limiter
     app.state.webhook_notifier = webhook_notifier
     app.state.slo_monitor = slo_monitor
@@ -1289,6 +1293,97 @@ def create_app(
         ):
             raise HTTPException(status_code=409, detail=message) from exc
         raise HTTPException(status_code=400, detail=message) from exc
+
+    def _raise_policy_exception_error(exc: ValueError) -> Never:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/admin/policies/exceptions")
+    async def create_policy_exception(
+        payload: dict[str, Any],
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Create a time-bound policy exception for one session or tenant scope."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        tool_name = payload.get("tool_name")
+        reason = payload.get("reason")
+        expires_in_seconds = payload.get("expires_in_seconds")
+        session_id = payload.get("session_id")
+        tenant_id = payload.get("tenant_id")
+        created_by = payload.get("created_by", "admin")
+        if not isinstance(tool_name, str) or not tool_name.strip():
+            raise HTTPException(status_code=400, detail="tool_name required")
+        if not isinstance(reason, str) or not reason.strip():
+            raise HTTPException(status_code=400, detail="reason required")
+        if not isinstance(created_by, str) or not created_by.strip():
+            raise HTTPException(status_code=400, detail="created_by must be a string")
+        if not isinstance(expires_in_seconds, int):
+            raise HTTPException(
+                status_code=400, detail="expires_in_seconds must be an integer"
+            )
+        if session_id is not None and not isinstance(session_id, str):
+            raise HTTPException(status_code=400, detail="session_id must be a string")
+        if tenant_id is not None and not isinstance(tenant_id, str):
+            raise HTTPException(status_code=400, detail="tenant_id must be a string")
+        try:
+            exception = app.state.policy_exception_manager.create_exception(
+                tool_name=tool_name.strip(),
+                reason=reason.strip(),
+                created_by=created_by.strip(),
+                expires_in_seconds=expires_in_seconds,
+                session_id=session_id.strip() if isinstance(session_id, str) else None,
+                tenant_id=tenant_id.strip() if isinstance(tenant_id, str) else None,
+            )
+        except ValueError as exc:
+            _raise_policy_exception_error(exc)
+        return JSONResponse(exception.to_dict())
+
+    @app.get("/admin/policies/exceptions")
+    async def list_policy_exceptions(
+        include_inactive: bool = False,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """List policy exceptions (active by default, optional inactive history)."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        entries = app.state.policy_exception_manager.list_exceptions(
+            include_inactive=include_inactive
+        )
+        return JSONResponse(
+            {"exceptions": [entry.to_dict() for entry in entries]}
+        )
+
+    @app.post("/admin/policies/exceptions/{exception_id}/revoke")
+    async def revoke_policy_exception(
+        exception_id: str,
+        payload: dict[str, Any],
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Revoke a policy exception before its expiry time."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        revoked_by = payload.get("revoked_by", "admin")
+        if not isinstance(revoked_by, str) or not revoked_by.strip():
+            raise HTTPException(status_code=400, detail="revoked_by must be a string")
+        try:
+            exception = app.state.policy_exception_manager.revoke_exception(
+                exception_id, revoked_by=revoked_by.strip()
+            )
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="policy exception not found") from exc
+        return JSONResponse(exception.to_dict())
 
     @app.post("/admin/approvals/workflows")
     async def create_approval_workflow(
