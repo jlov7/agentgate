@@ -194,6 +194,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P2-001 hosted browser sandbox no-local-install trial flow.
 - [x] Implement P2-002 policy template library by risk/use-case.
 - [x] Implement P2-003 adaptive risk model tuning loop.
+- [x] Implement P2-004 compliance control mapping exports (SOC2/ISO/NIST).
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -239,6 +240,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P2-001 success, prioritize P2-002 policy template library by risk/use-case.
 - After P2-002 success, prioritize P2-003 adaptive risk model tuning loop.
 - After P2-003 success, prioritize P2-004 compliance control mapping exports.
+- After P2-004 success, prioritize P2-005 usage metering/quota/billing hooks.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -403,3 +405,9 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added adaptive tuning runbook (`docs/ADAPTIVE_RISK_TUNING.md`) with input/output contract and usage commands.
 - Added regression tests (`tests/test_adaptive_risk_tuning.py`) validating tighten/relax recommendation behavior and docs/readme discoverability.
 - Evidence: `.venv/bin/pytest tests/test_adaptive_risk_tuning.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P2-004 completed with RED->GREEN->verify->doctor loop.
+- Added compliance mapping exporter (`scripts/compliance_mappings.py`) to map release evidence to SOC2, ISO27001, and NIST 800-53 controls.
+- Added operator entrypoint (`make compliance-map`) to emit JSON and CSV mapping artifacts.
+- Added compliance mapping runbook (`docs/COMPLIANCE_MAPPINGS.md`) with command usage and output contract.
+- Added regression tests (`tests/test_compliance_mappings.py`) validating export schema/content and docs/readme discoverability.
+- Evidence: `.venv/bin/pytest tests/test_compliance_mappings.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

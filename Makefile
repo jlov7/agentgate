@@ -1,4 +1,4 @@
-.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke staging-reset risk-tune check-docker rego-quality verify verify-strict doctor scorecard product-audit security-closure support-bundle
+.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke staging-reset risk-tune compliance-map check-docker rego-quality verify verify-strict doctor scorecard product-audit security-closure support-bundle
 
 # ============================================================================
 # Development
@@ -110,6 +110,9 @@ staging-reset:
 
 risk-tune:
 	.venv/bin/python scripts/adaptive_risk_tuning.py --incident-report artifacts/incident-report.json --replay-report artifacts/replay-report.json --rollout-report artifacts/rollout-report.json --output artifacts/risk-tuning.json
+
+compliance-map:
+	.venv/bin/python scripts/compliance_mappings.py --artifacts-dir artifacts --output-json artifacts/compliance-mappings.json --output-csv artifacts/compliance-mappings.csv
 
 test-adversarial:
 	.venv/bin/python run_adversarial.py
@@ -274,6 +277,7 @@ help:
 	@echo "  make staging-smoke   Run smoke + load against STAGING_URL"
 	@echo "  make staging-reset   Purge staging sessions and apply seeded scenarios"
 	@echo "  make risk-tune       Generate adaptive risk threshold recommendations from evidence artifacts"
+	@echo "  make compliance-map  Export SOC2/ISO27001/NIST control-evidence mappings"
 	@echo "  make check-docker    Fail fast when Docker daemon is unavailable"
 	@echo "  make rego-quality    Run Rego fmt/test/coverage scoring and emit artifacts/rego-quality.json"
 	@echo "  make test-all        Run all tests"

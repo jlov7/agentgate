@@ -23,6 +23,7 @@ nav:
   - Observability Pack: OBSERVABILITY_PACK.md
   - Policy Template Library: POLICY_TEMPLATE_LIBRARY.md
   - Adaptive Risk Tuning: ADAPTIVE_RISK_TUNING.md
+  - Compliance Mappings: COMPLIANCE_MAPPINGS.md
   - Staging Reset: STAGING_RESET.md
   - Threat Model: THREAT_MODEL.md
   - UX Audit: UX_AUDIT.md

@@ -107,14 +107,14 @@
 - [x] P2-001
 - [x] P2-002
 - [x] P2-003
-- [ ] P2-004
+- [x] P2-004
 - [ ] P2-005
 - [ ] P2-006
 
 ## Current Execution Slice
 
-- Active item: `P2-004` Compliance control mapping exports (SOC2/ISO/NIST).
-- Why now: adaptive risk tuning is now wired, so compliance evidence portability is the next release differentiator.
+- Active item: `P2-005` Usage metering/quota/billing hooks.
+- Why now: compliance portability is now in place, so monetization-ready usage controls are the next release-critical differentiator.
 
 ## Surprises & Discoveries (Live)
 
@@ -161,6 +161,7 @@
 - 2026-02-19: Move next to P2-002 after P2-001 landed with hosted browser sandbox no-install trial support.
 - 2026-02-19: Move next to P2-003 after P2-002 landed with risk-tier policy template library support.
 - 2026-02-19: Move next to P2-004 after P2-003 landed with adaptive risk tuning loop automation.
+- 2026-02-19: Move next to P2-005 after P2-004 landed with compliance mapping export automation.
 
 ## Outcomes & Retrospective (Live)
 
@@ -377,3 +378,9 @@
   - Added adaptive tuning runbook (`docs/ADAPTIVE_RISK_TUNING.md`) and discoverability wiring in `mkdocs.yml` + README quick links.
   - Added regression tests (`tests/test_adaptive_risk_tuning.py`) covering tighten/relax recommendation paths and docs publication checks.
   - Evidence: `.venv/bin/pytest tests/test_adaptive_risk_tuning.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P2-004` with compliance control mapping exports (SOC2/ISO/NIST).
+  - Added compliance exporter (`scripts/compliance_mappings.py`) that maps release evidence artifacts to SOC2, ISO27001, and NIST 800-53 controls.
+  - Added make entrypoint (`make compliance-map`) that writes `artifacts/compliance-mappings.json` and `artifacts/compliance-mappings.csv`.
+  - Added compliance runbook (`docs/COMPLIANCE_MAPPINGS.md`) and discoverability wiring in `mkdocs.yml` + README quick links.
+  - Added regression tests (`tests/test_compliance_mappings.py`) covering export outputs and docs/readme publication checks.
+  - Evidence: `.venv/bin/pytest tests/test_compliance_mappings.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
