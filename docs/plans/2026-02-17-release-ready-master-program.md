@@ -95,7 +95,7 @@
 - [x] P1-003
 - [x] P1-004
 - [x] P1-005
-- [ ] P1-006
+- [x] P1-006
 - [ ] P1-007
 - [ ] P1-008
 - [ ] P1-009
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-006` Tenant rollout observability console surfaces.
-- Why now: Incident command-center payloads are now enriched, so rollout operators need dedicated tenant-level observability to make promotion/rollback calls quickly.
+- Active item: `P1-007` Time-bound policy exceptions with auto-expiry.
+- Why now: Rollout observability is now in place, so controlled exception handling is the next launch-quality control needed for operational safety.
 
 ## Surprises & Discoveries (Live)
 
@@ -149,6 +149,7 @@
 - 2026-02-19: Move next to P1-004 after P1-003 landed with Rego quality gate automation and release enforcement.
 - 2026-02-19: Move next to P1-005 after P1-004 landed with replay explainability and root-cause attribution payloads.
 - 2026-02-19: Move next to P1-006 after P1-005 landed with incident command-center API/reporting enrichment.
+- 2026-02-19: Move next to P1-007 after P1-006 landed with tenant rollout observability surfaces.
 
 ## Outcomes & Retrospective (Live)
 
@@ -292,3 +293,9 @@
   - Preserved tenant-isolation enforcement on command-center access alongside existing incident endpoint authorization.
   - Added regression tests validating enriched payload fields, release-state rollback-step transitions, and tenant-scoped access controls.
   - Evidence: `.venv/bin/pytest tests/test_main.py::test_admin_incident_release_flow tests/test_main.py::test_replay_and_incident_endpoints_enforce_tenant_isolation -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-006` with tenant rollout observability console surfaces.
+  - Added tenant rollout observability endpoint (`GET /admin/tenants/{tenant_id}/rollouts/observability`) for dashboard-grade rollout monitoring.
+  - Added tenant summary metrics (active/pass/fail/rollback counts and rates, risk distribution, latest update timestamp).
+  - Added per-rollout risk-level and drift-budget annotations to support promotion vs rollback decisions.
+  - Added regression tests validating observability payload exposure in tenant rollout flow.
+  - Evidence: `.venv/bin/pytest tests/test_main.py::test_create_tenant_rollout_returns_canary_plan -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

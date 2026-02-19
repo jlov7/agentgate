@@ -721,6 +721,13 @@ def create_app(
             "related_replay_runs": related_replay_runs,
         }
 
+    def _rollout_risk_level(*, status: str, critical_drift: int, high_drift: int) -> str:
+        if status in {"rolled_back", "failed"} or critical_drift > 0:
+            return "critical"
+        if high_drift > 0:
+            return "elevated"
+        return "normal"
+
     @app.middleware("http")
     async def request_size_middleware(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -1921,6 +1928,76 @@ def create_app(
             "rollout": rollout.model_dump(mode="json"),
             "summary": summary.model_dump(mode="json"),
         })
+
+    @app.get("/admin/tenants/{tenant_id}/rollouts/observability")
+    async def get_tenant_rollout_observability(
+        tenant_id: str,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Return tenant rollout observability surfaces for console dashboards."""
+        _authorize_admin_request(
+            required_roles={ROLLOUT_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        if not _valid_tenant_id(tenant_id):
+            raise HTTPException(status_code=400, detail="Invalid tenant_id")
+
+        rollouts = app.state.trace_store.list_rollouts(tenant_id=tenant_id)
+        ordered_rollouts = sorted(rollouts, key=lambda item: item.updated_at, reverse=True)
+        status_counts = Counter(item.status for item in ordered_rollouts)
+        verdict_counts = Counter(item.verdict for item in ordered_rollouts)
+        enriched_rollouts: list[dict[str, Any]] = []
+        risk_counts: Counter[str] = Counter()
+        for rollout in ordered_rollouts:
+            risk_level = _rollout_risk_level(
+                status=rollout.status,
+                critical_drift=rollout.critical_drift,
+                high_drift=rollout.high_drift,
+            )
+            risk_counts[risk_level] += 1
+            enriched_rollouts.append(
+                {
+                    **rollout.model_dump(mode="json"),
+                    "risk_level": risk_level,
+                    "drift_budget": {
+                        "critical_drift": rollout.critical_drift,
+                        "high_drift": rollout.high_drift,
+                        "within_budget": (
+                            rollout.critical_drift == 0 and rollout.high_drift == 0
+                        ),
+                    },
+                }
+            )
+
+        total = len(ordered_rollouts)
+        active = sum(1 for rollout in ordered_rollouts if rollout.status in {"queued", "promoting"})
+        rolled_back = sum(1 for rollout in ordered_rollouts if rollout.rolled_back)
+        passed = verdict_counts.get("pass", 0)
+        failed = verdict_counts.get("fail", 0)
+        summary_payload = {
+            "total_rollouts": total,
+            "active_rollouts": active,
+            "rolled_back_rollouts": rolled_back,
+            "pass_count": passed,
+            "fail_count": failed,
+            "pass_rate": (passed / total) if total else 0.0,
+            "rollback_rate": (rolled_back / total) if total else 0.0,
+            "by_status": dict(status_counts),
+            "by_verdict": dict(verdict_counts),
+            "by_risk_level": dict(risk_counts),
+            "latest_updated_at": (
+                ordered_rollouts[0].updated_at.isoformat() if ordered_rollouts else None
+            ),
+        }
+        return JSONResponse(
+            {
+                "tenant_id": tenant_id,
+                "summary": summary_payload,
+                "rollouts": enriched_rollouts,
+            }
+        )
 
     @app.get("/admin/tenants/{tenant_id}/rollouts/{rollout_id}")
     async def get_tenant_rollout(

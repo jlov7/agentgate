@@ -1189,6 +1189,18 @@ def test_create_tenant_rollout_returns_canary_plan(client, monkeypatch) -> None:
     assert payload["rollout"]["tenant_id"] == "tenant-a"
     assert payload["rollout"]["status"] == "promoting"
 
+    observability = client.get(
+        "/admin/tenants/tenant-a/rollouts/observability",
+        headers={"X-API-Key": "admin-key"},
+    )
+    assert observability.status_code == 200
+    obs_payload = observability.json()
+    assert obs_payload["tenant_id"] == "tenant-a"
+    assert obs_payload["summary"]["total_rollouts"] >= 1
+    assert obs_payload["summary"]["active_rollouts"] >= 1
+    assert obs_payload["rollouts"]
+    assert obs_payload["rollouts"][0]["risk_level"] in {"normal", "elevated", "critical"}
+
 
 def test_create_tenant_rollout_rejects_run_from_other_tenant_when_isolation_enabled(
     client, monkeypatch

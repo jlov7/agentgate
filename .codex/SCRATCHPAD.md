@@ -113,17 +113,21 @@ In Progress
 103. [x] P1-005 GREEN: implement incident command-center API/reporting enhancements.
 104. [x] Run targeted tests for P1-005.
 105. [x] Re-run `make verify` and `scripts/doctor.sh`.
-106. [ ] P1-006 RED: add failing tests for tenant rollout observability console payloads.
-107. [ ] P1-006 GREEN: implement tenant rollout observability API/reporting surfaces.
-108. [ ] Run targeted tests for P1-006.
-109. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+106. [x] P1-006 RED: add failing tests for tenant rollout observability console payloads.
+107. [x] P1-006 GREEN: implement tenant rollout observability API/reporting surfaces.
+108. [x] Run targeted tests for P1-006.
+109. [x] Re-run `make verify` and `scripts/doctor.sh`.
+110. [ ] P1-007 RED: add failing tests for time-bound policy exception lifecycles and auto-expiry.
+111. [ ] P1-007 GREEN: implement policy exception API with expiry enforcement.
+112. [ ] Run targeted tests for P1-007.
+113. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-005 is fully complete with command-center enrichment + full-gate verification; next execution item is `P1-006`.
+- P1-006 is fully complete with rollout observability surfaces + full-gate verification; next execution item is `P1-007`.
 
 ## Open Questions
 
-- None blocking commit for P1-005 and transition to P1-006.
+- None blocking commit for P1-006 and transition to P1-007.

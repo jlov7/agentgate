@@ -182,6 +182,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-003 Rego quality gates (lint/test/coverage scoring).
 - [x] Implement P1-004 replay explainability and root-cause diff details.
 - [x] Implement P1-005 incident command-center API/reporting enhancements.
+- [x] Implement P1-006 tenant rollout observability console surfaces.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -215,6 +216,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-003 success, prioritize P1-004 replay explainability.
 - After P1-004 success, prioritize P1-005 incident command-center enhancements.
 - After P1-005 success, prioritize P1-006 tenant rollout observability surfaces.
+- After P1-006 success, prioritize P1-007 time-bound policy exceptions.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -314,3 +316,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added dedicated command-center endpoint (`/admin/incidents/{incident_id}/command-center`) with tenant-isolation enforcement.
 - Added regression tests for command-center payload fields, release-state transitions, and tenant-scoped access behavior.
 - Evidence: `.venv/bin/pytest tests/test_main.py::test_admin_incident_release_flow tests/test_main.py::test_replay_and_incident_endpoints_enforce_tenant_isolation -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-006 completed with RED->GREEN->verify->doctor loop.
+- Added tenant rollout observability endpoint (`/admin/tenants/{tenant_id}/rollouts/observability`) with dashboard-ready aggregates and risk-level classification.
+- Added per-rollout drift-budget metadata and tenant-level summary metrics (active, pass/fail, rollback rate, risk distribution, latest update).
+- Added regression tests validating observability payload availability in rollout lifecycle flow.
+- Evidence: `.venv/bin/pytest tests/test_main.py::test_create_tenant_rollout_returns_canary_plan -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
