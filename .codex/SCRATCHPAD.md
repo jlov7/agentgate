@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-009 to P1-010 (Helm chart + Kubernetes deployment guide).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-010 to P1-011 (Terraform baseline module).
 
 ## Status
 
@@ -129,17 +129,21 @@ In Progress
 119. [x] P1-009 GREEN: implement TypeScript SDK package and client coverage.
 120. [x] Run targeted tests for P1-009.
 121. [x] Re-run `make verify` and `scripts/doctor.sh`.
-122. [ ] P1-010 RED: add failing checks for Helm chart and Kubernetes deployment workflow.
-123. [ ] P1-010 GREEN: implement Helm chart + K8s deployment guide.
-124. [ ] Run targeted tests for P1-010.
-125. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+122. [x] P1-010 RED: add failing checks for Helm chart and Kubernetes deployment workflow.
+123. [x] P1-010 GREEN: implement Helm chart + K8s deployment guide.
+124. [x] Run targeted tests for P1-010.
+125. [x] Re-run `make verify` and `scripts/doctor.sh`.
+126. [ ] P1-011 RED: add failing checks for Terraform baseline module scaffolding and documentation.
+127. [ ] P1-011 GREEN: implement Terraform baseline module for AgentGate deployment primitives.
+128. [ ] Run targeted tests for P1-011.
+129. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-009 is fully complete with official TypeScript SDK support + full-gate verification; next execution item is `P1-010`.
+- P1-010 is fully complete with Helm chart + Kubernetes deployment guide support and full-gate verification; next execution item is `P1-011`.
 
 ## Open Questions
 
-- None blocking commit for P1-009 and transition to P1-010.
+- None blocking commit for P1-010 and transition to P1-011.

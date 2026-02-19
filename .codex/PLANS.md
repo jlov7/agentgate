@@ -186,6 +186,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-007 time-bound policy exceptions with auto-expiry.
 - [x] Implement P1-008 official Python SDK.
 - [x] Implement P1-009 official TypeScript SDK.
+- [x] Implement P1-010 Helm chart + Kubernetes deployment guide.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -223,6 +224,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-007 success, prioritize P1-008 official Python SDK.
 - After P1-008 success, prioritize P1-009 official TypeScript SDK.
 - After P1-009 success, prioritize P1-010 Helm chart and Kubernetes deployment guide.
+- After P1-010 success, prioritize P1-011 Terraform baseline module.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -342,3 +344,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added Node-based TypeScript SDK tests (`sdk/typescript/tests/client.test.mjs`) and release-gated Python harness tests (`tests/test_typescript_sdk.py`) to enforce SDK behavior in CI/local verification.
 - Added README TypeScript SDK usage documentation with async integration example.
 - Evidence: `.venv/bin/pytest tests/test_typescript_sdk.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-010 completed with RED->GREEN->verify->doctor loop.
+- Added production-oriented Helm chart package at `deploy/helm/agentgate` with AgentGate, Redis, and OPA workloads plus services, secrets, policy config, and PVC-backed persistence defaults.
+- Added Kubernetes deployment guide (`docs/KUBERNETES_DEPLOYMENT.md`) with install/upgrade/rollback/runbook commands and wired it into MkDocs navigation and README discovery links.
+- Added regression tests (`tests/test_helm_chart.py`) to enforce chart metadata, core template presence, and published deployment documentation.
+- Evidence: `.venv/bin/pytest tests/test_helm_chart.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agentgate.fullname" . }}
+  labels:
+    {{- include "agentgate.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "agentgate.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "agentgate.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: gateway
+      annotations:
+        checksum/policies: {{ toYaml .Values.policy | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: agentgate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["-m", "agentgate", "--host", "0.0.0.0", "--port", "8000"]
+          command: ["python"]
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: AGENTGATE_REDIS_URL
+              value: redis://{{ include "agentgate.fullname" . }}-redis:6379/0
+            - name: AGENTGATE_OPA_URL
+              value: http://{{ include "agentgate.fullname" . }}-opa:8181
+            - name: AGENTGATE_POLICY_PATH
+              value: /app/policies
+            - name: AGENTGATE_TRACE_DB
+              value: /app/traces/traces.db
+            - name: AGENTGATE_LOG_LEVEL
+              value: {{ .Values.agentgate.logLevel | quote }}
+            - name: AGENTGATE_POLICY_VERSION
+              value: {{ .Values.agentgate.policyVersion | quote }}
+            - name: AGENTGATE_APPROVAL_TOKEN
+              value: {{ .Values.agentgate.approvalToken | quote }}
+            - name: AGENTGATE_API_VERSION
+              value: {{ .Values.agentgate.apiVersion | quote }}
+            - name: AGENTGATE_SUPPORTED_API_VERSIONS
+              value: {{ .Values.agentgate.supportedApiVersions | quote }}
+            - name: AGENTGATE_WEBHOOK_URL
+              value: {{ .Values.agentgate.webhookUrl | quote }}
+            - name: AGENTGATE_ADMIN_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentgate.fullname" . }}-secrets
+                  key: AGENTGATE_ADMIN_API_KEY
+            - name: AGENTGATE_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentgate.fullname" . }}-secrets
+                  key: AGENTGATE_SIGNING_KEY
+            - name: AGENTGATE_POLICY_PACKAGE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentgate.fullname" . }}-secrets
+                  key: AGENTGATE_POLICY_PACKAGE_SECRET
+            - name: AGENTGATE_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentgate.fullname" . }}-secrets
+                  key: AGENTGATE_WEBHOOK_SECRET
+          {{- with .Values.agentgate.extraEnv }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: policies
+              mountPath: /app/policies
+              readOnly: true
+            - name: traces
+              mountPath: /app/traces
+      volumes:
+        - name: policies
+          configMap:
+            name: {{ include "agentgate.fullname" . }}-policies
+        - name: traces
+          {{- if .Values.persistence.traces.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "agentgate.fullname" . }}-traces
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}

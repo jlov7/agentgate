@@ -1,0 +1,6 @@
+apiVersion: v2
+name: agentgate
+description: Containment-first security gateway for AI agents using MCP tools.
+type: application
+version: 0.1.0
+appVersion: "0.2.1"

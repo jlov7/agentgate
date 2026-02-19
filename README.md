@@ -610,6 +610,25 @@ Production features:
 - Resource limits (CPU/memory)
 - Health checks
 
+## Kubernetes Deployment (Helm)
+
+Use the bundled Helm chart:
+
+```bash
+helm upgrade --install agentgate ./deploy/helm/agentgate \
+  --namespace agentgate \
+  --create-namespace
+```
+
+Then port-forward and validate health:
+
+```bash
+kubectl port-forward svc/agentgate-agentgate -n agentgate 8000:8000
+curl http://127.0.0.1:8000/health
+```
+
+Full guide: [Kubernetes Deployment](docs/KUBERNETES_DEPLOYMENT.md)
+
 ---
 
 ## Troubleshooting
@@ -703,6 +722,7 @@ This is a personal, independent project. It is not affiliated with any employer 
 | [Demo Script](docs/DEMO_SCRIPT.md) | 60-second live demo |
 | [Architecture](docs/ARCHITECTURE.md) | Data flow + policy decision diagrams |
 | [Threat Model](docs/THREAT_MODEL.md) | Threats, controls, evidence signals |
+| [Kubernetes Deployment](docs/KUBERNETES_DEPLOYMENT.md) | Helm-based cluster deployment and rollback guide |
 | [Showcase Artifacts](docs/showcase/README.md) | Evidence pack, metrics snapshot, logs |
 | [Docs Site](https://jlov7.github.io/agentgate/) | Executive-friendly documentation |
 | [API Documentation](http://localhost:8000/docs) | Interactive OpenAPI docs (when running) |

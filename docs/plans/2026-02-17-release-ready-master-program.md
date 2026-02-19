@@ -99,7 +99,7 @@
 - [x] P1-007
 - [x] P1-008
 - [x] P1-009
-- [ ] P1-010
+- [x] P1-010
 - [ ] P1-011
 - [ ] P1-012
 - [ ] P1-013
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-010` Helm chart + K8s deployment guide.
-- Why now: SDK parity is now release-ready, so deployability via standardized Kubernetes packaging is the next launch-quality lever for production onboarding.
+- Active item: `P1-011` Terraform baseline module.
+- Why now: Kubernetes packaging is now in place, so Terraform baseline provisioning is the next launch-quality lever for repeatable infrastructure onboarding.
 
 ## Surprises & Discoveries (Live)
 
@@ -153,6 +153,7 @@
 - 2026-02-19: Move next to P1-008 after P1-007 landed with time-bound policy exception lifecycle controls.
 - 2026-02-19: Move next to P1-009 after P1-008 landed with official Python SDK support.
 - 2026-02-19: Move next to P1-010 after P1-009 landed with official TypeScript SDK support.
+- 2026-02-19: Move next to P1-011 after P1-010 landed with Helm chart and Kubernetes deployment support.
 
 ## Outcomes & Retrospective (Live)
 
@@ -320,3 +321,9 @@
   - Added Node test suite (`sdk/typescript/tests/client.test.mjs`) and Python gate tests (`tests/test_typescript_sdk.py`) so SDK behavior is enforced in `make verify`.
   - Added README TypeScript SDK usage section with async integration example.
   - Evidence: `.venv/bin/pytest tests/test_typescript_sdk.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-010` with Helm chart and Kubernetes deployment guide support.
+  - Added a Helm chart package at `deploy/helm/agentgate` covering AgentGate, Redis, and OPA workloads with services, policies ConfigMap, secrets, and persistence defaults.
+  - Added Kubernetes deployment runbook `docs/KUBERNETES_DEPLOYMENT.md` with install, smoke-test, upgrade, rollback, and uninstall workflows.
+  - Wired docs discovery through `mkdocs.yml` navigation and README links to the Kubernetes deployment guide.
+  - Added regression tests (`tests/test_helm_chart.py`) to enforce chart metadata, workload templates, and docs publication requirements.
+  - Evidence: `.venv/bin/pytest tests/test_helm_chart.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

@@ -1,0 +1,90 @@
+replicaCount: 1
+
+image:
+  repository: agentgate
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+agentgate:
+  logLevel: INFO
+  policyVersion: v1
+  approvalToken: approved
+  apiVersion: v1
+  supportedApiVersions: v1
+  adminApiKey: change-me
+  signingKey: ""
+  policyPackageSecret: ""
+  webhookUrl: ""
+  webhookSecret: ""
+  extraEnv: []
+
+policy:
+  rego: |
+    package agentgate
+
+    default allow = false
+    default require_approval = false
+
+    allow {
+      input.tool_name == "read_file"
+    }
+
+    require_approval {
+      input.tool_name == "write_file"
+      not input.approval_token
+    }
+
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7-alpine
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+
+opa:
+  enabled: true
+  image:
+    repository: openpolicyagent/opa
+    tag: 1.4.2-static
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+persistence:
+  traces:
+    enabled: true
+    size: 5Gi
+    storageClass: ""
+
+resources:
+  limits:
+    cpu: "2"
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+podAnnotations: {}
+nodeSelector: {}
+affinity: {}
+tolerations: []

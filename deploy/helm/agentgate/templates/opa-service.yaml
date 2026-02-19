@@ -1,0 +1,18 @@
+{{- if .Values.opa.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "agentgate.fullname" . }}-opa
+  labels:
+    {{- include "agentgate.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "agentgate.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: opa
+  ports:
+    - name: http
+      port: 8181
+      targetPort: http
+      protocol: TCP
+{{- end }}

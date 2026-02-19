@@ -1,0 +1,17 @@
+{{- if .Values.persistence.traces.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "agentgate.fullname" . }}-traces
+  labels:
+    {{- include "agentgate.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.traces.size }}
+  {{- if .Values.persistence.traces.storageClass }}
+  storageClassName: {{ .Values.persistence.traces.storageClass | quote }}
+  {{- end }}
+{{- end }}

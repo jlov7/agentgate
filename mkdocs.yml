@@ -16,6 +16,7 @@ nav:
   - Replay Lab: REPLAY_LAB.md
   - Incident Response: INCIDENT_RESPONSE.md
   - Tenant Rollouts: TENANT_ROLLOUTS.md
+  - Kubernetes Deployment: KUBERNETES_DEPLOYMENT.md
   - Threat Model: THREAT_MODEL.md
   - UX Audit: UX_AUDIT.md
   - Showcase Artifacts: showcase/README.md
