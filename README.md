@@ -374,6 +374,30 @@ async def run() -> None:
 asyncio.run(run())
 ```
 
+### TypeScript SDK Usage
+
+```ts
+import { AgentGateApiError, AgentGateClient } from "@agentgate/sdk";
+
+const client = AgentGateClient.fromEnv(); // AGENTGATE_URL + optional admin env vars
+
+try {
+  const health = await client.health();
+  console.log("health:", health.status);
+
+  const result = await client.callTool({
+    sessionId: "sdk-demo",
+    toolName: "db_query",
+    arguments: { query: "SELECT 1" },
+  });
+  console.log("tool success:", result.success);
+} catch (error) {
+  if (error instanceof AgentGateApiError) {
+    console.error(error.statusCode, error.payload);
+  }
+}
+```
+
 ### CLI Usage
 
 ```bash

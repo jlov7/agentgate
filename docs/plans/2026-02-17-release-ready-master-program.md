@@ -98,7 +98,7 @@
 - [x] P1-006
 - [x] P1-007
 - [x] P1-008
-- [ ] P1-009
+- [x] P1-009
 - [ ] P1-010
 - [ ] P1-011
 - [ ] P1-012
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-009` Official TypeScript SDK.
-- Why now: Python SDK ergonomics is now release-ready, so TypeScript parity is the next launch-quality lever for integrator adoption.
+- Active item: `P1-010` Helm chart + K8s deployment guide.
+- Why now: SDK parity is now release-ready, so deployability via standardized Kubernetes packaging is the next launch-quality lever for production onboarding.
 
 ## Surprises & Discoveries (Live)
 
@@ -152,6 +152,7 @@
 - 2026-02-19: Move next to P1-007 after P1-006 landed with tenant rollout observability surfaces.
 - 2026-02-19: Move next to P1-008 after P1-007 landed with time-bound policy exception lifecycle controls.
 - 2026-02-19: Move next to P1-009 after P1-008 landed with official Python SDK support.
+- 2026-02-19: Move next to P1-010 after P1-009 landed with official TypeScript SDK support.
 
 ## Outcomes & Retrospective (Live)
 
@@ -313,3 +314,9 @@
   - Added regression tests for configured admin header usage, environment bootstrap behavior, and structured error propagation on unsupported API version requests.
   - Added README Python SDK usage section with an end-to-end async integration example.
   - Evidence: `.venv/bin/pytest tests/test_client.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-009` with official TypeScript SDK support.
+  - Added TypeScript SDK package scaffold under `sdk/typescript` with runtime client implementation, typed declaration entrypoint, and environment bootstrap support.
+  - Added structured API error handling and helper methods for tool calls, admin policy exceptions, replay/incident/rollout operations, and rollout observability.
+  - Added Node test suite (`sdk/typescript/tests/client.test.mjs`) and Python gate tests (`tests/test_typescript_sdk.py`) so SDK behavior is enforced in `make verify`.
+  - Added README TypeScript SDK usage section with async integration example.
+  - Evidence: `.venv/bin/pytest tests/test_typescript_sdk.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-008 to P1-009 (official TypeScript SDK).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-009 to P1-010 (Helm chart + Kubernetes deployment guide).
 
 ## Status
 
@@ -125,17 +125,21 @@ In Progress
 115. [x] P1-008 GREEN: implement Python SDK package and client coverage.
 116. [x] Run targeted tests for P1-008.
 117. [x] Re-run `make verify` and `scripts/doctor.sh`.
-118. [ ] P1-009 RED: add failing tests for official TypeScript SDK workflows.
-119. [ ] P1-009 GREEN: implement TypeScript SDK package and client coverage.
-120. [ ] Run targeted tests for P1-009.
-121. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+118. [x] P1-009 RED: add failing tests for official TypeScript SDK workflows.
+119. [x] P1-009 GREEN: implement TypeScript SDK package and client coverage.
+120. [x] Run targeted tests for P1-009.
+121. [x] Re-run `make verify` and `scripts/doctor.sh`.
+122. [ ] P1-010 RED: add failing checks for Helm chart and Kubernetes deployment workflow.
+123. [ ] P1-010 GREEN: implement Helm chart + K8s deployment guide.
+124. [ ] Run targeted tests for P1-010.
+125. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-008 is fully complete with official Python SDK ergonomics + full-gate verification; next execution item is `P1-009`.
+- P1-009 is fully complete with official TypeScript SDK support + full-gate verification; next execution item is `P1-010`.
 
 ## Open Questions
 
-- None blocking commit for P1-008 and transition to P1-009.
+- None blocking commit for P1-009 and transition to P1-010.

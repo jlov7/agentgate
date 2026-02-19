@@ -185,6 +185,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-006 tenant rollout observability console surfaces.
 - [x] Implement P1-007 time-bound policy exceptions with auto-expiry.
 - [x] Implement P1-008 official Python SDK.
+- [x] Implement P1-009 official TypeScript SDK.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -221,6 +222,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-006 success, prioritize P1-007 time-bound policy exceptions.
 - After P1-007 success, prioritize P1-008 official Python SDK.
 - After P1-008 success, prioritize P1-009 official TypeScript SDK.
+- After P1-009 success, prioritize P1-010 Helm chart and Kubernetes deployment guide.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -335,3 +337,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added regression tests for configured admin-header behavior, environment bootstrap path, and structured error handling on unsupported requested API versions.
 - Added README SDK usage documentation with an end-to-end async example for tool calls and policy exception workflows.
 - Evidence: `.venv/bin/pytest tests/test_client.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-009 completed with RED->GREEN->verify->doctor loop.
+- Added official TypeScript SDK package at `sdk/typescript` with runtime client, typed declarations, environment bootstrap, structured API errors, and parity admin helper methods.
+- Added Node-based TypeScript SDK tests (`sdk/typescript/tests/client.test.mjs`) and release-gated Python harness tests (`tests/test_typescript_sdk.py`) to enforce SDK behavior in CI/local verification.
+- Added README TypeScript SDK usage documentation with async integration example.
+- Evidence: `.venv/bin/pytest tests/test_typescript_sdk.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

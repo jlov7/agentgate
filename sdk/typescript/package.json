@@ -1,0 +1,21 @@
+{
+  "name": "@agentgate/sdk",
+  "version": "0.2.1",
+  "description": "Official TypeScript SDK for AgentGate",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test tests/client.test.mjs"
+  },
+  "license": "Apache-2.0"
+}
