@@ -103,7 +103,7 @@
 - [x] P1-011
 - [x] P1-012
 - [x] P1-013
-- [ ] P1-014
+- [x] P1-014
 - [ ] P2-001
 - [ ] P2-002
 - [ ] P2-003
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-014` Resettable staging environment with seeded scenarios.
-- Why now: observability defaults are now in place, so a deterministic resettable staging path is the next launch-quality lever for pre-release confidence and demo reproducibility.
+- Active item: `P2-001` Hosted browser sandbox (no-local-install trial).
+- Why now: baseline launch quality is complete through `P1-014`, and reducing trial friction is now the highest-leverage product adoption step.
 
 ## Surprises & Discoveries (Live)
 
@@ -157,6 +157,7 @@
 - 2026-02-19: Move next to P1-012 after P1-011 landed with Terraform baseline provisioning support.
 - 2026-02-19: Move next to P1-013 after P1-012 landed with OpenTelemetry distributed tracing support.
 - 2026-02-19: Move next to P1-014 after P1-013 landed with default Grafana dashboards and alert packs.
+- 2026-02-19: Move next to P2-001 after P1-014 landed with staging reset automation and seeded scenario validation.
 
 ## Outcomes & Retrospective (Live)
 
@@ -349,3 +350,9 @@
   - Wired docs discovery through `mkdocs.yml` navigation and README links.
   - Added regression tests (`tests/test_observability_pack.py`) for artifact and docs enforcement.
   - Evidence: `.venv/bin/pytest tests/test_observability_pack.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-014` with resettable staging environment and seeded scenarios.
+  - Added deterministic staging seed fixture (`deploy/staging/seed_scenarios.json`) covering allow/deny/approved-write paths.
+  - Added staging reset automation script (`scripts/staging_reset.py`) to purge sessions and replay seed scenarios with pass/fail outcome reporting.
+  - Added operator make target (`make staging-reset`) and runbook (`docs/STAGING_RESET.md`) with discovery links in `mkdocs.yml` and README quick links.
+  - Added regression tests (`tests/test_staging_reset.py`) for pass/fail reset behavior and docs/asset publication checks.
+  - Evidence: `.venv/bin/pytest tests/test_staging_reset.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

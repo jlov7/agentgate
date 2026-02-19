@@ -190,6 +190,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P1-011 Terraform baseline module.
 - [x] Implement P1-012 OpenTelemetry distributed tracing.
 - [x] Implement P1-013 default Grafana dashboards + alert packs.
+- [x] Implement P1-014 resettable staging environment with seeded scenarios.
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -231,6 +232,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P1-011 success, prioritize P1-012 OpenTelemetry distributed tracing.
 - After P1-012 success, prioritize P1-013 default Grafana dashboards + alert packs.
 - After P1-013 success, prioritize P1-014 resettable staging environment + seeded scenarios.
+- After P1-014 success, prioritize P2-001 hosted browser sandbox no-local-install trial flow.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -371,3 +373,9 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added observability pack runbook (`docs/OBSERVABILITY_PACK.md`) and discovery links in docs navigation + README quick links.
 - Added regression tests (`tests/test_observability_pack.py`) validating artifact existence, metric coverage, alert names, and docs publication.
 - Evidence: `.venv/bin/pytest tests/test_observability_pack.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-014 completed with RED->GREEN->verify->doctor loop.
+- Added resettable staging seed fixture (`deploy/staging/seed_scenarios.json`) for deterministic allow/deny scenario replay before demos and release checks.
+- Added staging reset automation (`scripts/staging_reset.py`) and make target (`make staging-reset`) to purge stale sessions and replay seeded scenarios with pass/fail summary output.
+- Added staging reset runbook (`docs/STAGING_RESET.md`) and docs discovery links in MkDocs + README quick links.
+- Added regression tests (`tests/test_staging_reset.py`) validating reset pass/fail behavior and published assets/docs.
+- Evidence: `.venv/bin/pytest tests/test_staging_reset.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

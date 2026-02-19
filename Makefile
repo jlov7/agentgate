@@ -1,4 +1,4 @@
-.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke check-docker rego-quality verify verify-strict doctor scorecard product-audit security-closure support-bundle
+.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke staging-reset check-docker rego-quality verify verify-strict doctor scorecard product-audit security-closure support-bundle
 
 # ============================================================================
 # Development
@@ -104,6 +104,9 @@ load-test-remote:
 
 staging-smoke:
 	STAGING_URL=$(STAGING_URL) scripts/staging_smoke.sh
+
+staging-reset:
+	STAGING_URL=$(STAGING_URL) AGENTGATE_ADMIN_API_KEY=$(AGENTGATE_ADMIN_API_KEY) .venv/bin/python scripts/staging_reset.py --seed-file deploy/staging/seed_scenarios.json --output artifacts/staging-reset.json
 
 test-adversarial:
 	.venv/bin/python run_adversarial.py
@@ -266,6 +269,7 @@ help:
 	@echo "  make load-test       Run a k6 load test (starts local server)"
 	@echo "  make load-test-remote Run a k6 load test against LOAD_TEST_URL"
 	@echo "  make staging-smoke   Run smoke + load against STAGING_URL"
+	@echo "  make staging-reset   Purge staging sessions and apply seeded scenarios"
 	@echo "  make check-docker    Fail fast when Docker daemon is unavailable"
 	@echo "  make rego-quality    Run Rego fmt/test/coverage scoring and emit artifacts/rego-quality.json"
 	@echo "  make test-all        Run all tests"

@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-013 to P1-014 (resettable staging environment with seeded scenarios).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-014 to P2-001 (hosted browser sandbox trial flow).
 
 ## Status
 
@@ -145,17 +145,21 @@ In Progress
 135. [x] P1-013 GREEN: implement Grafana dashboard + alert pack artifacts.
 136. [x] Run targeted tests for P1-013.
 137. [x] Re-run `make verify` and `scripts/doctor.sh`.
-138. [ ] P1-014 RED: add failing checks for resettable staging environment workflow and seeded scenarios.
-139. [ ] P1-014 GREEN: implement resettable staging automation + seeded scenario fixtures.
-140. [ ] Run targeted tests for P1-014.
-141. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+138. [x] P1-014 RED: add failing checks for resettable staging environment workflow and seeded scenarios.
+139. [x] P1-014 GREEN: implement resettable staging automation + seeded scenario fixtures.
+140. [x] Run targeted tests for P1-014.
+141. [x] Re-run `make verify` and `scripts/doctor.sh`.
+142. [ ] P2-001 RED: add failing checks for hosted browser sandbox trial entrypoint and artifacts.
+143. [ ] P2-001 GREEN: implement hosted browser sandbox no-local-install trial path.
+144. [ ] Run targeted tests for P2-001.
+145. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-013 is fully complete with default Grafana dashboard + alert pack support and full-gate verification; next execution item is `P1-014`.
+- P1-014 is fully complete with staging reset automation, seeded scenarios, and full-gate verification; next execution item is `P2-001`.
 
 ## Open Questions
 
-- None blocking commit for P1-013 and transition to P1-014.
+- None blocking commit for P1-014 and transition to P2-001.

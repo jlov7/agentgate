@@ -20,6 +20,7 @@ nav:
   - Terraform Deployment: TERRAFORM_DEPLOYMENT.md
   - Distributed Tracing: OBSERVABILITY_TRACING.md
   - Observability Pack: OBSERVABILITY_PACK.md
+  - Staging Reset: STAGING_RESET.md
   - Threat Model: THREAT_MODEL.md
   - UX Audit: UX_AUDIT.md
   - Showcase Artifacts: showcase/README.md

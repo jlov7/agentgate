@@ -1,0 +1,36 @@
+[
+  {
+    "id": "seed-read-allow",
+    "request": {
+      "session_id": "staging-seed-read",
+      "tool_name": "db_query",
+      "arguments": {
+        "query": "SELECT 1"
+      }
+    },
+    "expected_success": true
+  },
+  {
+    "id": "seed-write-approval-required",
+    "request": {
+      "session_id": "staging-seed-write-deny",
+      "tool_name": "db_update",
+      "arguments": {
+        "table": "inventory"
+      }
+    },
+    "expected_success": false
+  },
+  {
+    "id": "seed-write-approved",
+    "request": {
+      "session_id": "staging-seed-write-allow",
+      "tool_name": "db_update",
+      "arguments": {
+        "table": "inventory"
+      },
+      "approval_token": "approved"
+    },
+    "expected_success": true
+  }
+]
