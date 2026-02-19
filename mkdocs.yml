@@ -23,6 +23,11 @@ nav:
   - Observability Pack: OBSERVABILITY_PACK.md
   - Policy Template Library: POLICY_TEMPLATE_LIBRARY.md
   - Adaptive Risk Tuning: ADAPTIVE_RISK_TUNING.md
+  - Operational Trust Layer: OPERATIONAL_TRUST_LAYER.md
+  - Status Page: STATUS_PAGE.md
+  - SLA and SLO: SLA_SLO.md
+  - Support Tiers: SUPPORT_TIERS.md
+  - Usage Metering: USAGE_METERING.md
   - Compliance Mappings: COMPLIANCE_MAPPINGS.md
   - Staging Reset: STAGING_RESET.md
   - Threat Model: THREAT_MODEL.md

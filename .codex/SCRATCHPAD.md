@@ -1,10 +1,10 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P2-004 to P2-005 (usage metering/quota/billing hooks).
+Execute the exhaustive release-ready master backlog and track every item to completion (all tracked items now completed).
 
 ## Status
 
-In Progress
+Completed
 
 ## Plan
 
@@ -165,17 +165,22 @@ In Progress
 155. [x] P2-004 GREEN: implement SOC2/ISO/NIST control mapping exports.
 156. [x] Run targeted tests for P2-004.
 157. [x] Re-run `make verify` and `scripts/doctor.sh`.
-158. [ ] P2-005 RED: add failing checks for usage metering/quota/billing hook artifacts.
-159. [ ] P2-005 GREEN: implement usage metering, quota controls, and billing export hooks.
-160. [ ] Run targeted tests for P2-005.
-161. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+158. [x] P2-005 RED: add failing checks for usage metering/quota/billing hook artifacts.
+159. [x] P2-005 GREEN: implement usage metering, quota controls, and billing export hooks.
+160. [x] Run targeted tests for P2-005.
+161. [x] Re-run `make verify` and `scripts/doctor.sh`.
+162. [x] P2-006 RED: add failing checks for operational trust layer assets (status page + SLA/SLO/support tiers docs).
+163. [x] P2-006 GREEN: implement operational trust layer docs/assets and publish links.
+164. [x] Run targeted tests for P2-006.
+165. [x] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P2-004 is fully complete with compliance mapping export coverage and full-gate verification; next execution item is `P2-005`.
+- P2-006 is fully complete with operational trust layer docs/assets and full-gate verification.
+- The release-ready master backlog is now 100% closed.
 
 ## Open Questions
 
-- None blocking commit for P2-004 and transition to P2-005.
+- None.

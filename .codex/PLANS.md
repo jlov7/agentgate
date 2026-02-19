@@ -195,7 +195,9 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P2-002 policy template library by risk/use-case.
 - [x] Implement P2-003 adaptive risk model tuning loop.
 - [x] Implement P2-004 compliance control mapping exports (SOC2/ISO/NIST).
-- [ ] Continue sequential execution of P1/P2 backlog to completion.
+- [x] Implement P2-005 usage metering/quota/billing hooks.
+- [x] Implement P2-006 operational trust layer (status page, SLA/SLO docs, support tiers).
+- [x] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
 - 2026-02-17: Docker daemon outage caused temporary doctor failures (`RG-01`, `RG-03`, `RG-04`, `RG-05`) unrelated to code changes.
@@ -241,6 +243,8 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P2-002 success, prioritize P2-003 adaptive risk model tuning loop.
 - After P2-003 success, prioritize P2-004 compliance control mapping exports.
 - After P2-004 success, prioritize P2-005 usage metering/quota/billing hooks.
+- After P2-005 success, prioritize P2-006 operational trust layer (status page/SLA-SLO/support tiers).
+- After P2-006 success, close the release-ready master backlog.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -411,3 +415,15 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added compliance mapping runbook (`docs/COMPLIANCE_MAPPINGS.md`) with command usage and output contract.
 - Added regression tests (`tests/test_compliance_mappings.py`) validating export schema/content and docs/readme discoverability.
 - Evidence: `.venv/bin/pytest tests/test_compliance_mappings.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P2-005 completed with RED->GREEN->verify->doctor loop.
+- Added usage metering automation (`scripts/usage_metering.py`) to aggregate tenant usage, enforce quota thresholds, and emit billing export hooks.
+- Added operator entrypoint (`make usage-meter`) to emit `artifacts/usage-metering.json` and `artifacts/billing-export.csv`.
+- Added usage metering runbook (`docs/USAGE_METERING.md`) and discoverability wiring in `mkdocs.yml` + README quick links.
+- Added regression tests (`tests/test_usage_metering.py`) validating pass/fail quota behavior and docs/readme publication checks.
+- Evidence: `.venv/bin/pytest tests/test_usage_metering.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P2-006 completed with RED->GREEN->verify->doctor loop.
+- Added operational trust layer runbook (`docs/OPERATIONAL_TRUST_LAYER.md`) and dedicated docs for status page operations, SLA/SLO commitments, and support tier policy.
+- Added publishable status page template at `docs/status/index.html`.
+- Wired trust-layer documentation discoverability through `mkdocs.yml` navigation and README quick links.
+- Added regression tests (`tests/test_operational_trust_layer.py`) validating trust-layer assets and publication wiring.
+- Evidence: `.venv/bin/pytest tests/test_operational_trust_layer.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

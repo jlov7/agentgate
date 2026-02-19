@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentGate Status</title>
+  <style>
+    :root {
+      --bg: #f6f8f5;
+      --card: #ffffff;
+      --ink: #102a24;
+      --muted: #4d635d;
+      --ok: #1f8a70;
+      --warn: #c27c2c;
+      --risk: #9f2f2f;
+      --line: #d8e1de;
+    }
+
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #eef3f0 0%, var(--bg) 100%);
+      color: var(--ink);
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 40px 20px 56px;
+    }
+
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 10px 24px rgba(10, 33, 28, 0.08);
+      margin-bottom: 18px;
+    }
+
+    .kicker {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.1;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #e6f6f2;
+      color: var(--ok);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: 1.2fr 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .ok { color: var(--ok); font-weight: 700; }
+    .warn { color: var(--warn); font-weight: 700; }
+    .risk { color: var(--risk); font-weight: 700; }
+
+    .meta {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="kicker">Operational Trust Layer</div>
+      <h1>AgentGate Status</h1>
+      <span class="status-pill">Operational</span>
+      <p class="meta">Last updated: 2026-02-19 18:55 UTC</p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Components</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Status</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>API Gateway</td>
+              <td class="ok">Operational</td>
+              <td>P95 within target</td>
+            </tr>
+            <tr>
+              <td>Policy Engine (OPA)</td>
+              <td class="ok">Operational</td>
+              <td>Hot reload healthy</td>
+            </tr>
+            <tr>
+              <td>Redis Control Plane</td>
+              <td class="ok">Operational</td>
+              <td>Failover checks passing</td>
+            </tr>
+            <tr>
+              <td>Evidence Export</td>
+              <td class="ok">Operational</td>
+              <td>Signed reports passing</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card">
+        <h2>SLO Snapshot</h2>
+        <table>
+          <tbody>
+            <tr>
+              <td>Monthly Availability</td>
+              <td class="ok">99.97%</td>
+            </tr>
+            <tr>
+              <td>P95 Decision Latency</td>
+              <td class="ok">214ms</td>
+            </tr>
+            <tr>
+              <td>P95 End-to-End Latency</td>
+              <td class="warn">2420ms</td>
+            </tr>
+            <tr>
+              <td>Error Budget Remaining</td>
+              <td class="ok">76%</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 style="margin-top: 18px;">Support Tiers</h2>
+        <table>
+          <tbody>
+            <tr>
+              <td>Community</td>
+              <td>Best effort</td>
+            </tr>
+            <tr>
+              <td>Professional</td>
+              <td>Business hours + ticketing</td>
+            </tr>
+            <tr>
+              <td>Enterprise</td>
+              <td>24/7 + on-call bridge</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

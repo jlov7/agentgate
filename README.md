@@ -752,6 +752,8 @@ This is a personal, independent project. It is not affiliated with any employer 
 | [Observability Pack](docs/OBSERVABILITY_PACK.md) | Default Grafana dashboard and Prometheus alert pack |
 | [Policy Template Library](docs/POLICY_TEMPLATE_LIBRARY.md) | Risk-tier policy templates for common rollout use-cases |
 | [Adaptive Risk Tuning](docs/ADAPTIVE_RISK_TUNING.md) | Evidence-driven recommendations to tighten/hold/relax risk thresholds |
+| [Operational Trust Layer](docs/OPERATIONAL_TRUST_LAYER.md) | Status page, SLA/SLO commitments, and support tier model |
+| [Usage Metering](docs/USAGE_METERING.md) | Tenant usage, quota checks, and billing export hooks |
 | [Compliance Mappings](docs/COMPLIANCE_MAPPINGS.md) | SOC2/ISO27001/NIST control mapping exports (JSON + CSV) |
 | [Staging Reset](docs/STAGING_RESET.md) | Resettable staging workflow with seeded validation scenarios |
 | [Showcase Artifacts](docs/showcase/README.md) | Evidence pack, metrics snapshot, logs |

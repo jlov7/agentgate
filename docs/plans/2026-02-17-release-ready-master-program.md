@@ -108,13 +108,13 @@
 - [x] P2-002
 - [x] P2-003
 - [x] P2-004
-- [ ] P2-005
-- [ ] P2-006
+- [x] P2-005
+- [x] P2-006
 
 ## Current Execution Slice
 
-- Active item: `P2-005` Usage metering/quota/billing hooks.
-- Why now: compliance portability is now in place, so monetization-ready usage controls are the next release-critical differentiator.
+- Active item: `None` (all backlog items complete).
+- Why now: full release-ready master program closure reached after successful gate reruns.
 
 ## Surprises & Discoveries (Live)
 
@@ -162,6 +162,8 @@
 - 2026-02-19: Move next to P2-003 after P2-002 landed with risk-tier policy template library support.
 - 2026-02-19: Move next to P2-004 after P2-003 landed with adaptive risk tuning loop automation.
 - 2026-02-19: Move next to P2-005 after P2-004 landed with compliance mapping export automation.
+- 2026-02-19: Move next to P2-006 after P2-005 landed with usage metering/quota/billing export automation.
+- 2026-02-19: Close master backlog after P2-006 landed with operational trust layer docs/assets.
 
 ## Outcomes & Retrospective (Live)
 
@@ -384,3 +386,14 @@
   - Added compliance runbook (`docs/COMPLIANCE_MAPPINGS.md`) and discoverability wiring in `mkdocs.yml` + README quick links.
   - Added regression tests (`tests/test_compliance_mappings.py`) covering export outputs and docs/readme publication checks.
   - Evidence: `.venv/bin/pytest tests/test_compliance_mappings.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P2-005` with usage metering/quota/billing hooks.
+  - Added usage metering automation (`scripts/usage_metering.py`) to aggregate per-tenant calls/spend, enforce quota thresholds, and emit billing line-item exports.
+  - Added make entrypoint (`make usage-meter`) that writes `artifacts/usage-metering.json` and `artifacts/billing-export.csv`.
+  - Added usage metering runbook (`docs/USAGE_METERING.md`) and discoverability wiring in `mkdocs.yml` + README quick links.
+  - Added regression tests (`tests/test_usage_metering.py`) covering pass/fail quota behavior and docs/readme publication checks.
+  - Evidence: `.venv/bin/pytest tests/test_usage_metering.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P2-006` with operational trust layer assets.
+  - Added operational trust layer docs (`docs/OPERATIONAL_TRUST_LAYER.md`, `docs/STATUS_PAGE.md`, `docs/SLA_SLO.md`, `docs/SUPPORT_TIERS.md`) and publishable status page template (`docs/status/index.html`).
+  - Added trust-layer discoverability wiring in `mkdocs.yml` and README quick links.
+  - Added regression tests (`tests/test_operational_trust_layer.py`) validating asset presence, core status-page sections, and docs publication wiring.
+  - Evidence: `.venv/bin/pytest tests/test_operational_trust_layer.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
