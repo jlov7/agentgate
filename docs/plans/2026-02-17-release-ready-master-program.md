@@ -85,7 +85,7 @@
 - [x] P0-013
 - [x] P0-014
 - [x] P0-015
-- [ ] P0-016
+- [x] P0-016
 - [x] P0-017
 - [ ] P0-018
 - [ ] P0-019
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P0-016` Retention/deletion/legal-hold policy controls.
-- Why now: redaction/tokenization controls are now gate-verified; next blocker is lifecycle governance and legal-hold-safe deletion behavior.
+- Active item: `P0-018` SLO definitions + runtime alerting implementation.
+- Why now: lifecycle governance controls are now complete; the next P0 release blocker is explicit SLO policy + automated runtime alert generation.
 
 ## Surprises & Discoveries (Live)
 
@@ -140,6 +140,7 @@
 - 2026-02-18: Move next to P0-014 after P0-013 landed with mTLS service identity controls.
 - 2026-02-19: Move next to P0-015 after P0-014 landed with tenant data isolation enforcement.
 - 2026-02-19: Move next to P0-016 after P0-015 landed with PII redaction/tokenization controls.
+- 2026-02-19: Move next to P0-018 after P0-016 landed with retention/deletion/legal-hold controls.
 
 ## Outcomes & Retrospective (Live)
 
@@ -229,3 +230,9 @@
   - Applied PII controls at evidence export time for metadata/timeline/analysis/replay/incident/rollout payloads, including explicit `metadata.pii_mode`.
   - Added regression tests for redact and tokenize modes in evidence exports and gateway trace persistence.
   - Evidence: `pytest tests/test_evidence.py::test_exporter_redacts_pii_when_enabled tests/test_evidence.py::test_exporter_tokenizes_pii_when_enabled tests/test_gateway.py::test_tool_call_trace_tokenizes_pii_when_enabled -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P0-016` with retention/deletion/legal-hold controls.
+  - Added rollback-safe schema migration `v6` for `session_retention` policy state with retention expiry and legal-hold metadata.
+  - Added trace-store retention APIs for policy set/get, legal-hold-safe session deletion, and expiry-based purge of non-held sessions.
+  - Added admin lifecycle endpoints: `POST /admin/sessions/{session_id}/retention`, `POST /admin/sessions/purge`, and `DELETE /admin/sessions/{session_id}` with `409` conflict on held sessions.
+  - Added regression tests covering legal-hold block semantics, purge skipping held sessions, and end-to-end admin retention/purge flow.
+  - Evidence: `pytest tests/test_traces.py::test_session_retention_legal_hold_blocks_delete tests/test_traces.py::test_purge_expired_sessions_skips_legal_hold tests/test_main.py::test_admin_session_retention_and_purge_flow -v` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

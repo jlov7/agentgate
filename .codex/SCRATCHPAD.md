@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-015 to P0-016 (retention/deletion/legal-hold policy controls).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P0-016 to P0-018 (SLO definitions + runtime alerting implementation).
 
 ## Status
 
@@ -77,17 +77,21 @@ In Progress
 67. [x] P0-015 GREEN: implement configurable PII redaction/tokenization pipeline.
 68. [x] Run targeted tests for P0-015.
 69. [x] Re-run `make verify` and `scripts/doctor.sh`.
-70. [ ] P0-016 RED: add failing tests for retention/deletion/legal-hold controls.
-71. [ ] P0-016 GREEN: implement retention policy enforcement + legal-hold bypass guards.
-72. [ ] Run targeted tests for P0-016.
-73. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+70. [x] P0-016 RED: add failing tests for retention/deletion/legal-hold controls.
+71. [x] P0-016 GREEN: implement retention policy enforcement + legal-hold bypass guards.
+72. [x] Run targeted tests for P0-016.
+73. [x] Re-run `make verify` and `scripts/doctor.sh`.
+74. [ ] P0-018 RED: add failing tests for SLO policy evaluation and alert emission.
+75. [ ] P0-018 GREEN: implement SLO definitions and runtime alert generation.
+76. [ ] Run targeted tests for P0-018.
+77. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P0-015 is complete and verified; next priority is retention/deletion/legal-hold controls (`P0-016`).
+- P0-016 is complete and verified; next priority is SLO definitions and runtime alerting (`P0-018`).
 
 ## Open Questions
 
-- None blocking P0-016 implementation start.
+- None blocking P0-018 implementation start.
