@@ -1,6 +1,6 @@
 ## Current Task
 
-Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-001 to P1-002 (policy lifecycle system with draft/review/publish/rollback).
+Execute the exhaustive release-ready master backlog and track every item to completion, now moving from completed P1-002 to P1-003 (Rego quality gates: lint/test/coverage scoring).
 
 ## Status
 
@@ -97,17 +97,21 @@ In Progress
 87. [x] P1-001 GREEN: implement approval workflow engine in API/runtime paths.
 88. [x] Run targeted tests for P1-001.
 89. [x] Re-run `make verify` and `scripts/doctor.sh`.
-90. [ ] P1-002 RED: add failing tests for policy lifecycle states and rollback behavior.
-91. [ ] P1-002 GREEN: implement policy lifecycle draft/review/publish/rollback APIs and storage.
-92. [ ] Run targeted tests for P1-002.
-93. [ ] Re-run `make verify` and `scripts/doctor.sh`.
+90. [x] P1-002 RED: add failing tests for policy lifecycle states and rollback behavior.
+91. [x] P1-002 GREEN: implement policy lifecycle draft/review/publish/rollback APIs and storage.
+92. [x] Run targeted tests for P1-002.
+93. [x] Re-run `make verify` and `scripts/doctor.sh`.
+94. [ ] P1-003 RED: add failing checks for Rego lint/test/coverage scoring gates.
+95. [ ] P1-003 GREEN: implement Rego quality scoring automation + enforcement wiring.
+96. [ ] Run targeted tests for P1-003.
+97. [ ] Re-run `make verify` and `scripts/doctor.sh`.
 
 ## Decisions Made
 
 - Execute by strict P0-first ordering with evidence gating on each item.
 - Start with API contract stability before deeper auth/storage migrations.
-- P1-001 is complete and verified; next priority is policy lifecycle management (`P1-002`).
+- P1-002 is complete and verified; next priority is Rego quality gate enforcement (`P1-003`).
 
 ## Open Questions
 
-- None blocking P1-002 implementation start.
+- None blocking P1-003 implementation start.

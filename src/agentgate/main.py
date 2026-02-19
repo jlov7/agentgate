@@ -68,6 +68,10 @@ from agentgate.models import (
     ApprovalWorkflowCreateRequest,
     ApprovalWorkflowDelegateRequest,
     KillRequest,
+    PolicyLifecycleDraftRequest,
+    PolicyLifecyclePublishRequest,
+    PolicyLifecycleReviewRequest,
+    PolicyLifecycleRollbackRequest,
     ReplayRun,
     ToolCallRequest,
     ToolCallResponse,
@@ -1139,6 +1143,36 @@ def create_app(
             raise HTTPException(status_code=409, detail=message) from exc
         raise HTTPException(status_code=400, detail=message) from exc
 
+    def _apply_runtime_policy_data(policy_data: dict[str, Any]) -> None:
+        app.state.policy_client.policy_data = policy_data
+        evaluator = getattr(app.state.policy_client, "evaluator", None)
+        if evaluator is not None and hasattr(evaluator, "policy_data"):
+            evaluator.policy_data = policy_data
+        rate_limits = policy_data.get("rate_limits", {})
+        if not isinstance(rate_limits, dict):
+            rate_limits = {}
+        if rate_limits:
+            app.state.rate_limiter = RateLimiter(
+                rate_limits, _get_rate_limit_window_seconds()
+            )
+            app.state.gateway.rate_limiter = app.state.rate_limiter
+        else:
+            app.state.rate_limiter = None
+            app.state.gateway.rate_limiter = None
+
+    def _raise_policy_lifecycle_error(exc: ValueError) -> Never:
+        message = str(exc)
+        if "not found" in message:
+            raise HTTPException(status_code=404, detail=message) from exc
+        if (
+            "must be in" in message
+            or "only published" in message
+            or "not publishable" in message
+            or "must differ" in message
+        ):
+            raise HTTPException(status_code=409, detail=message) from exc
+        raise HTTPException(status_code=400, detail=message) from exc
+
     @app.post("/admin/approvals/workflows")
     async def create_approval_workflow(
         payload: ApprovalWorkflowCreateRequest,
@@ -1227,6 +1261,131 @@ def create_app(
             _raise_approval_engine_error(exc)
         return JSONResponse(workflow)
 
+    @app.post("/admin/policies/lifecycle/drafts")
+    async def create_policy_lifecycle_draft(
+        payload: PolicyLifecycleDraftRequest,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Create a persisted policy lifecycle draft revision."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        revision = app.state.trace_store.create_policy_revision(
+            policy_version=payload.policy_version,
+            policy_data=payload.policy_data,
+            created_by=payload.created_by,
+            change_summary=payload.change_summary,
+        )
+        return JSONResponse(revision)
+
+    @app.get("/admin/policies/lifecycle")
+    async def list_policy_lifecycle_revisions(
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """List policy lifecycle revisions."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        return JSONResponse({"revisions": app.state.trace_store.list_policy_revisions()})
+
+    @app.get("/admin/policies/lifecycle/{revision_id}")
+    async def get_policy_lifecycle_revision(
+        revision_id: str,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Fetch one policy lifecycle revision."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        revision = app.state.trace_store.get_policy_revision(revision_id)
+        if revision is None:
+            raise HTTPException(status_code=404, detail="policy revision not found")
+        return JSONResponse(revision)
+
+    @app.post("/admin/policies/lifecycle/{revision_id}/review")
+    async def review_policy_lifecycle_revision(
+        revision_id: str,
+        payload: PolicyLifecycleReviewRequest,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Move a draft policy lifecycle revision into review state."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        try:
+            revision = app.state.trace_store.review_policy_revision(
+                revision_id=revision_id,
+                reviewed_by=payload.reviewed_by,
+                review_notes=payload.review_notes,
+            )
+        except ValueError as exc:
+            _raise_policy_lifecycle_error(exc)
+        return JSONResponse(revision)
+
+    @app.post("/admin/policies/lifecycle/{revision_id}/publish")
+    async def publish_policy_lifecycle_revision(
+        revision_id: str,
+        payload: PolicyLifecyclePublishRequest,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Publish a reviewed policy revision and apply it at runtime."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        try:
+            revision = app.state.trace_store.publish_policy_revision(
+                revision_id=revision_id,
+                published_by=payload.published_by,
+            )
+        except ValueError as exc:
+            _raise_policy_lifecycle_error(exc)
+        _apply_runtime_policy_data(revision.get("policy_data", {}))
+        return JSONResponse(revision)
+
+    @app.post("/admin/policies/lifecycle/{revision_id}/rollback")
+    async def rollback_policy_lifecycle_revision(
+        revision_id: str,
+        payload: PolicyLifecycleRollbackRequest,
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
+        authorization: str | None = Header(None, alias="Authorization"),
+    ) -> JSONResponse:
+        """Roll back a published policy revision to a previous revision."""
+        _authorize_admin_request(
+            required_roles={POLICY_ADMIN_ROLE},
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        try:
+            rolled_back, restored = app.state.trace_store.rollback_policy_revision(
+                revision_id=revision_id,
+                target_revision_id=payload.target_revision_id,
+                rolled_back_by=payload.rolled_back_by,
+            )
+        except ValueError as exc:
+            _raise_policy_lifecycle_error(exc)
+        _apply_runtime_policy_data(restored.get("policy_data", {}))
+        return JSONResponse(
+            {
+                "rolled_back_revision": rolled_back,
+                "restored_revision": restored,
+            }
+        )
+
     @app.post("/admin/policies/reload")
     async def reload_policies(
         x_api_key: str | None = Header(None, alias="X-API-Key"),
@@ -1244,15 +1403,7 @@ def create_app(
             new_policy_data = load_policy_data(policy_data_path)
             if require_signed_policy_packages() and not new_policy_data:
                 raise RuntimeError("Policy provenance validation failed")
-            app.state.policy_client.policy_data = new_policy_data
-
-            # Update rate limiter with new limits
-            rate_limits = new_policy_data.get("rate_limits", {})
-            if rate_limits:
-                app.state.rate_limiter = RateLimiter(
-                    rate_limits, _get_rate_limit_window_seconds()
-                )
-                app.state.gateway.rate_limiter = app.state.rate_limiter
+            _apply_runtime_policy_data(new_policy_data)
 
             logger.info("policies_reloaded", path=str(policy_data_path))
             return JSONResponse({

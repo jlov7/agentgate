@@ -8,10 +8,11 @@ import json
 import sqlite3
 from collections.abc import Callable
 from contextlib import suppress
-from datetime import datetime
+from datetime import UTC, datetime
 from threading import Lock
 from types import TracebackType
 from typing import Any
+from uuid import uuid4
 
 from agentgate.models import (
     IncidentEvent,
@@ -133,6 +134,7 @@ class TraceStore:
             (4, "transparency_checkpoints", self._migration_transparency_checkpoints),
             (5, "session_tenants", self._migration_session_tenants),
             (6, "session_retention", self._migration_session_retention),
+            (7, "policy_lifecycle", self._migration_policy_lifecycle),
         ]
 
     def _ensure_migrations_table(self) -> None:
@@ -612,6 +614,42 @@ class TraceStore:
                 """
             )
 
+    def _migration_policy_lifecycle(self) -> None:
+        """Create persisted policy lifecycle revision table."""
+        with self._lock:
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS policy_revisions (
+                    revision_id TEXT PRIMARY KEY,
+                    policy_version TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    policy_json TEXT NOT NULL,
+                    created_by TEXT,
+                    reviewed_by TEXT,
+                    published_by TEXT,
+                    rolled_back_by TEXT,
+                    change_summary TEXT,
+                    review_notes TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    published_at TEXT,
+                    rolled_back_at TEXT
+                )
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_policy_revisions_status
+                ON policy_revisions(status, updated_at)
+                """
+            )
+            self.conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_policy_revisions_created_at
+                ON policy_revisions(created_at)
+                """
+            )
+
     def archive_evidence_pack(
         self,
         *,
@@ -966,6 +1004,244 @@ class TraceStore:
             "legal_hold": bool(row["legal_hold"]),
             "hold_reason": row["hold_reason"],
             "updated_at": row["updated_at"],
+        }
+
+    def create_policy_revision(
+        self,
+        *,
+        policy_version: str,
+        policy_data: dict[str, Any],
+        created_by: str | None = None,
+        change_summary: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a draft policy lifecycle revision."""
+        now = datetime.now(UTC).isoformat()
+        revision_id = f"polrev-{uuid4()}"
+        policy_json = json.dumps(policy_data, sort_keys=True)
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT INTO policy_revisions (
+                    revision_id,
+                    policy_version,
+                    status,
+                    policy_json,
+                    created_by,
+                    change_summary,
+                    created_at,
+                    updated_at
+                ) VALUES (?, ?, 'draft', ?, ?, ?, ?, ?)
+                """,
+                (
+                    revision_id,
+                    policy_version,
+                    policy_json,
+                    created_by,
+                    change_summary,
+                    now,
+                    now,
+                ),
+            )
+            self.conn.commit()
+        created = self.get_policy_revision(revision_id)
+        if created is None:
+            raise RuntimeError("Policy revision persistence failed")
+        return created
+
+    def get_policy_revision(self, revision_id: str) -> dict[str, Any] | None:
+        """Fetch policy lifecycle revision by ID."""
+        with self._lock:
+            row = self.conn.execute(
+                """
+                SELECT revision_id, policy_version, status, policy_json, created_by,
+                       reviewed_by, published_by, rolled_back_by, change_summary,
+                       review_notes, created_at, updated_at, published_at, rolled_back_at
+                FROM policy_revisions
+                WHERE revision_id = ?
+                """,
+                (revision_id,),
+            ).fetchone()
+        return self._row_to_policy_revision(row)
+
+    def list_policy_revisions(self) -> list[dict[str, Any]]:
+        """List all policy lifecycle revisions ordered by creation time."""
+        with self._lock:
+            rows = self.conn.execute(
+                """
+                SELECT revision_id, policy_version, status, policy_json, created_by,
+                       reviewed_by, published_by, rolled_back_by, change_summary,
+                       review_notes, created_at, updated_at, published_at, rolled_back_at
+                FROM policy_revisions
+                ORDER BY created_at ASC, revision_id ASC
+                """
+            ).fetchall()
+        return [
+            row_payload
+            for row_payload in (self._row_to_policy_revision(row) for row in rows)
+            if row_payload is not None
+        ]
+
+    def review_policy_revision(
+        self,
+        *,
+        revision_id: str,
+        reviewed_by: str,
+        review_notes: str | None = None,
+    ) -> dict[str, Any]:
+        """Transition a draft policy revision into review state."""
+        revision = self.get_policy_revision(revision_id)
+        if revision is None:
+            raise ValueError("policy revision not found")
+        if revision["status"] != "draft":
+            raise ValueError("policy revision must be in draft status")
+
+        now = datetime.now(UTC).isoformat()
+        with self._lock:
+            self.conn.execute(
+                """
+                UPDATE policy_revisions
+                SET status = 'review',
+                    reviewed_by = ?,
+                    review_notes = ?,
+                    updated_at = ?
+                WHERE revision_id = ?
+                """,
+                (reviewed_by, review_notes, now, revision_id),
+            )
+            self.conn.commit()
+
+        updated = self.get_policy_revision(revision_id)
+        if updated is None:
+            raise RuntimeError("Policy revision review transition failed")
+        return updated
+
+    def publish_policy_revision(
+        self,
+        *,
+        revision_id: str,
+        published_by: str,
+    ) -> dict[str, Any]:
+        """Publish a reviewed policy revision and supersede active published entries."""
+        revision = self.get_policy_revision(revision_id)
+        if revision is None:
+            raise ValueError("policy revision not found")
+        if revision["status"] != "review":
+            raise ValueError("policy revision must be in review status")
+
+        now = datetime.now(UTC).isoformat()
+        with self._lock:
+            self.conn.execute(
+                """
+                UPDATE policy_revisions
+                SET status = 'superseded',
+                    updated_at = ?
+                WHERE status = 'published' AND revision_id != ?
+                """,
+                (now, revision_id),
+            )
+            self.conn.execute(
+                """
+                UPDATE policy_revisions
+                SET status = 'published',
+                    published_by = ?,
+                    published_at = ?,
+                    updated_at = ?
+                WHERE revision_id = ?
+                """,
+                (published_by, now, now, revision_id),
+            )
+            self.conn.commit()
+
+        published = self.get_policy_revision(revision_id)
+        if published is None:
+            raise RuntimeError("Policy revision publish transition failed")
+        return published
+
+    def rollback_policy_revision(
+        self,
+        *,
+        revision_id: str,
+        target_revision_id: str,
+        rolled_back_by: str,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Roll back a published revision to a previously published/superseded target."""
+        source = self.get_policy_revision(revision_id)
+        if source is None:
+            raise ValueError("policy revision not found")
+        if source["status"] != "published":
+            raise ValueError("only published revisions can be rolled back")
+        if target_revision_id == revision_id:
+            raise ValueError("target revision must differ from source revision")
+
+        target = self.get_policy_revision(target_revision_id)
+        if target is None:
+            raise ValueError("target policy revision not found")
+        if target["status"] in {"draft", "review"}:
+            raise ValueError("target revision is not publishable")
+
+        now = datetime.now(UTC).isoformat()
+        with self._lock:
+            self.conn.execute(
+                """
+                UPDATE policy_revisions
+                SET status = 'rolled_back',
+                    rolled_back_by = ?,
+                    rolled_back_at = ?,
+                    updated_at = ?
+                WHERE revision_id = ?
+                """,
+                (rolled_back_by, now, now, revision_id),
+            )
+            self.conn.execute(
+                """
+                UPDATE policy_revisions
+                SET status = 'superseded',
+                    updated_at = ?
+                WHERE status = 'published' AND revision_id != ?
+                """,
+                (now, target_revision_id),
+            )
+            self.conn.execute(
+                """
+                UPDATE policy_revisions
+                SET status = 'published',
+                    published_by = ?,
+                    published_at = ?,
+                    updated_at = ?
+                WHERE revision_id = ?
+                """,
+                (rolled_back_by, now, now, target_revision_id),
+            )
+            self.conn.commit()
+
+        rolled_back = self.get_policy_revision(revision_id)
+        restored = self.get_policy_revision(target_revision_id)
+        if rolled_back is None or restored is None:
+            raise RuntimeError("Policy revision rollback transition failed")
+        return rolled_back, restored
+
+    @staticmethod
+    def _row_to_policy_revision(row: Any | None) -> dict[str, Any] | None:
+        if row is None:
+            return None
+        policy_data = json.loads(row["policy_json"])
+        if not isinstance(policy_data, dict):
+            policy_data = {}
+        return {
+            "revision_id": row["revision_id"],
+            "policy_version": row["policy_version"],
+            "status": row["status"],
+            "policy_data": policy_data,
+            "created_by": row["created_by"],
+            "reviewed_by": row["reviewed_by"],
+            "published_by": row["published_by"],
+            "rolled_back_by": row["rolled_back_by"],
+            "change_summary": row["change_summary"],
+            "review_notes": row["review_notes"],
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+            "published_at": row["published_at"],
+            "rolled_back_at": row["rolled_back_at"],
         }
 
     def delete_session_data(self, session_id: str, *, force: bool = False) -> bool:

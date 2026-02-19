@@ -91,7 +91,7 @@
 - [x] P0-019
 - [x] P0-020
 - [x] P1-001
-- [ ] P1-002
+- [x] P1-002
 - [ ] P1-003
 - [ ] P1-004
 - [ ] P1-005
@@ -113,8 +113,8 @@
 
 ## Current Execution Slice
 
-- Active item: `P1-002` Policy lifecycle system (draft/review/publish/rollback).
-- Why now: approval workflow quality bar is now closed with gate evidence, so execution moves to lifecycle governance for safe policy operations.
+- Active item: `P1-003` Rego quality gates (lint/test/coverage scoring).
+- Why now: lifecycle governance is now implemented with passing gate evidence, so execution moves to policy-quality scoring enforcement.
 
 ## Surprises & Discoveries (Live)
 
@@ -145,6 +145,7 @@
 - 2026-02-19: Move next to P0-020 after P0-019 landed with release-target performance validation enforcement.
 - 2026-02-19: Move next to P1-001 after P0-020 landed with external security assessment closure artifacts.
 - 2026-02-19: Move next to P1-002 after P1-001 landed with approval workflow engine controls.
+- 2026-02-19: Move next to P1-003 after P1-002 landed with policy lifecycle state-management controls.
 
 ## Outcomes & Retrospective (Live)
 
@@ -264,3 +265,9 @@
   - Wired policy approval-token verification to support workflow-backed tokens while preserving existing static approval token compatibility.
   - Added regression tests covering multi-step gating, expiry denial, and delegation completion behavior (`tests/test_approvals.py`).
   - Evidence: `.venv/bin/pytest tests/test_approvals.py tests/test_gateway.py tests/test_policy.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- 2026-02-19: Completed `P1-002` with policy lifecycle governance system.
+  - Added persisted lifecycle revision storage in trace-store migration `v7` plus transition methods for `draft -> review -> publish -> rollback`.
+  - Added policy lifecycle admin APIs: `/admin/policies/lifecycle/drafts`, `/admin/policies/lifecycle`, `/admin/policies/lifecycle/{revision_id}`, `/review`, `/publish`, `/rollback`.
+  - Added runtime policy application refresh on publish/rollback so policy decisions and rate limits update immediately without restart.
+  - Added regression tests for publish-state gating, publish runtime effect, rollback restoration, and trace-store lifecycle persistence.
+  - Evidence: `.venv/bin/pytest tests/test_policy_lifecycle.py tests/test_traces.py -q` pass, `.venv/bin/pytest tests/test_main.py tests/test_policy.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).

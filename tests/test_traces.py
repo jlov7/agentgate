@@ -102,7 +102,7 @@ def test_trace_store_migrates_legacy_schema(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2, 3, 4, 5, 6]
+        assert versions == [1, 2, 3, 4, 5, 6, 7]
 
 
 def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
@@ -113,7 +113,7 @@ def test_trace_store_tracks_schema_versions_on_new_db(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-    assert versions == [1, 2, 3, 4, 5, 6]
+    assert versions == [1, 2, 3, 4, 5, 6, 7]
 
 
 def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
@@ -138,7 +138,36 @@ def test_trace_store_migration_rolls_back_failed_step(tmp_path) -> None:
                 "SELECT version FROM schema_migrations ORDER BY version ASC"
             ).fetchall()
         ]
-        assert versions == [1, 2, 3, 4, 5, 6]
+        assert versions == [1, 2, 3, 4, 5, 6, 7]
+
+
+def test_policy_lifecycle_revision_persistence(tmp_path) -> None:
+    with TraceStore(str(tmp_path / "traces.db")) as store:
+        created = store.create_policy_revision(
+            policy_version="policy-v2",
+            policy_data={"read_only_tools": ["db_query"], "write_tools": []},
+            created_by="ops-1",
+            change_summary="tighten writes",
+        )
+        assert created["status"] == "draft"
+
+        reviewed = store.review_policy_revision(
+            revision_id=created["revision_id"],
+            reviewed_by="security-1",
+            review_notes="approved",
+        )
+        assert reviewed["status"] == "review"
+
+        published = store.publish_policy_revision(
+            revision_id=created["revision_id"],
+            published_by="ops-2",
+        )
+        assert published["status"] == "published"
+        assert published["published_by"] == "ops-2"
+
+        listed = store.list_policy_revisions()
+        assert len(listed) == 1
+        assert listed[0]["revision_id"] == created["revision_id"]
 
 
 def test_trace_store_binds_session_tenant_and_filters_sessions(tmp_path) -> None:

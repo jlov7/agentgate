@@ -285,6 +285,35 @@ class ApprovalWorkflowDelegateRequest(BaseModel):
     to_approver: str = Field(..., min_length=1, description="Delegate approver identity")
 
 
+class PolicyLifecycleDraftRequest(BaseModel):
+    """Request payload to create a policy lifecycle draft."""
+
+    policy_version: str = Field(..., min_length=1, description="Logical policy version label")
+    policy_data: dict[str, Any] = Field(..., description="Policy bundle payload")
+    created_by: str | None = Field(default=None, description="Draft author identity")
+    change_summary: str | None = Field(default=None, description="Optional change summary")
+
+
+class PolicyLifecycleReviewRequest(BaseModel):
+    """Request payload to submit a policy draft for review."""
+
+    reviewed_by: str = Field(..., min_length=1, description="Reviewer identity")
+    review_notes: str | None = Field(default=None, description="Optional review notes")
+
+
+class PolicyLifecyclePublishRequest(BaseModel):
+    """Request payload to publish a reviewed policy revision."""
+
+    published_by: str = Field(..., min_length=1, description="Publisher identity")
+
+
+class PolicyLifecycleRollbackRequest(BaseModel):
+    """Request payload to roll back a published policy revision."""
+
+    target_revision_id: str = Field(..., min_length=1, description="Revision to restore")
+    rolled_back_by: str = Field(..., min_length=1, description="Rollback operator")
+
+
 class ReplayRun(BaseModel):
     """Replay job metadata for counterfactual policy analysis."""
 

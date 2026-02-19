@@ -178,6 +178,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - [x] Implement P0-019 scale/perf validation at release target traffic.
 - [x] Implement P0-020 external security assessment closure package.
 - [x] Implement P1-001 approval workflow engine (multi-step, expiry, delegation).
+- [x] Implement P1-002 policy lifecycle system (draft/review/publish/rollback).
 - [ ] Continue sequential execution of P1/P2 backlog to completion.
 
 ## Surprises & Discoveries
@@ -207,6 +208,7 @@ Deliver all remaining requirements needed for production-grade release readiness
 - After P0-019 success, prioritize P0-020 external security assessment closure package.
 - After P0-020 success, prioritize P1-001 approval workflow engine.
 - After P1-001 success, prioritize P1-002 policy lifecycle system.
+- After P1-002 success, prioritize P1-003 Rego quality gates.
 
 ## Outcomes & Retrospective
 - P0-017 completed with RED->GREEN->verify->doctor loop.
@@ -284,3 +286,9 @@ Deliver all remaining requirements needed for production-grade release readiness
 - Added approval admin APIs for workflow create/get/approve/delegate and bound workflow tokens to session/tool pairs in policy evaluation.
 - Added approval workflow request models and runtime approval verifier wiring in policy client path while retaining existing static-token compatibility.
 - Evidence: `.venv/bin/pytest tests/test_approvals.py tests/test_gateway.py tests/test_policy.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+- P1-002 completed with RED->GREEN->verify->doctor loop.
+- Added persisted policy lifecycle storage and migration (`v7`) in trace store with draft/review/publish/rollback transitions and revision history APIs.
+- Added policy lifecycle admin APIs (`/admin/policies/lifecycle/*`) for draft creation, review, publish, rollback, and revision retrieval/listing.
+- Added runtime policy-application wiring on publish/rollback to refresh policy evaluation state and rate-limit controls without restart.
+- Added regression tests covering lifecycle transitions, publish gating, rollback restoration behavior, and trace-store lifecycle persistence.
+- Evidence: `.venv/bin/pytest tests/test_policy_lifecycle.py tests/test_traces.py -q` pass, `.venv/bin/pytest tests/test_main.py tests/test_policy.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
