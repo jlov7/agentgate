@@ -643,7 +643,7 @@ git add README.md docs/ARCHITECTURE.md docs/REPLAY_LAB.md docs/INCIDENT_RESPONSE
 - Unit: `pytest tests/test_replay.py tests/test_quarantine.py tests/test_rollout.py -v`
 - Integration: `pytest tests/integration/test_api_contract.py tests/integration/test_live_stack.py -v`
 - Adversarial: `pytest tests/adversarial -v`
-- E2E: `env -u NO_COLOR npx playwright test tests/e2e/api-happy.spec.ts tests/e2e/api-negative.spec.ts tests/e2e/docs-ui.spec.ts tests/e2e/a11y.spec.ts`
+- E2E: `env -u NO_COLOR npx playwright test tests/e2e/api-happy.spec.ts tests/e2e/api-negative.spec.ts tests/e2e/docs-ui.spec.ts tests/e2e/a11y*.spec.ts`
 - Release: `make verify && ./scripts/doctor.sh && make verify-strict`
 
 ## Risk register

@@ -15,7 +15,7 @@ Scoring rule:
 | Onboarding flow (README -> run -> validate) | 10/10 | `make verify` pass in `artifacts/logs/verify.log` |
 | API docs usability | 10/10 | `tests/e2e/docs-ui.spec.ts`, `artifacts/logs/ux.log` |
 | Error guidance quality | 10/10 | `tests/test_main.py` validation payload tests, `tests/e2e/api-negative.spec.ts` |
-| Accessibility basics | 10/10 | `tests/e2e/a11y.spec.ts`, `artifacts/logs/a11y.log` |
+| Accessibility basics | 10/10 | `tests/e2e/a11y*.spec.ts`, `artifacts/logs/a11y.log` |
 | Evidence report trustworthiness | 10/10 | `docs/showcase/evidence.json` single-run totals (`5` calls) + signature present |
 | Cross-device docs behavior | 10/10 | `docs/UX_AUDIT.md` mobile/desktop captures |
 

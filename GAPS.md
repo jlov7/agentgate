@@ -39,7 +39,7 @@ Status values: `Ready`, `In Progress`, `Blocked`, `Done`.
 
 ### GAP-P1-001 — Missing dedicated accessibility smoke gate
 - Priority: P1
-- Evidence: No `tests/e2e/a11y.spec.ts`.
+- Evidence: No dedicated accessibility Playwright suite in release gates.
 - Impacted journey: Docs/API UI accessibility confidence.
 - Fix strategy: Add Playwright a11y smoke test and include gate in doctor.
 - Status: Done
