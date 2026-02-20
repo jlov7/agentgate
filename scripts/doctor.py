@@ -58,7 +58,7 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         name="a11y",
         gate="RG-04",
         description="Accessibility smoke checks",
-        command="env -u NO_COLOR npx playwright test tests/e2e/a11y.spec.ts",
+        command="env -u NO_COLOR npx playwright test tests/e2e/a11y*.spec.ts",
     ),
     CheckSpec(
         name="perf",
