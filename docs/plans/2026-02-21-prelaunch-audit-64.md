@@ -116,3 +116,15 @@ Status legend: `[x]` pass, `[-]` blocked/pending.
 - Release candidate tag: `v0.2.2-rc.1` pushed to origin.
 - Reproducibility evidence: clean-clone bootstrap + full gate passed (`PYTHON_BIN=python3.12 make setup`, `npm ci`, `npx playwright install chromium`, `make verify`).
 - Final local gate stamp: `scripts/doctor.sh` passed with `overall_status: pass` after clearing an external port occupancy conflict from leftover repro containers.
+
+## Post-Audit Continuity Refresh (2026-02-20)
+
+- Current release-ready head commit: `02caffd579b6cae10d607decc1591777a1d03543`.
+- Main CI evidence on current head:
+  - `CI` success `22244537273` (<https://github.com/jlov7/agentgate/actions/runs/22244537273>)
+  - `CodeQL` success `22244537260` (<https://github.com/jlov7/agentgate/actions/runs/22244537260>)
+  - `Scorecard` success `22244537249` (<https://github.com/jlov7/agentgate/actions/runs/22244537249>)
+  - `Docs` success `22244537244` (<https://github.com/jlov7/agentgate/actions/runs/22244537244>)
+- Local gates revalidated on current head:
+  - `make verify-strict` pass
+  - `scripts/doctor.sh` pass (`overall_status: pass`)
