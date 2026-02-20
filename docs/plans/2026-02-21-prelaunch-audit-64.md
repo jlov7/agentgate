@@ -119,8 +119,8 @@ Status legend: `[x]` pass, `[-]` blocked/pending.
 
 ## Post-Audit Continuity Refresh (2026-02-20)
 
-- Current release-ready head commit: `02caffd579b6cae10d607decc1591777a1d03543`.
-- Main CI evidence on current head:
+- Validated continuity snapshot commit: `02caffd579b6cae10d607decc1591777a1d03543`.
+- Main CI evidence on that snapshot:
   - `CI` success `22244537273` (<https://github.com/jlov7/agentgate/actions/runs/22244537273>)
   - `CodeQL` success `22244537260` (<https://github.com/jlov7/agentgate/actions/runs/22244537260>)
   - `Scorecard` success `22244537249` (<https://github.com/jlov7/agentgate/actions/runs/22244537249>)
@@ -128,3 +128,12 @@ Status legend: `[x]` pass, `[-]` blocked/pending.
 - Local gates revalidated on current head:
   - `make verify-strict` pass
   - `scripts/doctor.sh` pass (`overall_status: pass`)
+
+## Continuity Snapshot Follow-up (2026-02-20)
+
+- Validated continuity snapshot commit: `377fa0370232faa3524023543ef41c02b049b1b7`.
+- Main CI evidence on that snapshot:
+  - `CI` success `22244949862` (<https://github.com/jlov7/agentgate/actions/runs/22244949862>)
+  - `CodeQL` success `22244949879` (<https://github.com/jlov7/agentgate/actions/runs/22244949879>)
+  - `Scorecard` success `22244949834` (<https://github.com/jlov7/agentgate/actions/runs/22244949834>)
+  - `Docs` success `22244949868` (<https://github.com/jlov7/agentgate/actions/runs/22244949868>)
