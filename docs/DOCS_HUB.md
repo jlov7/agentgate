@@ -8,6 +8,7 @@ Welcome to the AgentGate documentation. Choose your path based on your role and 
 
 | I want to... | Start here |
 |--------------|------------|
+| **Get role-based routing and onboarding** | [Start Here](GET_STARTED.md) |
 | **Try AgentGate in 5 minutes** | [Try in 5 Minutes](TRY_NOW.md) |
 | **Run an interactive hosted scenario replay** | [Interactive Demo Lab](DEMO_LAB.md) |
 | **Run a polished demo-day flow** | [Demo Day Playbook](DEMO_DAY.md) |
@@ -37,7 +38,7 @@ Welcome to the AgentGate documentation. Choose your path based on your role and 
 
 ### For Technical Teams
 - **[Main README](https://github.com/jlov7/agentgate/blob/main/README.md)** — Technical overview, architecture, API reference, and quickstart guide
-- **API Documentation (local runtime)** — Run AgentGate locally, then open `http://localhost:8000/docs`
+- **API Documentation** — Use your deployed `<base-url>/docs` endpoint, or run locally and open `/docs`.
 - **[Architecture](ARCHITECTURE.md)** — Data flow and policy decision diagrams
 - **[Showcase Artifacts](showcase/README.md)** — Evidence pack, metrics snapshot, and logs
 - **[Sample Evidence Pack](showcase/evidence.html)** — Example of evidence export output

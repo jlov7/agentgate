@@ -1,0 +1,14 @@
+{
+  "persona": "compliance_reviewer",
+  "goal": "Review evidence integrity and control mappings",
+  "recommended_route": [
+    "OPERATIONAL_TRUST_LAYER",
+    "COMPLIANCE_MAPPINGS",
+    "SUPPORT_TIERS"
+  ],
+  "primary_artifacts": [
+    "artifacts/security-closure.json",
+    "artifacts/support-bundle.json",
+    "artifacts/compliance-mappings.json"
+  ]
+}

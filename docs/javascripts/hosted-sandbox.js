@@ -77,6 +77,9 @@
       return;
     }
 
+    const passCount = state.runs.filter((entry) => entry.matchedExpectation).length;
+    const failCount = state.runs.length - passCount;
+
     const rows = state.runs
       .map((run) => {
         const stateClass = run.matchedExpectation ? "pass" : "fail";
@@ -96,7 +99,13 @@
       })
       .join("");
 
-    panel.innerHTML = rows;
+    panel.innerHTML = `
+      <div class="ag-lab-signature">
+        <span>Run summary</span>
+        <strong>${passCount} pass · ${failCount} fail</strong>
+      </div>
+      ${rows}
+    `;
   }
 
   function renderFlowButtons() {
@@ -106,8 +115,12 @@
     }
     panel.innerHTML = state.flows
       .map(
-        (flow) =>
-          `<button class="ag-lab-chip" data-flow-id="${escapeHtml(flow.id)}">${escapeHtml(flow.title)}</button>`,
+        (flow) => `
+          <button class="ag-lab-chip" data-flow-id="${escapeHtml(flow.id)}" title="${escapeHtml(flow.description)}">
+            ${escapeHtml(flow.title)}
+            <code>${escapeHtml(flow.expected_status)}</code>
+          </button>
+        `,
       )
       .join("");
   }
@@ -227,6 +240,15 @@
         <label>Tenant ID <input data-field="tenant-id" type="text" placeholder="tenant-01"></label>
         <label>Admin API Key <input data-field="admin-key" type="password" placeholder="optional"></label>
         <label>Requested Version <input data-field="requested-version" type="text" value="2026-02-17"></label>
+      </div>
+      <div class="ag-next-steps">
+        <h3>Credential Helper</h3>
+        <ul>
+          <li><code>Base URL</code> is required.</li>
+          <li><code>X-Tenant-ID</code> is optional unless tenant isolation is enforced.</li>
+          <li><code>X-API-Key</code> is required for admin-only flows.</li>
+          <li><code>X-AgentGate-Requested-Version</code> validates compatibility with your deployment.</li>
+        </ul>
       </div>
       <div class="ag-lab-controls">
         <div data-slot="flows" class="ag-lab-chip-row"></div>

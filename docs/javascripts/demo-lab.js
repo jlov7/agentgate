@@ -107,6 +107,10 @@
         <p>${escapeHtml(scenario.why_it_matters)}</p>
       </div>
       <div class="ag-lab-signature">
+        <span>Scenario progress</span>
+        <strong>${Math.min(revealCount, (scenario.timeline || []).length)} / ${(scenario.timeline || []).length} timeline events revealed</strong>
+      </div>
+      <div class="ag-lab-signature">
         <span>Signed evidence</span>
         <strong>${escapeHtml(scenario.signature.algorithm)} · ${escapeHtml(scenario.signature.digest)}</strong>
       </div>
@@ -116,6 +120,8 @@
           <div class="ag-lab-metrics">${metricRows(scenario.blast_radius || {})}</div>
         </section>
         <section>
+          <h3>What to watch</h3>
+          <ul>${listRows((scenario.timeline || []).slice(0, 2).map((entry) => entry.event))}</ul>
           <h3>Non-technical talk track</h3>
           <ul>${listRows(scenario.non_technical_script || [])}</ul>
           <h3>Technical talk track</h3>

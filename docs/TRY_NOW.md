@@ -1,5 +1,7 @@
 # Try AgentGate in 5 Minutes
 
+<div data-ag-context></div>
+
 ## One command
 
 ```bash
@@ -32,3 +34,12 @@ What `make try` does:
 - Run `make setup` if `.venv` is missing.
 - Start Docker Desktop and retry.
 - Check `docs/showcase/summary.json` and `docs/showcase/showcase.log` for the failure reason.
+
+<div class="ag-next-steps">
+  <h3>Next Best Actions</h3>
+  <ol>
+    <li><a href="HOSTED_SANDBOX/">Run live API flows in hosted sandbox</a></li>
+    <li><a href="DEMO_LAB/">Walk through scenario narratives and blast radius</a></li>
+    <li><a href="JOURNEYS/">Move to role-based production journeys</a></li>
+  </ol>
+</div>

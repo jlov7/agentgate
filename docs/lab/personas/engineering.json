@@ -1,0 +1,15 @@
+{
+  "persona": "platform_engineer",
+  "goal": "Integrate API workflows and stage rollouts safely",
+  "recommended_route": [
+    "HOSTED_SANDBOX",
+    "TRY_NOW",
+    "TENANT_ROLLOUTS",
+    "OBSERVABILITY_PACK"
+  ],
+  "primary_artifacts": [
+    "docs/showcase/summary.json",
+    "artifacts/load-test-summary.json",
+    "artifacts/perf-validation.json"
+  ]
+}

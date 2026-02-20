@@ -1,5 +1,7 @@
 # Replay Lab
 
+<div data-ag-context></div>
+
 Use policy replay to compare historical decisions against alternate policy snapshots.
 
 ## Quickstart
@@ -60,3 +62,12 @@ python scripts/replay_report.py --db traces.db --run-id <run_id> --output artifa
 - `drifted_events`: count of decisions that changed between baseline and candidate.
 - `by_severity`: categorized impact (critical/high/medium/low).
 - Use the report to validate whether candidate policy changes are safe to promote.
+
+<div class="ag-next-steps">
+  <h3>Next Best Actions</h3>
+  <ol>
+    <li><a href="TENANT_ROLLOUTS/">Promote validated policy through staged rollout</a></li>
+    <li><a href="INCIDENT_RESPONSE/">Prepare incident response guardrails for risky changes</a></li>
+    <li><a href="OPERATIONAL_TRUST_LAYER/">Export artifacts for trust and audit review</a></li>
+  </ol>
+</div>

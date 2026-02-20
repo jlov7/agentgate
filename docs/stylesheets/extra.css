@@ -345,3 +345,250 @@ body {
     transform: translateY(0);
   }
 }
+
+.ag-shell-bar {
+  display: grid;
+  gap: 0.7rem;
+  border: 1px solid var(--ag-line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.ag-shell-title {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ag-ink-muted);
+  font-weight: 700;
+}
+
+.ag-shell-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ag-shell-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--ag-line);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: #fff;
+  font-size: 0.82rem;
+}
+
+.ag-shell-chip strong {
+  color: var(--ag-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+}
+
+.ag-shell-edit {
+  justify-self: start;
+}
+
+.ag-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+  margin: 0.8rem 0 1.1rem;
+}
+
+.ag-card {
+  border: 1px solid var(--ag-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ag-card h3 {
+  margin: 0;
+}
+
+.ag-card p {
+  margin: 0;
+  color: var(--ag-ink-muted);
+}
+
+.ag-card a {
+  font-weight: 700;
+}
+
+.ag-tag {
+  display: inline-block;
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px solid var(--ag-line);
+  padding: 0.15rem 0.45rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ag-ink-muted);
+  background: rgba(14, 124, 123, 0.08);
+}
+
+.ag-next-steps {
+  border: 1px dashed var(--ag-line);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.ag-next-steps h3 {
+  margin-top: 0;
+}
+
+.ag-checklist {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid var(--ag-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  padding: 0.8rem;
+}
+
+.ag-check {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  font-size: 0.96rem;
+}
+
+.ag-check input {
+  margin-top: 0.15rem;
+}
+
+.ag-next-state {
+  margin-top: 0.7rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--ag-line);
+  background: rgba(14, 124, 123, 0.08);
+}
+
+.ag-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.8rem;
+  color: var(--ag-ink-muted);
+}
+
+.ag-breadcrumb a {
+  text-decoration: none;
+  color: var(--ag-ink-muted);
+}
+
+.ag-breadcrumb a:hover {
+  color: var(--ag-accent);
+}
+
+.ag-breadcrumb-sep {
+  opacity: 0.6;
+}
+
+.ag-tour-list {
+  margin-top: 0.45rem;
+}
+
+.ag-command-launch {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 999;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.6rem 0.9rem;
+  background: var(--ag-accent);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 28px rgba(11, 29, 26, 0.25);
+  cursor: pointer;
+}
+
+.ag-command-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.ag-command-modal--open {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.ag-command-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 29, 26, 0.55);
+}
+
+.ag-command-panel {
+  position: relative;
+  margin: 8vh auto;
+  width: min(720px, 92vw);
+  max-height: 82vh;
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid var(--ag-line);
+  background: #fff;
+  padding: 1rem;
+  box-shadow: 0 24px 60px rgba(11, 29, 26, 0.3);
+}
+
+.ag-command-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.ag-command-head h2 {
+  margin: 0;
+}
+
+.ag-command-copy {
+  color: var(--ag-ink-muted);
+}
+
+.ag-command-links {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ag-command-link {
+  border: 1px solid var(--ag-line);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--ag-ink);
+  background: rgba(247, 241, 233, 0.45);
+}
+
+.ag-command-link:hover {
+  border-color: var(--ag-accent);
+}
+
+@media (max-width: 768px) {
+  .ag-command-launch {
+    right: 0.7rem;
+    bottom: 0.7rem;
+    padding: 0.5rem 0.75rem;
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "persona": "security_lead",
+  "goal": "Validate policy safety and containment controls",
+  "recommended_route": [
+    "REPLAY_LAB",
+    "INCIDENT_RESPONSE",
+    "TENANT_ROLLOUTS"
+  ],
+  "primary_artifacts": [
+    "artifacts/replay-report.json",
+    "artifacts/incident-report.json",
+    "artifacts/rollout-report.json"
+  ]
+}

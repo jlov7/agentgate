@@ -1,0 +1,13 @@
+{
+  "persona": "executive_sponsor",
+  "goal": "Understand risk reduction and launch confidence quickly",
+  "recommended_route": [
+    "EXEC_SUMMARY",
+    "DEMO_LAB",
+    "OPERATIONAL_TRUST_LAYER"
+  ],
+  "primary_artifacts": [
+    "docs/showcase/evidence.html",
+    "docs/showcase/proof-bundle-latest.zip"
+  ]
+}

@@ -203,3 +203,18 @@ Completed
   - Release-candidate tag pushed (`v0.2.2-rc.1`).
   - Clean-clone reproducibility run passed (`make setup` + `npm ci` + Playwright install + `make verify`).
   - `scripts/doctor.sh` re-run and passing (`overall_status: pass`).
+
+## 2026-02-20 UX Transformation Execution
+
+- Active plan: `docs/plans/2026-02-20-ux-transformation-master-plan.md`
+- Active tracker: `docs/plans/2026-02-20-ux-transformation-execution-tracker.md`
+- Completed in this slice:
+  - Journey-oriented navigation and Start Here routing pages.
+  - Global UX shell (`quick actions`, `workspace context`, `onboarding checklist + resume`).
+  - Guided next-step panels across core journey pages.
+  - Sandbox/demo UX clarity improvements.
+  - Regression coverage (`tests/test_ux_shell_assets.py`).
+- Verification:
+  - `make verify` pass
+  - `scripts/doctor.sh` pass (`overall_status: pass`)
+- Tracker status: 24 done, 2 in progress, 74 todo.

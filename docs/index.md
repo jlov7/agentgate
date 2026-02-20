@@ -1,13 +1,15 @@
+<div data-ag-context></div>
+
 <div class="ag-hero">
   <div class="ag-hero__copy">
     <p class="ag-eyebrow">Containment-first security gateway</p>
     <h1>AgentGate</h1>
     <p class="ag-lede">Stop, approve, and evidence every AI tool call in real time.</p>
     <div class="ag-cta">
+      <a class="ag-btn" href="GET_STARTED/">Start Here</a>
       <a class="ag-btn" href="TRY_NOW/">Try in 5 minutes</a>
-      <a class="ag-btn" href="EXEC_SUMMARY/">Executive Summary</a>
-      <a class="ag-btn ag-btn--ghost" href="DEMO_SCRIPT/">60-second demo</a>
-      <a class="ag-btn ag-btn--ghost" href="DEMO_LAB/">Interactive Demo Lab</a>
+      <a class="ag-btn ag-btn--ghost" href="HOSTED_SANDBOX/">Hosted Sandbox</a>
+      <a class="ag-btn ag-btn--ghost" href="JOURNEYS/">Journey Map</a>
     </div>
     <div class="ag-kpis">
       <div class="ag-kpi">
@@ -73,6 +75,15 @@ flowchart LR
 ```bash
 make setup && make try
 ```
+
+<div class="ag-next-steps">
+  <h3>Next Best Actions</h3>
+  <ol>
+    <li><a href="GET_STARTED/">Pick your role and route</a></li>
+    <li><a href="HOSTED_SANDBOX/">Run no-install hosted sandbox flows</a></li>
+    <li><a href="DEMO_LAB/">Replay high-impact scenarios</a></li>
+  </ol>
+</div>
 
 ## Proof Paths
 - Executive overview: `EXEC_SUMMARY.md`

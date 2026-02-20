@@ -258,6 +258,38 @@ Deliver all remaining requirements needed for production-grade release readiness
 - P0-002 completed with RED->GREEN->verify->doctor loop.
 - Removed static admin API-key fallback, added strict secret baseline validation mode, and implemented admin API-key rotation endpoint with regression coverage and full gate pass evidence (`make verify`, `scripts/doctor.sh`).
 - P0-005 completed with RED->GREEN->verify->doctor loop.
+
+---
+
+# UX Transformation Program ExecPlan
+
+## Purpose / Big Picture
+Transform AgentGate UX from documentation-heavy navigation into role-based, guided journeys with lower friction onboarding and clearer operational workflow progression while preserving release-gate quality.
+
+## Progress
+- [x] Create UX research + strategy plan (`docs/plans/2026-02-20-ux-transformation-master-plan.md`).
+- [x] Create executable 100-item tracker with explicit statuses (`docs/plans/2026-02-20-ux-transformation-execution-tracker.md`).
+- [x] Implement Phase 1 foundation slice:
+  - journey-oriented navigation groups in `mkdocs.yml`
+  - Start Here, Journey Map, Workspaces pages
+  - global UX shell (`docs/javascripts/ux-shell.js`) with quick actions, context banner, onboarding checklist persistence
+  - next-step guidance pattern across key journey pages
+  - sandbox/demo UX micro-improvements
+- [x] Add regression coverage (`tests/test_ux_shell_assets.py`).
+- [x] Re-run full quality gates (`make verify`, `scripts/doctor.sh`).
+- [ ] Continue implementing remaining 74 tracker items across all tracks.
+
+## Surprises & Discoveries
+- Existing docs/test architecture supports rapid UX shell iteration without backend risk.
+- Journey guidance and context framing can be introduced safely in MkDocs prior to a full app-shell migration.
+
+## Decision Log
+- Ship UX transformation incrementally with tracker-backed status, not a monolithic rewrite.
+- Prioritize IA + onboarding + workflow guidance first because they reduce friction fastest.
+
+## Outcomes & Retrospective
+- Initial UX transformation slice is live and verified; tracker now records 24/100 done, 2 in progress, 74 todo.
+- All release gates still pass after UX changes (`overall_status: pass`).
 - Added Postgres DSN detection and optional psycopg-backed trace-store adapter while preserving existing SQLite behavior.
 - Added SQL compatibility normalization for qmark placeholders and SQLite autoincrement declarations in the Postgres adapter path.
 - Added regression tests for DSN detection, SQL normalization behavior, and explicit error when psycopg is unavailable.
