@@ -65,6 +65,9 @@ demo_recording.log
 evidence_*.json
 evidence_*.pdf
 traces.db
+artifacts/
+site/
+docs/showcase/proof-bundle-try-*.zip
 
 # Secrets (never commit these)
 .env

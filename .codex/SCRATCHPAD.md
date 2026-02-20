@@ -198,4 +198,8 @@ Completed
   - `scripts/doctor.sh` pass (`overall_status: pass`)
   - `make load-test` + perf validation pass
   - `make staging-reset`, `make staging-smoke`, `make try`, and `bash demo/run_demo.sh` pass
-- Remaining closure step before declaring 64/64 complete: final push + confirm latest `main` CI green + tag final release commit.
+- Final closure completed:
+  - `main` CI green for launch candidate commit (`22241654897`).
+  - Release-candidate tag pushed (`v0.2.2-rc.1`).
+  - Clean-clone reproducibility run passed (`make setup` + `npm ci` + Playwright install + `make verify`).
+  - `scripts/doctor.sh` re-run and passing (`overall_status: pass`).
