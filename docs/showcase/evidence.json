@@ -2,22 +2,22 @@
   "anomalies": [],
   "integrity": {
     "event_count": 5,
-    "hash": "060023c03a86a97b291df7268780b8e6443d25cb2563a27d586336d1031d1938",
+    "hash": "f80d09edb5d1116add980d65542b3e191af4b15664bf1646ca51c068a5cbe7e2",
     "hash_algorithm": "sha256",
-    "signature": "2a0ee922a488df08809ed3e42def32c69664c835d9868d505815e00e479f4dc8",
+    "signature": "17ecc87d123bfbd0ce1d22fad34b1f2e8507941beeb1a7c115a1a3a5372b16c1",
     "signature_algorithm": "hmac-sha256",
-    "signed_at": "2026-02-20T20:31:11.046313+00:00",
+    "signed_at": "2026-02-20T23:39:43.347134+00:00",
     "transparency_algorithm": "sha256-merkle-v1",
-    "transparency_root": "011c95ccf751aefc1c815343b96743649be06ac4e39269f78efd883dac2bc92a"
+    "transparency_root": "e50c76e051702e0c138e7f1896f0b440d7bf0b8041efaa80f356a3fabebcc903"
   },
   "metadata": {
     "agent_id": null,
-    "generated_at": "2026-02-20T20:31:10.329211+00:00",
+    "generated_at": "2026-02-20T23:39:42.354234+00:00",
     "generator": "AgentGate v0.2.1",
-    "session_id": "try-20260220T203110Z",
+    "session_id": "try-20260220T233942Z",
     "time_range": {
-      "end": "2026-02-20T20:31:10.324656+00:00",
-      "start": "2026-02-20T20:31:10.272891+00:00"
+      "end": "2026-02-20T23:39:42.350186+00:00",
+      "start": "2026-02-20T23:39:42.308958+00:00"
     },
     "user_id": null,
     "version": "1.0.0"
@@ -99,60 +99,60 @@
       "decision": "ALLOW",
       "duration_ms": 0,
       "error": null,
-      "event_id": "34c6276a-a7e9-4378-afb2-9f926d10cbc6",
+      "event_id": "161c1788-c444-4d4d-ae1c-6aad6aa8b94e",
       "matched_rule": "read_only_tools",
       "reason": "Read-only tool",
-      "timestamp": "2026-02-20T20:31:10.272891+00:00",
+      "timestamp": "2026-02-20T23:39:42.308958+00:00",
       "tool_name": "db_query"
     },
     {
       "decision": "REQUIRE_APPROVAL",
       "duration_ms": null,
       "error": "Approval required: Write action requires human approval",
-      "event_id": "e6398a3e-b91f-4793-92e5-89b7b2a0eb27",
+      "event_id": "990ffd43-a829-4132-8845-0df76348339b",
       "matched_rule": "write_requires_approval",
       "reason": "Write action requires human approval",
-      "timestamp": "2026-02-20T20:31:10.285013+00:00",
+      "timestamp": "2026-02-20T23:39:42.318935+00:00",
       "tool_name": "db_insert"
     },
     {
       "decision": "ALLOW",
       "duration_ms": 0,
       "error": null,
-      "event_id": "f552534a-0b37-4d8a-89ca-783c3614f6a3",
+      "event_id": "da746a19-6c52-4894-b4f6-390d172f61c1",
       "matched_rule": "write_with_approval",
       "reason": "Write action approved",
-      "timestamp": "2026-02-20T20:31:10.295650+00:00",
+      "timestamp": "2026-02-20T23:39:42.328017+00:00",
       "tool_name": "db_insert"
     },
     {
       "decision": "DENY",
       "duration_ms": null,
       "error": "Policy denied: Tool not in allowlist",
-      "event_id": "6bd5616b-a3a0-4d3f-aa81-fb8c6e2f15fb",
+      "event_id": "d9fa32db-0041-4a87-bd6b-f96c6413258b",
       "matched_rule": "unknown_tool",
       "reason": "Tool not in allowlist",
-      "timestamp": "2026-02-20T20:31:10.307095+00:00",
+      "timestamp": "2026-02-20T23:39:42.337426+00:00",
       "tool_name": "hack_the_planet"
     },
     {
       "decision": "DENY",
       "duration_ms": null,
       "error": "Policy denied: Kill switch: Showcase completed",
-      "event_id": "e779851b-c948-47f3-a8a7-7f768338398f",
+      "event_id": "4cf51cf2-280a-4788-8bdb-b8c90aa3d7a2",
       "matched_rule": "kill_switch",
       "reason": "Kill switch: Showcase completed",
-      "timestamp": "2026-02-20T20:31:10.324656+00:00",
+      "timestamp": "2026-02-20T23:39:42.350186+00:00",
       "tool_name": "db_query"
     }
   ],
   "write_action_log": [
     {
       "approved_by": "token",
-      "event_id": "f552534a-0b37-4d8a-89ca-783c3614f6a3",
+      "event_id": "da746a19-6c52-4894-b4f6-390d172f61c1",
       "pre_state_ref": null,
       "reversible": true,
-      "timestamp": "2026-02-20T20:31:10.295650+00:00",
+      "timestamp": "2026-02-20T23:39:42.328017+00:00",
       "tool_name": "db_insert"
     }
   ]
