@@ -1,4 +1,4 @@
-.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e mutate load-smoke load-test load-test-remote staging-smoke staging-reset risk-tune usage-meter compliance-map check-docker rego-quality verify verify-strict doctor scorecard product-audit security-closure support-bundle
+.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e a11y-smoke mutate load-smoke load-test load-test-remote staging-smoke staging-reset risk-tune usage-meter compliance-map check-docker rego-quality docs-ux-lint verify verify-strict doctor scorecard product-audit security-closure support-bundle
 
 # ============================================================================
 # Development
@@ -73,6 +73,9 @@ ai-evals:
 e2e:
 	env -u NO_COLOR npx playwright test
 
+a11y-smoke:
+	env -u NO_COLOR npx playwright test tests/e2e/a11y*.spec.ts
+
 mutate:
 	@if [ "$$(uname -s)" != "Linux" ]; then \
 		echo "Skipping mutmut on non-Linux host. Mutation gating is enforced in Linux CI."; \
@@ -134,9 +137,11 @@ verify:
 	.venv/bin/pytest tests/ -v -m "not integration and not evals" --cov=src/agentgate --cov-report=term --cov-report=xml
 	$(MAKE) check-docker
 	$(MAKE) rego-quality
+	$(MAKE) docs-ux-lint
 	.venv/bin/pytest tests/integration -v -m integration
 	.venv/bin/pytest tests/evals -v -m evals
 	.venv/bin/python evals/run_evals.py
+	$(MAKE) a11y-smoke
 	env -u NO_COLOR npx playwright test
 
 check-docker:
@@ -144,6 +149,9 @@ check-docker:
 
 rego-quality:
 	.venv/bin/python scripts/rego_quality.py --policy-dir policies --output artifacts/rego-quality.json --coverage-threshold 0.90 --require-pass
+
+docs-ux-lint:
+	.venv/bin/python scripts/docs_ux_lint.py --output artifacts/docs-ux-lint.json
 
 verify-strict: verify mutate
 

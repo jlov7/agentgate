@@ -16,6 +16,9 @@ def test_mkdocs_nav_includes_start_page_and_journeys() -> None:
     assert "Persona Kits: PERSONA_KITS.md" in mkdocs_text
     assert "Content Style Guide: CONTENT_STYLE_GUIDE.md" in mkdocs_text
     assert "Frontend UX Architecture: FRONTEND_ARCHITECTURE.md" in mkdocs_text
+    assert "UX Phase Gates: UX_PHASE_GATES.md" in mkdocs_text
+    assert "UX Review Rubric: UX_REVIEW_RUBRIC.md" in mkdocs_text
+    assert "UX Persona Test Plan: UX_PERSONA_TEST_PLAN.md" in mkdocs_text
 
 
 def test_ux_shell_javascript_is_published() -> None:
@@ -42,3 +45,14 @@ def test_persona_kits_exist_for_core_roles() -> None:
     assert (base / "security.json").exists()
     assert (base / "engineering.json").exists()
     assert (base / "compliance.json").exists()
+
+
+def test_ux_governance_docs_exist() -> None:
+    assert (ROOT / "docs" / "IA_OWNERSHIP_MAP.md").exists()
+    assert (ROOT / "docs" / "UX_GLOSSARY.md").exists()
+    assert (ROOT / "docs" / "UX_PHASE_GATES.md").exists()
+    assert (ROOT / "docs" / "UX_REVIEW_RUBRIC.md").exists()
+    assert (ROOT / "docs" / "UX_PERSONA_TEST_PLAN.md").exists()
+    assert (ROOT / "docs" / "UX_LAUNCH_PLAYBOOK.md").exists()
+    assert (ROOT / "docs" / "UX_MONITORING_RUNBOOK.md").exists()
+    assert (ROOT / "docs" / "UX_MAINTENANCE_MODEL.md").exists()

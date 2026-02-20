@@ -2,6 +2,10 @@
 
 <div data-ag-context></div>
 
+## Quick Start Summary
+
+Run one command to generate signed evidence artifacts and a proof bundle, then continue to hosted and operational journeys.
+
 ## One command
 
 ```bash

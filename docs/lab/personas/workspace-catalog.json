@@ -1,0 +1,77 @@
+[
+  {
+    "persona": "executive",
+    "headline": "Executive workspace",
+    "kpis": [
+      {"label": "Risk reduction", "value": "-38% critical exposure"},
+      {"label": "Go-live confidence", "value": "92/100"},
+      {"label": "Incidents contained", "value": "17 this month"}
+    ],
+    "actions": [
+      "Review trust posture",
+      "Validate launch gate",
+      "Share executive proof bundle"
+    ],
+    "default_layout": ["kpis", "narrative", "actions"]
+  },
+  {
+    "persona": "security",
+    "headline": "Security workspace",
+    "kpis": [
+      {"label": "Policy drift events", "value": "12 (24h)"},
+      {"label": "High-risk sessions", "value": "3 active"},
+      {"label": "Quarantine queue", "value": "2 pending review"}
+    ],
+    "actions": [
+      "Run replay delta analysis",
+      "Execute quarantine decision",
+      "Publish incident summary"
+    ],
+    "default_layout": ["kpis", "timeline", "actions"]
+  },
+  {
+    "persona": "engineering",
+    "headline": "Engineering workspace",
+    "kpis": [
+      {"label": "API health", "value": "99.96%"},
+      {"label": "Canary gate", "value": "Pass"},
+      {"label": "Integration status", "value": "All checks green"}
+    ],
+    "actions": [
+      "Run hosted sandbox",
+      "Compare rollout stages",
+      "Inspect observability pack"
+    ],
+    "default_layout": ["kpis", "controls", "actions"]
+  },
+  {
+    "persona": "compliance",
+    "headline": "Compliance workspace",
+    "kpis": [
+      {"label": "Evidence exports", "value": "41 signed"},
+      {"label": "Control mapping", "value": "100% coverage"},
+      {"label": "Legal hold status", "value": "2 active holds"}
+    ],
+    "actions": [
+      "Open evidence center",
+      "Validate signature lineage",
+      "Package support bundle"
+    ],
+    "default_layout": ["kpis", "evidence", "actions"]
+  },
+  {
+    "persona": "ops",
+    "headline": "Operations workspace",
+    "kpis": [
+      {"label": "Active alerts", "value": "4 open"},
+      {"label": "Rollback readiness", "value": "Ready"},
+      {"label": "Runbook freshness", "value": "Updated 2h ago"}
+    ],
+    "actions": [
+      "Triage live alerts",
+      "Open rollback runbook",
+      "Confirm on-call handoff"
+    ],
+    "default_layout": ["kpis", "alerts", "actions"]
+  }
+]

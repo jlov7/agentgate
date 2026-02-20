@@ -25,6 +25,32 @@ nav:
   - Build and Deploy:
       - Architecture: ARCHITECTURE.md
       - Frontend UX Architecture: FRONTEND_ARCHITECTURE.md
+      - Staging Reset: STAGING_RESET.md
+  - Trust and Operations:
+      - Operational Trust Layer: OPERATIONAL_TRUST_LAYER.md
+  - Learn:
+      - Understanding AgentGate: UNDERSTANDING_AGENTGATE.md
+      - Content Style Guide: CONTENT_STYLE_GUIDE.md
+      - Component Inventory: COMPONENT_INVENTORY.md
+      - Component Library: COMPONENT_LIBRARY.md
+      - Motion Guide: MOTION_GUIDE.md
+      - Contrast Compatibility Plan: CONTRAST_COMPATIBILITY_PLAN.md
+      - UX Glossary: UX_GLOSSARY.md
+      - IA Ownership Map: IA_OWNERSHIP_MAP.md
+      - UX Phase Gates: UX_PHASE_GATES.md
+      - UX Review Rubric: UX_REVIEW_RUBRIC.md
+      - UX Persona Test Plan: UX_PERSONA_TEST_PLAN.md
+      - Accessibility Gates: ACCESSIBILITY_GATES.md
+      - UX WCAG Audit: UX_WCAG_AUDIT.md
+      - UX Analytics Dashboard: UX_ANALYTICS_DASHBOARD.md
+      - Usability Test Protocol: USABILITY_TEST_PROTOCOL.md
+      - Design Partner Pilot Findings: DESIGN_PARTNER_PILOT_FINDINGS.md
+      - UX Launch Playbook: UX_LAUNCH_PLAYBOOK.md
+      - UX Monitoring Runbook: UX_MONITORING_RUNBOOK.md
+      - UX Maintenance Model: UX_MAINTENANCE_MODEL.md
+      - UX Audit: UX_AUDIT.md
+  - Reference:
+      - Docs Hub: DOCS_HUB.md
       - Kubernetes Deployment: KUBERNETES_DEPLOYMENT.md
       - Terraform Deployment: TERRAFORM_DEPLOYMENT.md
       - Distributed Tracing: OBSERVABILITY_TRACING.md
@@ -33,18 +59,10 @@ nav:
       - Adaptive Risk Tuning: ADAPTIVE_RISK_TUNING.md
       - Usage Metering: USAGE_METERING.md
       - Compliance Mappings: COMPLIANCE_MAPPINGS.md
-      - Staging Reset: STAGING_RESET.md
-  - Trust and Operations:
-      - Operational Trust Layer: OPERATIONAL_TRUST_LAYER.md
       - Status Page: STATUS_PAGE.md
       - SLA and SLO: SLA_SLO.md
       - Support Tiers: SUPPORT_TIERS.md
       - Threat Model: THREAT_MODEL.md
-  - Learn:
-      - Understanding AgentGate: UNDERSTANDING_AGENTGATE.md
-      - Content Style Guide: CONTENT_STYLE_GUIDE.md
-      - UX Audit: UX_AUDIT.md
-      - Docs Hub: DOCS_HUB.md
       - Showcase Artifacts: showcase/README.md
 
 theme:
@@ -85,6 +103,9 @@ extra_css:
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js
   - javascripts/mermaid-init.js
+  - javascripts/ux-analytics.js
   - javascripts/ux-shell.js
+  - javascripts/workspaces.js
+  - javascripts/workflow-shell.js
   - javascripts/demo-lab.js
   - javascripts/hosted-sandbox.js

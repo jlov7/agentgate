@@ -4,9 +4,15 @@
 
 Use this hosted lab to replay three high-impact AgentGate scenarios with blast-radius metrics and signed evidence context.
 
+## Quick Start Summary
+
+Pick a scenario, choose persona scripts, replay the timeline, and export a proof bundle for stakeholders.
+
 - **Policy drift replay**
 - **Live quarantine + credential revocation**
 - **Signed tenant canary rollout + auto-rollback**
+
+Choose persona scripts in the lab to switch between executive and technical storytelling.
 
 <div id="ag-demo-lab" class="ag-lab" data-scenarios="../lab/scenarios/policy-drift.json,../lab/scenarios/quarantine-revocation.json,../lab/scenarios/tenant-canary-rollback.json"></div>
 

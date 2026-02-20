@@ -209,12 +209,16 @@ Completed
 - Active plan: `docs/plans/2026-02-20-ux-transformation-master-plan.md`
 - Active tracker: `docs/plans/2026-02-20-ux-transformation-execution-tracker.md`
 - Completed in this slice:
-  - Journey-oriented navigation and Start Here routing pages.
-  - Global UX shell (`quick actions`, `workspace context`, `onboarding checklist + resume`).
-  - Guided next-step panels across core journey pages.
-  - Sandbox/demo UX clarity improvements.
-  - Regression coverage (`tests/test_ux_shell_assets.py`).
+  - Workflow shell rebuild for Replay/Incident/Rollout with stepper, risk explorer, and summary generation.
+  - Hosted sandbox expansion with mock mode, safe sample tenant, TTV timeline, trial report, and production handoff wizard.
+  - Persona-driven demo scripting and role workspace engine with saved views, terminology mode, adaptive defaults, and admin policy lock.
+  - Visual-system hardening (tokens, components, skeleton loading, motion + contrast plans).
+  - Accessibility gates and regression coverage (`a11y-smoke`, keyboard/zoom checks, WCAG audit doc, aria-live/focus management).
+  - UX telemetry layer with funnel events, experiments, friction diagnostics, health scorecard, and feedback capture dashboard.
+  - Launch-readiness artifacts: visual regression suite scaffold, usability protocol, and design-partner pilot findings.
 - Verification:
+  - `.venv/bin/mkdocs build --strict` pass
+  - `env -u NO_COLOR make a11y-smoke` pass
   - `make verify` pass
   - `scripts/doctor.sh` pass (`overall_status: pass`)
-- Tracker status: 24 done, 2 in progress, 74 todo.
+- Tracker status: 100 done, 0 in progress, 0 todo.

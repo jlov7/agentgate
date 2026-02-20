@@ -2,15 +2,71 @@
 
 <div data-ag-context></div>
 
-Use policy replay to compare historical decisions against alternate policy snapshots.
+Run deterministic policy replays with a guided workflow: select traces, compare policy versions, inspect deltas, apply a patch, and save a regression test.
 
-## Quickstart
+## Quick Start Summary
 
-1. Capture a session (run any tools).
-2. Submit a replay run with baseline and candidate policy data.
-3. Review the replay summary and deltas.
+Run replay against a candidate policy, prioritize deltas by severity, generate a patch and regression test, then promote safely.
 
-### API
+<div
+  class="ag-workflow"
+  data-ag-workflow
+  data-workflow-kind="replay"
+  data-steps="Select traces;;Compare policies;;Review deltas;;Apply patch;;Save test"
+  data-replay-deltas="../lab/workflows/replay-deltas.json"
+>
+  <div class="ag-workflow-header">
+    <h3>Replay Decision Workflow</h3>
+    <p class="ag-workflow-status" data-slot="status"></p>
+  </div>
+
+  <div data-slot="stepper"></div>
+
+  <section class="ag-workflow-panel" data-step-panel="0">
+    <h4>Select traces</h4>
+    <p>Choose the target tenant/session cohort and snapshot window to keep replay deterministic.</p>
+    <ul>
+      <li>Tenant: <code>tenant-a</code></li>
+      <li>Trace window: last 24 hours</li>
+      <li>Session filter: quarantined + near-threshold</li>
+    </ul>
+  </section>
+
+  <section class="ag-workflow-panel" data-step-panel="1" hidden>
+    <h4>Compare policies</h4>
+    <p>Run baseline vs candidate policy versions to surface allow/deny drift.</p>
+    <div class="ag-risk ag-risk--info">
+      <strong>Current compare:</strong> <code>v2.3.1</code> -> <code>v2.4.0</code>
+    </div>
+  </section>
+
+  <section class="ag-workflow-panel" data-step-panel="2" hidden>
+    <h4>Review deltas</h4>
+    <p>Use the explorer to prioritize by severity, then inspect tenant and session impact.</p>
+    <div data-slot="delta-groups"></div>
+  </section>
+
+  <section class="ag-workflow-panel" data-step-panel="3" hidden>
+    <h4>Apply patch</h4>
+    <p>Generate a focused Rego patch and a regression test from the highest-severity delta.</p>
+    <div class="ag-workflow-controls">
+      <button class="ag-btn" type="button" data-action="generate-replay-test">Generate patch + test</button>
+      <button class="ag-btn ag-btn--ghost" type="button" data-action="apply-patch">Apply patch</button>
+    </div>
+    <div data-slot="generated-test"></div>
+    <div data-slot="patch-status"></div>
+  </section>
+
+  <section class="ag-workflow-panel" data-step-panel="4" hidden>
+    <h4>Save test</h4>
+    <p>Save the generated regression test to lock behavior before rollout promotion.</p>
+    <pre><code>python scripts/replay_report.py --db traces.db --run-id &lt;run_id&gt; --output artifacts/replay-report.json</code></pre>
+  </section>
+
+  <div data-slot="controls"></div>
+</div>
+
+## API Commands
 
 ```bash
 curl -X POST http://localhost:8000/admin/replay/runs \
@@ -34,34 +90,9 @@ curl -X POST http://localhost:8000/admin/replay/runs \
 ```
 
 ```bash
-curl http://localhost:8000/admin/replay/runs/<run_id> \
-  -H "X-API-Key: $AGENTGATE_ADMIN_API_KEY"
-```
-
-```bash
 curl http://localhost:8000/admin/replay/runs/<run_id>/report \
   -H "X-API-Key: $AGENTGATE_ADMIN_API_KEY"
 ```
-
-### CLI
-
-```bash
-python -m agentgate --replay-run replay.json --admin-key "$AGENTGATE_ADMIN_API_KEY"
-```
-
-### Report Artifact
-
-Generate a standalone report from a trace database:
-
-```bash
-python scripts/replay_report.py --db traces.db --run-id <run_id> --output artifacts/replay-report.json
-```
-
-## Interpreting Results
-
-- `drifted_events`: count of decisions that changed between baseline and candidate.
-- `by_severity`: categorized impact (critical/high/medium/low).
-- Use the report to validate whether candidate policy changes are safe to promote.
 
 <div class="ag-next-steps">
   <h3>Next Best Actions</h3>

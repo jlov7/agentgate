@@ -275,21 +275,31 @@ Transform AgentGate UX from documentation-heavy navigation into role-based, guid
   - global UX shell (`docs/javascripts/ux-shell.js`) with quick actions, context banner, onboarding checklist persistence
   - next-step guidance pattern across key journey pages
   - sandbox/demo UX micro-improvements
-- [x] Add regression coverage (`tests/test_ux_shell_assets.py`).
+- [x] Implement workflow rebuild system (`docs/javascripts/workflow-shell.js`) and guided Replay/Incident/Rollout steppers.
+- [x] Implement hosted trial deepening (`mock mode`, `time-to-value`, `trial report`, `handoff wizard`) and persona-aware demo scripting.
+- [x] Implement role workspaces engine (`docs/javascripts/workspaces.js`) with adaptive defaults, saved views, terminology mode, and admin policy lock behavior.
+- [x] Implement UX content QA and IA controls (`Reference` nav area, `scripts/docs_ux_lint.py`, quick-start and CTA lint rules).
+- [x] Implement visual system architecture and governance docs (tokens, component inventory/library, motion and contrast plans, skeleton loading states).
+- [x] Implement accessibility hardening and CI gates (`make a11y-smoke`, `tests/e2e/a11y-regression.spec.ts`, `docs/ACCESSIBILITY_GATES.md`, `docs/UX_WCAG_AUDIT.md`).
+- [x] Implement UX telemetry and experimentation layer (`docs/javascripts/ux-analytics.js`, `docs/UX_ANALYTICS_DASHBOARD.md`).
+- [x] Implement launch-readiness UX artifacts (visual regression suite scaffold, usability protocol, design partner pilot findings).
+- [x] Add comprehensive regression coverage for all UX slices.
 - [x] Re-run full quality gates (`make verify`, `scripts/doctor.sh`).
-- [ ] Continue implementing remaining 74 tracker items across all tracks.
 
 ## Surprises & Discoveries
 - Existing docs/test architecture supports rapid UX shell iteration without backend risk.
 - Journey guidance and context framing can be introduced safely in MkDocs prior to a full app-shell migration.
+- Local analytics and workspace adaptation can be added without backend coupling by using deterministic browser-side event contracts.
 
 ## Decision Log
 - Ship UX transformation incrementally with tracker-backed status, not a monolithic rewrite.
 - Prioritize IA + onboarding + workflow guidance first because they reduce friction fastest.
+- Enforce UX quality with executable checks (`docs_ux_lint`, a11y smoke, regression asset tests) so docs and JS cannot silently regress.
 
 ## Outcomes & Retrospective
-- Initial UX transformation slice is live and verified; tracker now records 24/100 done, 2 in progress, 74 todo.
-- All release gates still pass after UX changes (`overall_status: pass`).
+- UX transformation program is now recorded as 100/100 closed in the execution tracker.
+- All release gates still pass after the full UX implementation (`make verify` pass, `scripts/doctor.sh` pass with `overall_status: pass`).
+- UX delivery now includes role-based workspaces, guided workflow shells, trial conversion improvements, a11y gates, telemetry dashboards, and launch protocol artifacts.
 - Added Postgres DSN detection and optional psycopg-backed trace-store adapter while preserving existing SQLite behavior.
 - Added SQL compatibility normalization for qmark placeholders and SQLite autoincrement declarations in the Postgres adapter path.
 - Added regression tests for DSN detection, SQL normalization behavior, and explicit error when psycopg is unavailable.

@@ -1,0 +1,42 @@
+[
+  {
+    "severity": "critical",
+    "tenant_id": "tenant-a",
+    "session_id": "sess-1172",
+    "change": "allow -> deny",
+    "impact": "Blocks privileged write tool invocation used by finance automation.",
+    "tool": "payments_write",
+    "suggested_patch": "allow { input.tool.name == \"payments_write\"; input.session.risk_score < 80 }",
+    "regression_test": "test_replay_payments_write_low_risk"
+  },
+  {
+    "severity": "high",
+    "tenant_id": "tenant-a",
+    "session_id": "sess-1179",
+    "change": "deny -> allow",
+    "impact": "Unexpected access granted to deprecated export endpoint.",
+    "tool": "legacy_export",
+    "suggested_patch": "deny[msg] { input.tool.name == \"legacy_export\"; msg := \"legacy export blocked\" }",
+    "regression_test": "test_replay_legacy_export_denied"
+  },
+  {
+    "severity": "medium",
+    "tenant_id": "tenant-b",
+    "session_id": "sess-3021",
+    "change": "allow -> deny",
+    "impact": "Read-only dashboard sync denied for one service account.",
+    "tool": "dashboard_sync",
+    "suggested_patch": "allow { input.tool.name == \"dashboard_sync\"; input.actor == \"svc-dashboard\" }",
+    "regression_test": "test_replay_dashboard_sync_service_account"
+  },
+  {
+    "severity": "low",
+    "tenant_id": "tenant-c",
+    "session_id": "sess-4418",
+    "change": "deny -> deny",
+    "impact": "No behavioral change; metadata drift only.",
+    "tool": "customer_delete",
+    "suggested_patch": "# no patch required",
+    "regression_test": "test_replay_customer_delete_stays_denied"
+  }
+]

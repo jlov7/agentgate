@@ -1,0 +1,30 @@
+[
+  {
+    "time": "2026-02-20T18:01:12Z",
+    "state": "risk_detected",
+    "action": "High-risk threshold exceeded",
+    "rationale": "Risk score crossed 92 with two blocked write attempts.",
+    "rollback_preview": "No rollback needed yet."
+  },
+  {
+    "time": "2026-02-20T18:01:19Z",
+    "state": "quarantine_pending",
+    "action": "Quarantine decision requested",
+    "rationale": "Policy requires operator confirmation for revocation scope.",
+    "rollback_preview": "Release session if false positive confirmed."
+  },
+  {
+    "time": "2026-02-20T18:01:33Z",
+    "state": "credentials_revoked",
+    "action": "Scoped credentials revoked",
+    "rationale": "Containment enforced to stop further external writes.",
+    "rollback_preview": "Reissue scoped token after remediation checklist."
+  },
+  {
+    "time": "2026-02-20T18:03:05Z",
+    "state": "session_released",
+    "action": "Session released with guardrails",
+    "rationale": "Operator completed remediation and signed release note.",
+    "rollback_preview": "Rollback release and re-quarantine if anomaly returns."
+  }
+]

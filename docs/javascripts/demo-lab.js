@@ -13,6 +13,7 @@
     scenarios: [],
     activeId: "",
     replayTimer: null,
+    personaMode: "executive",
   };
 
   function escapeHtml(value) {
@@ -22,6 +23,22 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#39;");
+  }
+
+  function emitUxEvent(name, props) {
+    window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
+  }
+
+  function formatErrorState(whatHappened, why, howToFix, docsPath) {
+    return [
+      '<article class="ag-empty" role="alert">',
+      "<h4>Unable to load demo lab</h4>",
+      `<p><strong>What happened:</strong> ${escapeHtml(whatHappened)}</p>`,
+      `<p><strong>Why:</strong> ${escapeHtml(why)}</p>`,
+      `<p><strong>How to fix:</strong> ${escapeHtml(howToFix)}</p>`,
+      `<p><a href="${escapeHtml(docsPath)}">Open docs</a></p>`,
+      "</article>",
+    ].join("");
   }
 
   function activeScenario() {
@@ -75,6 +92,27 @@
       .join("");
   }
 
+  function scriptRows(scenario) {
+    const executiveScript = scenario.non_technical_script || [];
+    const technicalScript = scenario.technical_script || [];
+    if (state.personaMode === "engineering") {
+      return {
+        title: "Technical talk track",
+        rows: technicalScript,
+      };
+    }
+    if (state.personaMode === "security") {
+      return {
+        title: "Security talk track",
+        rows: technicalScript,
+      };
+    }
+    return {
+      title: "Executive talk track",
+      rows: executiveScript,
+    };
+  }
+
   function renderDetails(revealCount) {
     const scenario = activeScenario();
     if (!scenario) {
@@ -100,6 +138,8 @@
       ? `<h4>Rollout lineage</h4><pre><code>${escapeHtml(JSON.stringify(scenario.lineage, null, 2))}</code></pre>`
       : "";
 
+    const script = scriptRows(scenario);
+
     root.querySelector("[data-slot='scenario-detail']").innerHTML = `
       <div class="ag-lab-headline">
         <p class="ag-eyebrow">${escapeHtml(scenario.tagline)}</p>
@@ -122,10 +162,8 @@
         <section>
           <h3>What to watch</h3>
           <ul>${listRows((scenario.timeline || []).slice(0, 2).map((entry) => entry.event))}</ul>
-          <h3>Non-technical talk track</h3>
-          <ul>${listRows(scenario.non_technical_script || [])}</ul>
-          <h3>Technical talk track</h3>
-          <ul>${listRows(scenario.technical_script || [])}</ul>
+          <h3>${escapeHtml(script.title)}</h3>
+          <ul>${listRows(script.rows)}</ul>
         </section>
       </div>
       <section>
@@ -152,12 +190,15 @@
     let revealCount = 0;
     renderDetails(revealCount);
     const totalSteps = (scenario.timeline || []).length;
+    emitUxEvent("demo_replay_started", { scenario_id: scenario.id, persona: state.personaMode });
 
     state.replayTimer = window.setInterval(() => {
       revealCount += 1;
       renderDetails(revealCount);
+      emitUxEvent("demo_replay_progress", { scenario_id: scenario.id, reveal_count: revealCount });
       if (revealCount >= totalSteps) {
         stopReplay();
+        emitUxEvent("demo_replay_completed", { scenario_id: scenario.id, persona: state.personaMode });
       }
     }, 700);
   }
@@ -170,6 +211,7 @@
 
     const bundle = {
       generated_at: new Date().toISOString(),
+      persona_mode: state.personaMode,
       scenario,
       call_to_action: {
         try_now: "Run `make try` locally.",
@@ -184,6 +226,7 @@
     anchor.download = `${scenario.id}-proof-bundle.json`;
     anchor.click();
     URL.revokeObjectURL(url);
+    emitUxEvent("demo_proof_bundle_exported", { scenario_id: scenario.id, persona: state.personaMode });
   }
 
   function wireEvents() {
@@ -198,6 +241,7 @@
         stopReplay();
         renderScenarioList();
         renderDetails((activeScenario()?.timeline || []).length);
+        emitUxEvent("demo_scenario_selected", { scenario_id: state.activeId, persona: state.personaMode });
       }
 
       if (target.matches("[data-action='replay']")) {
@@ -206,6 +250,18 @@
 
       if (target.matches("[data-action='download']")) {
         downloadProofBundle();
+      }
+    });
+
+    root.addEventListener("change", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLSelectElement)) {
+        return;
+      }
+      if (target.matches("[data-field='persona-mode']")) {
+        state.personaMode = target.value;
+        renderDetails((activeScenario()?.timeline || []).length);
+        emitUxEvent("demo_persona_changed", { persona: state.personaMode });
       }
     });
   }
@@ -229,11 +285,21 @@
       <div class="ag-lab-controls">
         <div data-slot="scenario-list" class="ag-lab-chip-row"></div>
         <div class="ag-lab-actions">
+          <label>Persona scripts
+            <select data-field="persona-mode">
+              <option value="executive">Executive</option>
+              <option value="security">Security</option>
+              <option value="engineering">Engineering</option>
+            </select>
+          </label>
           <button class="ag-btn" data-action="replay">Replay scenario</button>
           <button class="ag-btn ag-btn--ghost" data-action="download">Download proof bundle</button>
         </div>
       </div>
-      <div data-slot="scenario-detail" class="ag-lab-detail"></div>
+      <div data-slot="scenario-detail" class="ag-lab-detail" aria-live="polite">
+        <div class="ag-skeleton ag-skeleton--line"></div>
+        <div class="ag-skeleton ag-skeleton--card"></div>
+      </div>
     `;
 
     try {
@@ -241,8 +307,15 @@
       renderScenarioList();
       renderDetails((activeScenario()?.timeline || []).length);
       wireEvents();
+      emitUxEvent("demo_loaded", { scenario_count: state.scenarios.length, persona: state.personaMode });
     } catch (error) {
-      root.innerHTML = `<p>Demo Lab failed to load. ${escapeHtml(error instanceof Error ? error.message : String(error))}</p>`;
+      const details = error instanceof Error ? error.message : String(error);
+      root.innerHTML = formatErrorState(
+        details,
+        "Scenario fixtures could not be loaded from the configured paths.",
+        "Verify scenario JSON paths and refresh the page.",
+        "../DEMO_LAB/",
+      );
     }
   }
 

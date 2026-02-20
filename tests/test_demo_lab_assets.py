@@ -42,3 +42,11 @@ def test_demo_lab_page_wires_scenarios() -> None:
     assert "policy-drift.json" in page
     assert "quarantine-revocation.json" in page
     assert "tenant-canary-rollback.json" in page
+    assert "persona scripts" in page.lower()
+
+
+def test_demo_lab_script_supports_persona_switching() -> None:
+    script = (ROOT / "docs" / "javascripts" / "demo-lab.js").read_text(encoding="utf-8")
+    assert "persona" in script.lower()
+    assert "non_technical_script" in script
+    assert "technical_script" in script

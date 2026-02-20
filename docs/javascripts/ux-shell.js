@@ -45,6 +45,10 @@
     }
   }
 
+  function emitUxEvent(name, props) {
+    window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
+  }
+
   function defaultContext() {
     return {
       environment: "staging",
@@ -97,6 +101,7 @@
 
         const next = { environment, tenantId, policyVersion };
         saveJson(CONTEXT_KEY, next);
+        emitUxEvent("context_updated", next);
         mountContextBar();
       });
     }
@@ -140,10 +145,13 @@
     launch.className = "ag-command-launch";
     launch.type = "button";
     launch.textContent = "Quick Actions";
+    launch.setAttribute("aria-haspopup", "dialog");
+    launch.setAttribute("aria-controls", "ag-command-modal");
 
     const modal = document.createElement("div");
     modal.id = "ag-command-modal";
     modal.className = "ag-command-modal";
+    modal.setAttribute("aria-hidden", "true");
     modal.innerHTML = [
       '<div class="ag-command-overlay" data-action="close"></div>',
       '<div class="ag-command-panel" role="dialog" aria-modal="true" aria-label="Quick actions">',
@@ -160,12 +168,33 @@
       "</div>",
     ].join("");
 
+    let lastFocused = null;
+
+    function focusableNodes() {
+      return Array.from(
+        modal.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((node) => node instanceof HTMLElement && !node.hasAttribute("disabled"));
+    }
+
     function open() {
+      lastFocused = document.activeElement;
       modal.classList.add("ag-command-modal--open");
+      modal.setAttribute("aria-hidden", "false");
+      const first = focusableNodes()[0];
+      if (first instanceof HTMLElement) {
+        first.focus();
+      }
+      emitUxEvent("quick_actions_opened");
     }
 
     function close() {
       modal.classList.remove("ag-command-modal--open");
+      modal.setAttribute("aria-hidden", "true");
+      if (lastFocused instanceof HTMLElement) {
+        lastFocused.focus();
+      }
     }
 
     launch.addEventListener("click", open);
@@ -176,6 +205,8 @@
       }
       if (target.dataset.action === "close") {
         close();
+      } else if (target.matches(".ag-command-link")) {
+        emitUxEvent("quick_action_navigate", { label: target.textContent ? target.textContent.trim() : "" });
       }
     });
 
@@ -183,6 +214,22 @@
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         open();
+      }
+      if (modal.classList.contains("ag-command-modal--open") && event.key === "Tab") {
+        const nodes = focusableNodes();
+        if (nodes.length === 0) {
+          return;
+        }
+        const first = nodes[0];
+        const last = nodes[nodes.length - 1];
+        const active = document.activeElement;
+        if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        } else if (event.shiftKey && active === first) {
+          event.preventDefault();
+          last.focus();
+        }
       }
       if (event.key === "Escape") {
         close();
@@ -250,10 +297,16 @@
       }
       progress[index] = target.checked;
       saveJson(CHECKLIST_KEY, progress);
+      emitUxEvent("onboarding_step_toggled", { step_index: index, checked: target.checked });
+      const allDone = tasks.every((_, taskIndex) => Boolean(progress[taskIndex]));
+      if (allDone) {
+        emitUxEvent("onboarding_completed");
+      }
       render();
     });
 
     render();
+    emitUxEvent("onboarding_viewed");
     saveJson(RETURNING_KEY, { seen: true, updated_at: new Date().toISOString() });
   }
 
@@ -280,6 +333,7 @@
           return;
         }
         saveJson(key, { seen: true, updated_at: new Date().toISOString() });
+        emitUxEvent("orientation_tip_dismissed", { tip: node.getAttribute("data-ag-tip") || "" });
         node.remove();
       });
     }
@@ -319,6 +373,7 @@
         return;
       }
       saveJson(TOUR_KEY, { done: true, updated_at: new Date().toISOString() });
+      emitUxEvent("tour_completed");
       mountStartTour();
     });
   }
@@ -330,6 +385,7 @@
     mountOnboardingChecklist();
     mountContextTips();
     mountStartTour();
+    emitUxEvent("page_view", { path: window.location.pathname });
   }
 
   if (document.readyState === "loading") {

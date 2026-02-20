@@ -4,30 +4,19 @@
 
 AgentGate workspaces are role-oriented views over the same backend control system.
 
-## Workspace Catalog
+## Quick Start Summary
 
-<div class="ag-card-grid">
-  <article class="ag-card">
-    <h3>Executive Workspace</h3>
-    <p>Outcome KPIs, trust posture, and launch confidence indicators.</p>
-    <a href="EXEC_SUMMARY/">Open executive view</a>
-  </article>
-  <article class="ag-card">
-    <h3>Security Workspace</h3>
-    <p>Policy drift, incidents, quarantine actions, and risk trends.</p>
-    <a href="REPLAY_LAB/">Open security controls</a>
-  </article>
-  <article class="ag-card">
-    <h3>Engineering Workspace</h3>
-    <p>Integration health, rollout controls, and observability signals.</p>
-    <a href="TENANT_ROLLOUTS/">Open rollout controls</a>
-  </article>
-  <article class="ag-card">
-    <h3>Compliance Workspace</h3>
-    <p>Evidence exports, controls mapping, and supportability artifacts.</p>
-    <a href="OPERATIONAL_TRUST_LAYER/">Open trust layer</a>
-  </article>
-</div>
+Select a persona workspace, switch terminology mode, save tenant-specific views, and use adaptive defaults to reduce setup friction.
+
+<div id="ag-workspaces" class="ag-lab" data-personas="../lab/personas/workspace-catalog.json"></div>
+
+## Workspace Capabilities
+
+1. Executive workspace with KPI narrative tiles and business language.
+2. Security workspace for policy drift, incident risk, and quarantine queue.
+3. Engineering workspace for API health, integration status, and rollout controls.
+4. Compliance workspace for evidence exports and control mapping shortcuts.
+5. Ops workspace for active alerts, runbooks, and rollback quick actions.
 
 ## Design Rule
 

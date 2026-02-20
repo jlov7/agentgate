@@ -28,6 +28,8 @@ def test_hosted_sandbox_doc_wires_trial_component() -> None:
     page = (ROOT / "docs" / "HOSTED_SANDBOX.md").read_text(encoding="utf-8")
     assert "id=\"ag-hosted-sandbox\"" in page
     assert "data-flows=\"../lab/sandbox/flows.json\"" in page
+    assert "Safe sample tenant mode" in page
+    assert "Trial-to-production handoff" in page
 
 
 def test_hosted_sandbox_is_discoverable_in_docs_and_readme() -> None:
@@ -37,3 +39,12 @@ def test_hosted_sandbox_is_discoverable_in_docs_and_readme() -> None:
     assert "Hosted Browser Sandbox: HOSTED_SANDBOX.md" in mkdocs_text
     assert "javascripts/hosted-sandbox.js" in mkdocs_text
     assert "[Hosted Browser Sandbox](docs/HOSTED_SANDBOX.md)" in readme_text
+
+
+def test_hosted_sandbox_script_supports_mock_ttv_and_handoff() -> None:
+    script = (ROOT / "docs" / "javascripts" / "hosted-sandbox.js").read_text(encoding="utf-8")
+
+    assert "mock mode" in script.lower()
+    assert "time-to-value" in script.lower()
+    assert "trial report" in script.lower()
+    assert "handoff" in script.lower()
