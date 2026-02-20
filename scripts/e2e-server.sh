@@ -29,6 +29,7 @@ fi
 redis_db="$((RANDOM % 16))"
 export AGENTGATE_REDIS_URL="redis://localhost:6379/${redis_db}"
 export AGENTGATE_TRACE_DB="${TMPDIR:-/tmp}/agentgate-e2e-${$}.db"
+PORT="${PORT:-18080}"
 rm -f "${AGENTGATE_TRACE_DB}"
 
 cleanup() {
@@ -37,4 +38,4 @@ cleanup() {
 }
 trap cleanup EXIT
 
-exec .venv/bin/uvicorn agentgate.main:app --host 127.0.0.1 --port 8000
+exec .venv/bin/uvicorn agentgate.main:app --host 127.0.0.1 --port "${PORT}"

@@ -1,29 +1,23 @@
 {
-  "anomalies": [
-    {
-      "description": "Tool used only once across all sessions",
-      "event_ids": [
-        "039d66bd-83b2-4c52-977c-7d4e045a8f25"
-      ],
-      "type": "unusual_tool"
-    }
-  ],
+  "anomalies": [],
   "integrity": {
     "event_count": 5,
-    "hash": "bef886185e0adcea17aca08147f400b1bdc65b69fabcd9dcdf1a4a97eb785bf9",
+    "hash": "060023c03a86a97b291df7268780b8e6443d25cb2563a27d586336d1031d1938",
     "hash_algorithm": "sha256",
-    "signature": "cbea498bd53f3efe511b6317fa70e66ea3ee27e66064421112c3a1355c26bcbd",
+    "signature": "2a0ee922a488df08809ed3e42def32c69664c835d9868d505815e00e479f4dc8",
     "signature_algorithm": "hmac-sha256",
-    "signed_at": "2026-02-14T16:52:40.752099+00:00"
+    "signed_at": "2026-02-20T20:31:11.046313+00:00",
+    "transparency_algorithm": "sha256-merkle-v1",
+    "transparency_root": "011c95ccf751aefc1c815343b96743649be06ac4e39269f78efd883dac2bc92a"
   },
   "metadata": {
     "agent_id": null,
-    "generated_at": "2026-02-14T16:52:40.752008+00:00",
+    "generated_at": "2026-02-20T20:31:10.329211+00:00",
     "generator": "AgentGate v0.2.1",
-    "session_id": "showcase",
+    "session_id": "try-20260220T203110Z",
     "time_range": {
-      "end": "2026-02-14T16:52:40.749339+00:00",
-      "start": "2026-02-14T16:52:40.705780+00:00"
+      "end": "2026-02-20T20:31:10.324656+00:00",
+      "start": "2026-02-20T20:31:10.272891+00:00"
     },
     "user_id": null,
     "version": "1.0.0"
@@ -105,60 +99,60 @@
       "decision": "ALLOW",
       "duration_ms": 0,
       "error": null,
-      "event_id": "f6e45ede-8a7a-4a01-9468-74c6f422533a",
+      "event_id": "34c6276a-a7e9-4378-afb2-9f926d10cbc6",
       "matched_rule": "read_only_tools",
       "reason": "Read-only tool",
-      "timestamp": "2026-02-14T16:52:40.705780+00:00",
+      "timestamp": "2026-02-20T20:31:10.272891+00:00",
       "tool_name": "db_query"
-    },
-    {
-      "decision": "DENY",
-      "duration_ms": null,
-      "error": "Policy denied: Tool not in allowlist",
-      "event_id": "039d66bd-83b2-4c52-977c-7d4e045a8f25",
-      "matched_rule": "unknown_tool",
-      "reason": "Tool not in allowlist",
-      "timestamp": "2026-02-14T16:52:40.722038+00:00",
-      "tool_name": "hack_the_planet"
     },
     {
       "decision": "REQUIRE_APPROVAL",
       "duration_ms": null,
       "error": "Approval required: Write action requires human approval",
-      "event_id": "9b992fb9-8364-46a6-ba2f-9183c5efe1ff",
+      "event_id": "e6398a3e-b91f-4793-92e5-89b7b2a0eb27",
       "matched_rule": "write_requires_approval",
       "reason": "Write action requires human approval",
-      "timestamp": "2026-02-14T16:52:40.730795+00:00",
+      "timestamp": "2026-02-20T20:31:10.285013+00:00",
       "tool_name": "db_insert"
     },
     {
       "decision": "ALLOW",
       "duration_ms": 0,
       "error": null,
-      "event_id": "41c327a2-45ff-42c2-ae8b-fc4e36525c45",
+      "event_id": "f552534a-0b37-4d8a-89ca-783c3614f6a3",
       "matched_rule": "write_with_approval",
       "reason": "Write action approved",
-      "timestamp": "2026-02-14T16:52:40.738680+00:00",
+      "timestamp": "2026-02-20T20:31:10.295650+00:00",
       "tool_name": "db_insert"
     },
     {
       "decision": "DENY",
       "duration_ms": null,
+      "error": "Policy denied: Tool not in allowlist",
+      "event_id": "6bd5616b-a3a0-4d3f-aa81-fb8c6e2f15fb",
+      "matched_rule": "unknown_tool",
+      "reason": "Tool not in allowlist",
+      "timestamp": "2026-02-20T20:31:10.307095+00:00",
+      "tool_name": "hack_the_planet"
+    },
+    {
+      "decision": "DENY",
+      "duration_ms": null,
       "error": "Policy denied: Kill switch: Showcase completed",
-      "event_id": "ab0e3b9c-18ad-45b7-97cf-7ca63c74b996",
+      "event_id": "e779851b-c948-47f3-a8a7-7f768338398f",
       "matched_rule": "kill_switch",
       "reason": "Kill switch: Showcase completed",
-      "timestamp": "2026-02-14T16:52:40.749339+00:00",
+      "timestamp": "2026-02-20T20:31:10.324656+00:00",
       "tool_name": "db_query"
     }
   ],
   "write_action_log": [
     {
       "approved_by": "token",
-      "event_id": "41c327a2-45ff-42c2-ae8b-fc4e36525c45",
+      "event_id": "f552534a-0b37-4d8a-89ca-783c3614f6a3",
       "pre_state_ref": null,
       "reversible": true,
-      "timestamp": "2026-02-14T16:52:40.738680+00:00",
+      "timestamp": "2026-02-20T20:31:10.295650+00:00",
       "tool_name": "db_insert"
     }
   ]

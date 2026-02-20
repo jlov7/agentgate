@@ -30,6 +30,12 @@ def test_e2e_server_uses_ephemeral_runtime_state() -> None:
     assert 'rm -f "${AGENTGATE_TRACE_DB}"' in script
 
 
+def test_e2e_server_uses_configurable_port() -> None:
+    script = _read_script("scripts/e2e-server.sh")
+    assert 'PORT="${PORT:-18080}"' in script
+    assert '--port "${PORT}"' in script
+
+
 def test_load_server_sets_docker_default_platform_from_daemon_arch() -> None:
     script = _read_script("scripts/load_server.sh")
     assert "DOCKER_DEFAULT_PLATFORM" in script
@@ -37,3 +43,10 @@ def test_load_server_sets_docker_default_platform_from_daemon_arch() -> None:
     assert 'export DOCKER_DEFAULT_PLATFORM="linux/arm64/v8"' in script
     assert 'export DOCKER_DEFAULT_PLATFORM="linux/amd64"' in script
     assert OPA_PULL_SNIPPET in script
+
+
+def test_load_server_derives_port_from_target_url() -> None:
+    script = _read_script("scripts/load_server.sh")
+    assert "resolve_port_from_url()" in script
+    assert 'PORT="$(resolve_port_from_url "${LOAD_TEST_URL:-}")"' in script
+    assert 'PORT="${PORT:-18081}"' in script

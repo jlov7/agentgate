@@ -7,8 +7,9 @@
 |        |___/        Containment-First Security   |
 +---- Containment-first security in 60 seconds ----+
 
-This run will create demo artifacts in: docs/showcase
-Session ID: showcase
+This run will create demo artifacts in: /Users/jasonlovell/Downloads/AgentGate 
+Planning/files/agentgate/docs/showcase
+Session ID: try-20260220T203110Z
 Ensure the AgentGate server is running before continuing.
 
 Step 1/9: Health check
@@ -27,14 +28,14 @@ Allowed tools: db_query, file_read, api_get, rate_limited_tool
 Step 3/9: Allowed read (db_query)
 Decision: ALLOW
 
-Step 4/9: Denied unknown tool
-Decision: DENY
-
-Step 5/9: Write without approval
+Step 4/9: Write without approval
 Decision: REQUIRE_APPROVAL
 
-Step 6/9: Write with approval token
+Step 5/9: Write with approval token
 Decision: ALLOW
+
+Step 6/9: Denied unknown tool
+Decision: DENY
 
 Step 7/9: Activate kill switch
 Kill switch activated
@@ -43,14 +44,23 @@ Step 8/9: Confirm blocked after kill switch
 Decision: DENY
 
 Step 9/9: Export evidence pack
-Evidence JSON saved: docs/showcase/evidence.json
-Evidence HTML saved: docs/showcase/evidence.html
-Evidence PDF saved: docs/showcase/evidence.pdf
-Evidence HTML (light) saved: docs/showcase/evidence-light.html
-Evidence PDF (light) saved: docs/showcase/evidence-light.pdf
-Metrics snapshot saved: docs/showcase/metrics.prom
+Evidence JSON saved: /Users/jasonlovell/Downloads/AgentGate 
+Planning/files/agentgate/docs/showcase/evidence.json
+Evidence HTML saved: /Users/jasonlovell/Downloads/AgentGate 
+Planning/files/agentgate/docs/showcase/evidence.html
+Evidence PDF saved: /Users/jasonlovell/Downloads/AgentGate 
+Planning/files/agentgate/docs/showcase/evidence.pdf
+Evidence HTML (light) saved: /Users/jasonlovell/Downloads/AgentGate 
+Planning/files/agentgate/docs/showcase/evidence-light.html
+Evidence PDF (light) saved: /Users/jasonlovell/Downloads/AgentGate 
+Planning/files/agentgate/docs/showcase/evidence-light.pdf
+Metrics snapshot saved: /Users/jasonlovell/Downloads/AgentGate 
+Planning/files/agentgate/docs/showcase/metrics.prom
 
 Showcase complete. Share these artifacts with stakeholders:
-- docs/showcase/showcase.log
-- docs/showcase/evidence.html
-- docs/showcase/metrics.prom
+- /Users/jasonlovell/Downloads/AgentGate 
+Planning/files/agentgate/docs/showcase/showcase.log
+- /Users/jasonlovell/Downloads/AgentGate 
+Planning/files/agentgate/docs/showcase/evidence.html
+- /Users/jasonlovell/Downloads/AgentGate 
+Planning/files/agentgate/docs/showcase/metrics.prom

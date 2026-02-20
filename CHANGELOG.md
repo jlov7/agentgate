@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - k6-based load testing harness plus `make load-test`/`make load-test-remote` targets.
 - Staging smoke + load runner (`make staging-smoke`) and a scheduled CI load-test job.
 
+### Fixed
+
+- Made Playwright and load-test helper servers use dedicated configurable ports by default to avoid false gate failures when local `:8000` is occupied.
+- Fixed `scripts/staging_smoke.sh` empty optional-args handling under `set -u` and added regression coverage.
+
 ## [0.2.1] - 2026-01-23
 
 ### Fixed

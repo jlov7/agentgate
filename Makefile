@@ -44,10 +44,12 @@ showcase-video:
 showcase-video-silent:
 	VOICEOVER=0 bash demo/record_screen_demo.sh
 
+TRY_BASE_URL ?= http://127.0.0.1:18082
+
 try:
 	$(MAKE) check-docker
 	@test -x .venv/bin/python || { echo "Virtual environment missing. Run 'make setup' first."; exit 1; }
-	AGENTGATE_SIGNING_KEY="$${AGENTGATE_SIGNING_KEY:-try-now-signing-key}" scripts/load_server.sh .venv/bin/python scripts/try_now.py --base-url http://127.0.0.1:8000 --output-dir docs/showcase
+	LOAD_TEST_URL=$(TRY_BASE_URL) AGENTGATE_SIGNING_KEY="$${AGENTGATE_SIGNING_KEY:-try-now-signing-key}" scripts/load_server.sh .venv/bin/python scripts/try_now.py --base-url $(TRY_BASE_URL) --output-dir docs/showcase
 
 # ============================================================================
 # Testing
@@ -88,7 +90,7 @@ LOAD_SMOKE_TIMEOUT ?= 5
 load-smoke:
 	.venv/bin/python scripts/load_smoke.py --url $(LOAD_SMOKE_URL) --total $(LOAD_SMOKE_TOTAL) --concurrency $(LOAD_SMOKE_CONCURRENCY) --timeout $(LOAD_SMOKE_TIMEOUT)
 
-LOAD_TEST_URL ?= http://127.0.0.1:8000
+LOAD_TEST_URL ?= http://127.0.0.1:18081
 LOAD_TEST_VUS ?= 20
 LOAD_TEST_DURATION ?= 30s
 LOAD_TEST_RAMP_UP ?= 10s

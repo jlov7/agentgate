@@ -15,7 +15,11 @@ if [[ "${SMOKE_SKIP_METRICS:-}" == "1" ]]; then
   SMOKE_ARGS+=(--skip-metrics)
 fi
 
-.venv/bin/python scripts/smoke_check.py --base-url "${BASE_URL}" "${SMOKE_ARGS[@]}"
+if (( ${#SMOKE_ARGS[@]} > 0 )); then
+  .venv/bin/python scripts/smoke_check.py --base-url "${BASE_URL}" "${SMOKE_ARGS[@]}"
+else
+  .venv/bin/python scripts/smoke_check.py --base-url "${BASE_URL}"
+fi
 
 export LOAD_TEST_URL="${BASE_URL}"
 ./scripts/run_load_test.sh

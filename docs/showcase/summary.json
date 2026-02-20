@@ -1,14 +1,15 @@
 {
   "artifacts": {
-    "evidence_html": "docs/showcase/evidence.html",
-    "evidence_html_light": "docs/showcase/evidence-light.html",
-    "evidence_json": "docs/showcase/evidence.json",
-    "evidence_pdf": "docs/showcase/evidence.pdf",
-    "evidence_pdf_light": "docs/showcase/evidence-light.pdf",
-    "metrics": "docs/showcase/metrics.prom",
-    "summary": "docs/showcase/summary.json"
+    "evidence_html": "/Users/jasonlovell/Downloads/AgentGate Planning/files/agentgate/docs/showcase/evidence.html",
+    "evidence_html_light": "/Users/jasonlovell/Downloads/AgentGate Planning/files/agentgate/docs/showcase/evidence-light.html",
+    "evidence_json": "/Users/jasonlovell/Downloads/AgentGate Planning/files/agentgate/docs/showcase/evidence.json",
+    "evidence_pdf": "/Users/jasonlovell/Downloads/AgentGate Planning/files/agentgate/docs/showcase/evidence.pdf",
+    "evidence_pdf_light": "/Users/jasonlovell/Downloads/AgentGate Planning/files/agentgate/docs/showcase/evidence-light.pdf",
+    "metrics": "/Users/jasonlovell/Downloads/AgentGate Planning/files/agentgate/docs/showcase/metrics.prom",
+    "showcase_log": "/Users/jasonlovell/Downloads/AgentGate Planning/files/agentgate/docs/showcase/showcase.log",
+    "summary": "/Users/jasonlovell/Downloads/AgentGate Planning/files/agentgate/docs/showcase/summary.json"
   },
-  "base_url": "http://localhost:8000",
+  "base_url": "http://127.0.0.1:18082",
   "health": {
     "opa": true,
     "redis": true,
@@ -22,6 +23,7 @@
     "deny": true,
     "pending": "REQUIRE_APPROVAL"
   },
-  "session_id": "showcase",
-  "timestamp": "2026-02-14T16:52:40.629123+00:00"
+  "session_id": "try-20260220T203110Z",
+  "status": "pass",
+  "timestamp": "2026-02-20T20:31:10.226632+00:00"
 }

@@ -23,7 +23,30 @@ if [[ -n "${DOCKER_DEFAULT_PLATFORM:-}" ]]; then
   docker pull --platform "${DOCKER_DEFAULT_PLATFORM}" openpolicyagent/opa:latest >/dev/null 2>&1 || true
 fi
 
-PORT="${PORT:-8000}"
+resolve_port_from_url() {
+  local url="$1"
+  if [[ -z "${url}" ]]; then
+    return
+  fi
+
+  local no_scheme="${url#*://}"
+  local authority="${no_scheme%%/*}"
+  if [[ "${authority}" == *:* ]]; then
+    printf '%s\n' "${authority##*:}"
+    return
+  fi
+
+  if [[ "${url}" == https://* ]]; then
+    printf '443\n'
+    return
+  fi
+  printf '80\n'
+}
+
+if [[ -z "${PORT:-}" ]]; then
+  PORT="$(resolve_port_from_url "${LOAD_TEST_URL:-}")"
+fi
+PORT="${PORT:-18081}"
 
 "${compose_cmd[@]}" up -d
 

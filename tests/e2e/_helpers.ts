@@ -3,7 +3,7 @@ import { APIRequestContext } from '@playwright/test';
 export async function waitForHealthy(
   request: APIRequestContext,
   {
-    timeoutMs = 30000,
+    timeoutMs = 120000,
     intervalMs = 500,
   }: { timeoutMs?: number; intervalMs?: number } = {},
 ): Promise<void> {
