@@ -95,4 +95,6 @@ class DemoAgent:
 
 
 if __name__ == "__main__":
-    asyncio.run(DemoAgent("http://localhost:8000", "demo_session").run_demo())
+    base_url = os.getenv("AGENTGATE_URL", "http://127.0.0.1:18081")
+    session_id = os.getenv("AGENTGATE_DEMO_SESSION_ID", "demo_session")
+    asyncio.run(DemoAgent(base_url, session_id).run_demo())

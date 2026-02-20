@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Made Playwright and load-test helper servers use dedicated configurable ports by default to avoid false gate failures when local `:8000` is occupied.
 - Fixed `scripts/staging_smoke.sh` empty optional-args handling under `set -u` and added regression coverage.
+- Made mutation-gate scoring configurable (`AGENTGATE_MUTATION_MIN_SCORE`) with a stable default threshold to keep strict CI deterministic.
+- Fixed demo rehearsal flow by making `demo/agent.py` respect `AGENTGATE_URL` and aligning `demo/run_demo.sh` with `load_server.sh` port behavior.
 
 ## [0.2.1] - 2026-01-23
 

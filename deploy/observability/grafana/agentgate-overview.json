@@ -32,6 +32,17 @@
       ]
     },
     {
+      "id": 5,
+      "title": "Request P99 Latency (s)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(agentgate_request_duration_seconds_bucket[5m])))"
+        }
+      ]
+    },
+    {
       "id": 3,
       "title": "Kill Switch Activations",
       "type": "timeseries",

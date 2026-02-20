@@ -9,4 +9,4 @@ if [[ ! -x ".venv/bin/uvicorn" ]]; then
   exit 1
 fi
 
-scripts/load_server.sh .venv/bin/python demo/agent.py
+scripts/load_server.sh env AGENTGATE_URL="http://127.0.0.1:${PORT:-18081}" .venv/bin/python demo/agent.py

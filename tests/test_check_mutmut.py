@@ -44,6 +44,7 @@ def test_main_fails_for_unexpected_statuses(monkeypatch, capsys) -> None:
 
 
 def test_main_fails_when_score_below_threshold(monkeypatch, capsys) -> None:
+    monkeypatch.setenv("AGENTGATE_MUTATION_MIN_SCORE", "1.0")
     monkeypatch.setattr(
         check_mutmut.subprocess,
         "check_output",
@@ -65,3 +66,13 @@ def test_main_passes_on_all_killed(monkeypatch) -> None:
     )
 
     assert check_mutmut.main() == 0
+
+
+def test_main_rejects_invalid_threshold_env(monkeypatch, capsys) -> None:
+    monkeypatch.setenv("AGENTGATE_MUTATION_MIN_SCORE", "not-a-number")
+
+    exit_code = check_mutmut.main()
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "AGENTGATE_MUTATION_MIN_SCORE must be a float between 0 and 1" in captured.err

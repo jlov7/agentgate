@@ -39,6 +39,7 @@ def test_grafana_dashboard_covers_core_metrics() -> None:
     joined = "\n".join(panel_targets)
     assert "agentgate_tool_calls_total" in joined
     assert "agentgate_request_duration_seconds" in joined
+    assert "histogram_quantile(0.99" in joined
     assert "agentgate_kill_switch_activations_total" in joined
 
 

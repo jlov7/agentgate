@@ -184,3 +184,18 @@ Completed
 ## Open Questions
 
 - None.
+
+## 2026-02-20 Launch Audit Closure
+
+- Built exhaustive launch tracker: `docs/plans/2026-02-21-prelaunch-audit-64.md`.
+- Closed runtime/demo blockers:
+  - Mutation gate made configurable with stable default threshold for strict CI.
+  - Demo script port mismatch fixed (`demo/agent.py` + `demo/run_demo.sh`).
+  - Added explicit p99 observability visibility in Grafana dashboard and test coverage.
+- Verification evidence refreshed:
+  - `make verify` pass
+  - `make verify-strict` pass (local mutation skip policy)
+  - `scripts/doctor.sh` pass (`overall_status: pass`)
+  - `make load-test` + perf validation pass
+  - `make staging-reset`, `make staging-smoke`, `make try`, and `bash demo/run_demo.sh` pass
+- Remaining closure step before declaring 64/64 complete: final push + confirm latest `main` CI green + tag final release commit.

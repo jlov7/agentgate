@@ -34,7 +34,7 @@ curl -s http://prometheus:9090/api/v1/rules
 ## What this pack covers
 
 - Decision flow pressure (`agentgate_tool_calls_total`)
-- Request latency SLO risk (`agentgate_request_duration_seconds`)
+- Request latency SLO risk with P95/P99 quantiles (`agentgate_request_duration_seconds`)
 - Containment activations (`agentgate_kill_switch_activations_total`)
 - Excessive denial and latency breach alerts
 
