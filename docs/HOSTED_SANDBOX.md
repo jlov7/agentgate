@@ -39,8 +39,8 @@ Run seeded flows in mock or live mode, export a trial report, then complete the 
 <div class="ag-next-steps">
   <h3>Next Best Actions</h3>
   <ol>
-    <li><a href="TRY_NOW/">Generate local proof bundle artifacts</a></li>
-    <li><a href="DEMO_LAB/">Replay flagship risk scenarios</a></li>
-    <li><a href="JOURNEYS/">Move into role-based journeys</a></li>
+    <li><a href="../TRY_NOW/">Generate local proof bundle artifacts</a></li>
+    <li><a href="../DEMO_LAB/">Replay flagship risk scenarios</a></li>
+    <li><a href="../JOURNEYS/">Move into role-based journeys</a></li>
   </ol>
 </div>

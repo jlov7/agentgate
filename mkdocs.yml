@@ -80,6 +80,15 @@ theme:
     - scheme: default
       primary: teal
       accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
 
 markdown_extensions:
   - admonition
@@ -102,6 +111,7 @@ extra_css:
 
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js
+  - javascripts/ux-utils.js
   - javascripts/mermaid-init.js
   - javascripts/ux-analytics.js
   - javascripts/ux-shell.js

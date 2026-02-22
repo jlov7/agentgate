@@ -1,4 +1,5 @@
 (function () {
+  const ui = window.AgentGateUi || {};
   const root = document.getElementById("ag-demo-lab");
   if (!root) {
     return;
@@ -16,18 +17,28 @@
     personaMode: "executive",
   };
 
-  function escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
-  }
+  const escapeHtml =
+    ui.escapeHtml ||
+    function (value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    };
 
-  function emitUxEvent(name, props) {
-    window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
-  }
+  const emitUxEvent =
+    ui.emitUxEvent ||
+    function (name, props) {
+      window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
+    };
+
+  const resolveDocsHref =
+    ui.resolveDocsHref ||
+    function (path) {
+      return String(path || "");
+    };
 
   function formatErrorState(whatHappened, why, howToFix, docsPath) {
     return [
@@ -236,19 +247,25 @@
         return;
       }
 
-      if (target.matches("[data-scenario-id]")) {
-        state.activeId = target.dataset.scenarioId || "";
+      const scenarioNode = target.closest("[data-scenario-id]");
+      if (scenarioNode instanceof HTMLElement && root.contains(scenarioNode)) {
+        state.activeId = scenarioNode.dataset.scenarioId || "";
         stopReplay();
         renderScenarioList();
         renderDetails((activeScenario()?.timeline || []).length);
         emitUxEvent("demo_scenario_selected", { scenario_id: state.activeId, persona: state.personaMode });
       }
 
-      if (target.matches("[data-action='replay']")) {
+      const actionNode = target.closest("[data-action]");
+      if (!(actionNode instanceof HTMLElement) || !root.contains(actionNode)) {
+        return;
+      }
+
+      if (actionNode.matches("[data-action='replay']")) {
         replayScenario();
       }
 
-      if (target.matches("[data-action='download']")) {
+      if (actionNode.matches("[data-action='download']")) {
         downloadProofBundle();
       }
     });
@@ -276,6 +293,9 @@
         return response.json();
       }),
     );
+    if (!loaded.length) {
+      throw new Error("No scenarios configured.");
+    }
     state.scenarios = loaded;
     state.activeId = loaded[0]?.id || "";
   }
@@ -314,7 +334,7 @@
         details,
         "Scenario fixtures could not be loaded from the configured paths.",
         "Verify scenario JSON paths and refresh the page.",
-        "../DEMO_LAB/",
+        resolveDocsHref("DEMO_LAB/"),
       );
     }
   }

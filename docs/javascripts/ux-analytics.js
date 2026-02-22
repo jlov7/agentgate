@@ -66,13 +66,6 @@
     return getEvents().find((event) => event.name === name) || null;
   }
 
-  function avg(values) {
-    if (!values.length) {
-      return 0;
-    }
-    return values.reduce((acc, value) => acc + value, 0) / values.length;
-  }
-
   function renderDashboard(node) {
     const state = loadState();
     const events = state.events;

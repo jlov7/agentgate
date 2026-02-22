@@ -1,4 +1,5 @@
 (function () {
+  const ui = window.AgentGateUi || {};
   const root = document.getElementById("ag-workspaces");
   if (!root) {
     return;
@@ -8,6 +9,24 @@
   const LAYOUT_KEY = "ag_workspace_layout_v1";
   const VIEWS_KEY = "ag_workspace_saved_views_v1";
   const MODE_KEY = "ag_workspace_terminology_mode_v1";
+  const DEFAULT_WORKSPACE_PATH = "JOURNEYS/";
+  const actionDestinations = {
+    "Review trust posture": "OPERATIONAL_TRUST_LAYER/",
+    "Validate launch gate": "JOURNEYS/",
+    "Share executive proof bundle": "DEMO_DAY/",
+    "Run replay delta analysis": "REPLAY_LAB/",
+    "Execute quarantine decision": "INCIDENT_RESPONSE/",
+    "Publish incident summary": "INCIDENT_RESPONSE/",
+    "Run hosted sandbox": "HOSTED_SANDBOX/",
+    "Compare rollout stages": "TENANT_ROLLOUTS/",
+    "Inspect observability pack": "OBSERVABILITY_PACK/",
+    "Open evidence center": "OPERATIONAL_TRUST_LAYER/",
+    "Validate signature lineage": "THREAT_MODEL/",
+    "Package support bundle": "SUPPORT_TIERS/",
+    "Triage live alerts": "OBSERVABILITY_PACK/",
+    "Open rollback runbook": "INCIDENT_RESPONSE/",
+    "Confirm on-call handoff": "SUPPORT_TIERS/",
+  };
 
   const state = {
     catalog: [],
@@ -18,35 +37,49 @@
     adminPolicyLocked: false,
   };
 
-  function emitUxEvent(name, props) {
-    window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
-  }
+  const emitUxEvent =
+    ui.emitUxEvent ||
+    function (name, props) {
+      window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
+    };
 
-  function escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
-  }
+  const escapeHtml =
+    ui.escapeHtml ||
+    function (value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    };
 
-  function loadJson(key, fallback) {
-    try {
-      const raw = window.localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch (_) {
-      return fallback;
-    }
-  }
+  const loadJson =
+    ui.loadJson ||
+    function (key, fallback) {
+      try {
+        const raw = window.localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (_) {
+        return fallback;
+      }
+    };
 
-  function saveJson(key, value) {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(value));
-    } catch (_) {
-      // Ignore local storage failures.
-    }
-  }
+  const saveJson =
+    ui.saveJson ||
+    function (key, value) {
+      try {
+        window.localStorage.setItem(key, JSON.stringify(value));
+      } catch (_) {
+        // Ignore local storage failures.
+      }
+    };
+
+  const resolveDocsHref =
+    ui.resolveDocsHref ||
+    function (path) {
+      return String(path || "");
+    };
 
   function currentPersona() {
     return state.catalog.find((entry) => entry.persona === state.persona) || state.catalog[0];
@@ -61,6 +94,10 @@
         .replace("Rollback readiness", "Recovery readiness");
     }
     return label;
+  }
+
+  function actionPath(label) {
+    return actionDestinations[label] || DEFAULT_WORKSPACE_PATH;
   }
 
   function adaptiveDefaultPersona() {
@@ -108,7 +145,10 @@
     }
 
     const actions = persona.actions
-      .map((action) => `<li><a href="#" data-action="workspace-action">${escapeHtml(action)}</a></li>`)
+      .map((action) => {
+        const path = actionPath(action);
+        return `<li><a href="${escapeHtml(resolveDocsHref(path))}" data-action="workspace-action" data-action-label="${escapeHtml(action)}" data-action-path="${escapeHtml(path)}">${escapeHtml(action)}</a></li>`;
+      })
       .join("");
 
     const kpiRows = persona.kpis
@@ -164,7 +204,7 @@
       tenant: state.tenant,
       persona: state.persona,
       terminology: state.terminologyMode,
-      layout: state.layout,
+      layout: state.layout.slice(),
     };
     saved.unshift(view);
     saveJson(VIEWS_KEY, saved.slice(0, 20));
@@ -178,7 +218,13 @@
     }
     const saved = loadJson(VIEWS_KEY, []);
     if (!saved.length) {
-      slot.innerHTML = '<p class="ag-empty">No saved view yet.</p>';
+      slot.innerHTML = [
+        '<article class="ag-empty">',
+        "<h4>No saved views yet</h4>",
+        "<p>Save your current view to reopen this workspace with the same persona and layout.</p>",
+        '<button class="ag-btn ag-btn--ghost" type="button" data-action="save-view">Save your current view</button>',
+        "</article>",
+      ].join("");
       return;
     }
     slot.innerHTML = saved
@@ -204,9 +250,13 @@
       if (!(target instanceof HTMLElement)) {
         return;
       }
+      const actionNode = target.closest("[data-action]");
+      if (!(actionNode instanceof HTMLElement) || !root.contains(actionNode)) {
+        return;
+      }
 
-      if (target.matches("[data-action='select-persona']")) {
-        state.persona = String(target.getAttribute("data-persona") || "executive");
+      if (actionNode.matches("[data-action='select-persona']")) {
+        state.persona = String(actionNode.getAttribute("data-persona") || "executive");
         const persona = currentPersona();
         state.layout = Array.isArray(persona.default_layout) ? persona.default_layout.slice() : state.layout;
         persistLayout();
@@ -215,21 +265,21 @@
         emitUxEvent("workspace_persona_selected", { persona: state.persona, tenant: state.tenant });
       }
 
-      if (target.matches("[data-action='toggle-terminology']")) {
+      if (actionNode.matches("[data-action='toggle-terminology']")) {
         state.terminologyMode = state.terminologyMode === "technical" ? "non_technical" : "technical";
         saveJson(MODE_KEY, { terminology: state.terminologyMode });
         renderWorkspace();
         emitUxEvent("workspace_terminology_changed", { mode: state.terminologyMode, persona: state.persona });
       }
 
-      if (target.matches("[data-action='save-view']")) {
+      if (actionNode.matches("[data-action='save-view']")) {
         saveView();
         renderSavedViews();
       }
 
-      if (target.matches("[data-action='load-view']")) {
+      if (actionNode.matches("[data-action='load-view']")) {
         const saved = loadJson(VIEWS_KEY, []);
-        const index = Number(target.getAttribute("data-view-index") || 0);
+        const index = Number(actionNode.getAttribute("data-view-index") || 0);
         const view = saved[index];
         if (!view) {
           return;
@@ -243,13 +293,13 @@
         emitUxEvent("workspace_saved_view_loaded", { persona: state.persona, tenant: state.tenant });
       }
 
-      if (target.matches("[data-action='move-up']") || target.matches("[data-action='move-down']")) {
+      if (actionNode.matches("[data-action='move-up']") || actionNode.matches("[data-action='move-down']")) {
         if (state.adminPolicyLocked) {
           emitUxEvent("workspace_layout_change_blocked", { reason: "admin_policy_locked" });
           return;
         }
-        const index = Number(target.getAttribute("data-index") || 0);
-        const nextIndex = target.matches("[data-action='move-up']") ? index - 1 : index + 1;
+        const index = Number(actionNode.getAttribute("data-index") || 0);
+        const nextIndex = actionNode.matches("[data-action='move-up']") ? index - 1 : index + 1;
         if (nextIndex < 0 || nextIndex >= state.layout.length) {
           return;
         }
@@ -263,15 +313,18 @@
         emitUxEvent("workspace_layout_changed", { layout: state.layout, persona: state.persona });
       }
 
-      if (target.matches("[data-action='toggle-admin-policy']")) {
+      if (actionNode.matches("[data-action='toggle-admin-policy']")) {
         state.adminPolicyLocked = !state.adminPolicyLocked;
         renderWorkspace();
         emitUxEvent("workspace_admin_policy_toggled", { locked: state.adminPolicyLocked });
       }
 
-      if (target.matches("[data-action='workspace-action']")) {
-        event.preventDefault();
-        emitUxEvent("workspace_action_clicked", { persona: state.persona });
+      if (actionNode.matches("[data-action='workspace-action']")) {
+        emitUxEvent("workspace_action_clicked", {
+          persona: state.persona,
+          action: actionNode.getAttribute("data-action-label") || "",
+          destination: actionNode.getAttribute("data-action-path") || "",
+        });
       }
     });
   }
@@ -284,6 +337,9 @@
     const payload = await response.json();
     if (!Array.isArray(payload)) {
       throw new Error("workspace catalog must be an array");
+    }
+    if (payload.length === 0) {
+      throw new Error("workspace catalog is empty");
     }
     state.catalog = payload;
   }

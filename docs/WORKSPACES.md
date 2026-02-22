@@ -25,3 +25,12 @@ Each workspace should answer three questions immediately:
 1. What is the current state?
 2. What changed recently?
 3. What should I do next?
+
+<div class="ag-next-steps">
+  <h3>Next Best Actions</h3>
+  <ol>
+    <li><a href="../HOSTED_SANDBOX/">Validate seeded flows in hosted sandbox</a></li>
+    <li><a href="../REPLAY_LAB/">Inspect replay deltas for high-risk changes</a></li>
+    <li><a href="../TENANT_ROLLOUTS/">Promote validated policy through rollout gates</a></li>
+  </ol>
+</div>

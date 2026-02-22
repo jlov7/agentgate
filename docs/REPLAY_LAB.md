@@ -97,8 +97,8 @@ curl http://localhost:8000/admin/replay/runs/<run_id>/report \
 <div class="ag-next-steps">
   <h3>Next Best Actions</h3>
   <ol>
-    <li><a href="TENANT_ROLLOUTS/">Promote validated policy through staged rollout</a></li>
-    <li><a href="INCIDENT_RESPONSE/">Prepare incident response guardrails for risky changes</a></li>
-    <li><a href="OPERATIONAL_TRUST_LAYER/">Export artifacts for trust and audit review</a></li>
+    <li><a href="../TENANT_ROLLOUTS/">Promote validated policy through staged rollout</a></li>
+    <li><a href="../INCIDENT_RESPONSE/">Prepare incident response guardrails for risky changes</a></li>
+    <li><a href="../OPERATIONAL_TRUST_LAYER/">Export artifacts for trust and audit review</a></li>
   </ol>
 </div>

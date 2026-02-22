@@ -104,8 +104,8 @@ curl -X POST http://localhost:8000/admin/tenants/tenant-a/rollouts/<rollout_id>/
 <div class="ag-next-steps">
   <h3>Next Best Actions</h3>
   <ol>
-    <li><a href="REPLAY_LAB/">Re-run replay before promoting canary stage</a></li>
-    <li><a href="INCIDENT_RESPONSE/">Confirm quarantine and rollback response readiness</a></li>
-    <li><a href="OBSERVABILITY_PACK/">Validate p95/p99 and alerts during rollout</a></li>
+    <li><a href="../REPLAY_LAB/">Re-run replay before promoting canary stage</a></li>
+    <li><a href="../INCIDENT_RESPONSE/">Confirm quarantine and rollback response readiness</a></li>
+    <li><a href="../OBSERVABILITY_PACK/">Validate p95/p99 and alerts during rollout</a></li>
   </ol>
 </div>

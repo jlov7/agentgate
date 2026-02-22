@@ -469,3 +469,58 @@ Transform AgentGate UX from documentation-heavy navigation into role-based, guid
 - Wired trust-layer documentation discoverability through `mkdocs.yml` navigation and README quick links.
 - Added regression tests (`tests/test_operational_trust_layer.py`) validating trust-layer assets and publication wiring.
 - Evidence: `.venv/bin/pytest tests/test_operational_trust_layer.py -q` pass, `make verify` pass, `scripts/doctor.sh` pass (`overall_status: pass`).
+
+---
+
+# 2026-02-22 Frontend UX Remediation ExecPlan
+
+## Purpose / Big Picture
+Close every UX/a11y/flow/code-structure gap identified in the deep frontend audit across all interactive docs surfaces, with explicit tracking and verification evidence so no issue is lost.
+
+## Progress
+- [x] Add exhaustive task tracker updates in `.codex/PLANS.md` and `.codex/SCRATCHPAD.md`.
+- [x] RED: add failing regression tests for route-safe links on key journey pages.
+- [x] RED: add failing regression tests for quick-actions route generation on nested paths.
+- [x] RED: add failing regression tests for modal closed-state accessibility hooks.
+- [x] RED: add failing regression tests for workflow completion and focus semantics.
+- [x] RED: add failing regression tests for workspace actionable links and empty-state guidance.
+- [x] RED: add failing regression tests for responsive safeguards (demo-lab overflow and touch target minimum).
+- [x] GREEN: fix IA/navigation links across all key docs pages to eliminate 404 dead-ends.
+- [x] GREEN: fix quick-actions routing so links resolve correctly from nested docs routes.
+- [x] GREEN: fix command-modal accessibility (hidden/inert on close, scroll lock, controlled escape behavior).
+- [x] GREEN: fix context-bar listener accumulation bug and ensure deterministic single-handler behavior.
+- [x] GREEN: fix workflow focus management, add current-step semantics, and add explicit completion state with next CTA.
+- [x] GREEN: enforce incident summary gating on explicit quarantine choice.
+- [x] GREEN: replace hosted-sandbox blocking alert with inline actionable error feedback.
+- [x] GREEN: fix workspace dead-end actions by routing to concrete destinations and improving empty-state CTA.
+- [x] GREEN: add missing Next Best Actions guidance to `WORKSPACES.md`.
+- [x] GREEN: fix mobile overflow and touch target sizing gaps in custom CSS.
+- [x] GREEN: add dark-mode palette support and required theme-safe overrides.
+- [x] GREEN: extract shared frontend utility helpers, wire scripts to reuse them, and remove dead code.
+- [x] Run targeted test suite for changed UX surfaces.
+- [x] Run full `make verify`.
+- [x] Run `scripts/doctor.sh`.
+- [x] Update plan/scratchpad with verification evidence and final status.
+
+## Surprises & Discoveries
+- Audit found route breakage is systemic for level-1 docs pages using bare relative links (for example `HOSTED_SANDBOX/`) and for quick-actions links on nested routes.
+- Command modal is visually hidden while still keyboard-focusable when closed, violating expected dialog behavior.
+- Workflow step renders replace controls and drop focus to `<body>`, creating keyboard flow loss.
+- Demo lab exhibits horizontal overflow in mobile viewport due control-row layout behavior.
+- Delegated click handlers that rely on `event.target.matches(...)` can miss nested click targets (for example stepper labels, saved-view card children), causing intermittent dead-end interactions.
+
+## Decision Log
+- Use tests-first for each bug cluster before implementation (RED -> GREEN).
+- Keep fixes scoped to documented UX gaps only (no unrelated refactors).
+- Implement shared utility extraction only for repeated functions already duplicated in UX scripts.
+- Verify with repo-standard gates (`make verify`, `scripts/doctor.sh`) before completion claims.
+
+## Outcomes & Retrospective
+- Completed with full verification closure.
+- Added regression coverage in `tests/test_frontend_ux_remediation.py` and drove implementation via RED -> GREEN workflow.
+- Implemented UX fixes across docs navigation, workflow interactions, modal accessibility behavior, workspace CTAs, hosted-sandbox feedback, and responsive/dark-mode polish.
+- Added a second hardening sweep for delegated click reliability (`closest(...)`) and explicit empty-state guards for scenario/flow/workspace catalogs.
+- Verification evidence:
+  - `.venv/bin/pytest tests/test_frontend_ux_remediation.py -q` pass
+  - `make verify` pass
+  - `.venv/bin/python scripts/doctor.py` pass (`overall_status: pass`, `artifacts/doctor.json`, latest run at 2026-02-22T18:40:47+00:00)

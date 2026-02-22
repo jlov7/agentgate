@@ -1,4 +1,5 @@
 (function () {
+  const ui = window.AgentGateUi || {};
   const CONTEXT_KEY = "ag_context_v1";
   const CHECKLIST_KEY = "ag_onboarding_checklist_v1";
   const TOUR_KEY = "ag_start_tour_completed_v1";
@@ -6,48 +7,73 @@
   const RETURNING_KEY = "ag_returning_user_v1";
 
   const quickLinks = [
-    { label: "Start Here", href: "../GET_STARTED/" },
-    { label: "Try in 5 Minutes", href: "../TRY_NOW/" },
-    { label: "Hosted Sandbox", href: "../HOSTED_SANDBOX/" },
-    { label: "Demo Lab", href: "../DEMO_LAB/" },
-    { label: "Replay Lab", href: "../REPLAY_LAB/" },
-    { label: "Incident Response", href: "../INCIDENT_RESPONSE/" },
-    { label: "Tenant Rollouts", href: "../TENANT_ROLLOUTS/" },
-    { label: "Operational Trust", href: "../OPERATIONAL_TRUST_LAYER/" },
+    { label: "Start Here", path: "GET_STARTED/" },
+    { label: "Try in 5 Minutes", path: "TRY_NOW/" },
+    { label: "Hosted Sandbox", path: "HOSTED_SANDBOX/" },
+    { label: "Demo Lab", path: "DEMO_LAB/" },
+    { label: "Replay Lab", path: "REPLAY_LAB/" },
+    { label: "Incident Response", path: "INCIDENT_RESPONSE/" },
+    { label: "Tenant Rollouts", path: "TENANT_ROLLOUTS/" },
+    { label: "Operational Trust", path: "OPERATIONAL_TRUST_LAYER/" },
   ];
 
-  function escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
-  }
+  const escapeHtml =
+    ui.escapeHtml ||
+    function (value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    };
 
-  function loadJson(key, fallback) {
-    try {
-      const raw = window.localStorage.getItem(key);
-      if (!raw) {
+  const loadJson =
+    ui.loadJson ||
+    function (key, fallback) {
+      try {
+        const raw = window.localStorage.getItem(key);
+        if (!raw) {
+          return fallback;
+        }
+        return JSON.parse(raw);
+      } catch (_) {
         return fallback;
       }
-      return JSON.parse(raw);
-    } catch (_) {
-      return fallback;
-    }
-  }
+    };
 
-  function saveJson(key, value) {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(value));
-    } catch (_) {
-      // Ignore storage failures in private mode.
-    }
-  }
+  const saveJson =
+    ui.saveJson ||
+    function (key, value) {
+      try {
+        window.localStorage.setItem(key, JSON.stringify(value));
+      } catch (_) {
+        // Ignore storage failures in private mode.
+      }
+    };
 
-  function emitUxEvent(name, props) {
-    window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
-  }
+  const emitUxEvent =
+    ui.emitUxEvent ||
+    function (name, props) {
+      window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
+    };
+
+  const docsRootPath =
+    ui.docsRootPath ||
+    function () {
+      if (window.__md_scope && typeof window.__md_scope.pathname === "string") {
+        return window.__md_scope.pathname.endsWith("/")
+          ? window.__md_scope.pathname
+          : `${window.__md_scope.pathname}/`;
+      }
+      return "/";
+    };
+
+  const resolveDocsHref =
+    ui.resolveDocsHref ||
+    function (path) {
+      return `${docsRootPath()}${String(path || "").replace(/^\/+/, "")}`;
+    };
 
   function defaultContext() {
     return {
@@ -78,17 +104,21 @@
       return;
     }
 
-    const context = contextState();
-    for (const node of nodes) {
-      node.innerHTML = [
-        '<div class="ag-shell-bar">',
-        '<div class="ag-shell-title">Workspace Context</div>',
-        `<div class="ag-shell-chip-row">${renderContextChips(context)}</div>`,
-        '<button class="ag-btn ag-btn--ghost ag-shell-edit" type="button" data-action="edit-context">Edit</button>',
-        "</div>",
-      ].join("");
+    function renderAll() {
+      const context = contextState();
+      for (const node of nodes) {
+        node.innerHTML = [
+          '<div class="ag-shell-bar">',
+          '<div class="ag-shell-title">Workspace Context</div>',
+          `<div class="ag-shell-chip-row">${renderContextChips(context)}</div>`,
+          '<button class="ag-btn ag-btn--ghost ag-shell-edit" type="button" data-action="edit-context">Edit</button>',
+          "</div>",
+        ].join("");
+      }
+    }
 
-      node.addEventListener("click", (event) => {
+    for (const node of nodes) {
+      node.onclick = (event) => {
         const target = event.target;
         if (!(target instanceof HTMLElement) || target.dataset.action !== "edit-context") {
           return;
@@ -102,9 +132,11 @@
         const next = { environment, tenantId, policyVersion };
         saveJson(CONTEXT_KEY, next);
         emitUxEvent("context_updated", next);
-        mountContextBar();
-      });
+        renderAll();
+      };
     }
+
+    renderAll();
   }
 
   function mountBreadcrumbs() {
@@ -117,15 +149,16 @@
       return;
     }
 
-    const path = window.location.pathname.replace(/\/+$/, "");
-    const segments = path.split("/").filter(Boolean);
+    const scopeSegments = docsRootPath().replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
+    const pageSegments = window.location.pathname.replace(/\/+$/, "").split("/").filter(Boolean);
+    const contentSegments = pageSegments.slice(scopeSegments.length);
 
-    const crumbs = ['<a href="../">Home</a>'];
-    let current = "";
-    for (const segment of segments.slice(1)) {
+    const crumbs = [`<a href="${escapeHtml(resolveDocsHref(""))}">Home</a>`];
+    let current = docsRootPath().replace(/\/+$/, "");
+    for (const segment of contentSegments) {
       current += `/${segment}`;
       const label = segment.replace(/[-_]/g, " ").replace(/\b\w/g, (s) => s.toUpperCase());
-      crumbs.push(`<a href="${escapeHtml(current)}/">${escapeHtml(label)}</a>`);
+      crumbs.push(`<a href="${escapeHtml(`${current}/`)}">${escapeHtml(label)}</a>`);
     }
 
     const nav = document.createElement("nav");
@@ -152,6 +185,9 @@
     modal.id = "ag-command-modal";
     modal.className = "ag-command-modal";
     modal.setAttribute("aria-hidden", "true");
+    modal.setAttribute("hidden", "");
+    modal.setAttribute("inert", "");
+    launch.setAttribute("aria-expanded", "false");
     modal.innerHTML = [
       '<div class="ag-command-overlay" data-action="close"></div>',
       '<div class="ag-command-panel" role="dialog" aria-modal="true" aria-label="Quick actions">',
@@ -161,7 +197,7 @@
       quickLinks
         .map(
           (entry) =>
-            `<a class="ag-command-link" href="${escapeHtml(entry.href)}"><span>${escapeHtml(entry.label)}</span><code>Go</code></a>`,
+            `<a class="ag-command-link" href="${escapeHtml(resolveDocsHref(entry.path))}"><span>${escapeHtml(entry.label)}</span><code>Go</code></a>`,
         )
         .join(""),
       "</div>",
@@ -169,6 +205,7 @@
     ].join("");
 
     let lastFocused = null;
+    let previousBodyOverflow = "";
 
     function focusableNodes() {
       return Array.from(
@@ -179,9 +216,17 @@
     }
 
     function open() {
+      if (modal.classList.contains("ag-command-modal--open")) {
+        return;
+      }
       lastFocused = document.activeElement;
+      previousBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      modal.removeAttribute("hidden");
+      modal.removeAttribute("inert");
       modal.classList.add("ag-command-modal--open");
       modal.setAttribute("aria-hidden", "false");
+      launch.setAttribute("aria-expanded", "true");
       const first = focusableNodes()[0];
       if (first instanceof HTMLElement) {
         first.focus();
@@ -190,8 +235,15 @@
     }
 
     function close() {
+      if (!modal.classList.contains("ag-command-modal--open")) {
+        return;
+      }
       modal.classList.remove("ag-command-modal--open");
       modal.setAttribute("aria-hidden", "true");
+      modal.setAttribute("hidden", "");
+      modal.setAttribute("inert", "");
+      launch.setAttribute("aria-expanded", "false");
+      document.body.style.overflow = previousBodyOverflow;
       if (lastFocused instanceof HTMLElement) {
         lastFocused.focus();
       }
@@ -203,10 +255,16 @@
       if (!(target instanceof HTMLElement)) {
         return;
       }
-      if (target.dataset.action === "close") {
+      const closeNode = target.closest("[data-action='close']");
+      if (closeNode instanceof HTMLElement && modal.contains(closeNode)) {
         close();
-      } else if (target.matches(".ag-command-link")) {
-        emitUxEvent("quick_action_navigate", { label: target.textContent ? target.textContent.trim() : "" });
+        return;
+      }
+      const linkNode = target.closest(".ag-command-link");
+      if (linkNode instanceof HTMLElement && modal.contains(linkNode)) {
+        emitUxEvent("quick_action_navigate", {
+          label: linkNode.textContent ? linkNode.textContent.trim() : "",
+        });
       }
     });
 
@@ -231,7 +289,7 @@
           last.focus();
         }
       }
-      if (event.key === "Escape") {
+      if (modal.classList.contains("ag-command-modal--open") && event.key === "Escape") {
         close();
       }
     });
@@ -280,7 +338,7 @@
         if (nextIndex === -1) {
           resume.innerHTML = '<p class="ag-next-state">Onboarding complete. You can move to advanced workflows.</p>';
         } else {
-          const href = links[nextIndex] || "../JOURNEYS/";
+          const href = links[nextIndex] || resolveDocsHref("JOURNEYS/");
           resume.innerHTML = `<p class="ag-next-state">Next recommended step: <a href="${escapeHtml(href)}">${escapeHtml(tasks[nextIndex])}</a></p>`;
         }
       }

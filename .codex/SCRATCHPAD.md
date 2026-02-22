@@ -222,3 +222,46 @@ Completed
   - `make verify` pass
   - `scripts/doctor.sh` pass (`overall_status: pass`)
 - Tracker status: 100 done, 0 in progress, 0 todo.
+
+## 2026-02-22 Frontend UX Remediation
+
+### Status
+Completed
+
+### Goal
+Resolve all audited frontend issues across information architecture, interaction design, accessibility, visual polish, and code structure with complete tracking and verification evidence.
+
+### Exhaustive TODO
+1. [x] Add failing tests for key-page internal link safety.
+2. [x] Add failing tests for quick-actions nested-route safety.
+3. [x] Add failing tests for closed modal hidden/inert behavior.
+4. [x] Add failing tests for workflow completion + focus semantics.
+5. [x] Add failing tests for workspace actionable links + empty-state CTA.
+6. [x] Add failing tests for responsive guardrails (overflow + touch target minimum).
+7. [x] Fix docs internal links on all key journey pages.
+8. [x] Fix quick-actions route generation to use docs root scope.
+9. [x] Fix command modal focusability/scroll lock behavior.
+10. [x] Fix context-bar duplicate handler accumulation.
+11. [x] Fix workflow focus management and completion states.
+12. [x] Enforce incident summary selection requirement.
+13. [x] Replace hosted-sandbox alert with inline feedback.
+14. [x] Add concrete workspace action destinations.
+15. [x] Improve workspace empty-state guidance and Next Best Actions.
+16. [x] Fix demo-lab mobile overflow and touch targets.
+17. [x] Add dark mode theme + contrast-safe overrides.
+18. [x] Extract shared frontend utility helpers and remove dead code.
+19. [x] Run targeted tests.
+20. [x] Run `make verify`.
+21. [x] Run `scripts/doctor.sh`.
+22. [x] Record final evidence and close tracker.
+
+### Notes
+- User approved autonomous full execution with no intermediate approval checkpoints.
+- Do not stop at planning; ship all fixes and verify fully.
+- Verification evidence captured:
+  - `.venv/bin/pytest tests/test_frontend_ux_remediation.py -q` pass
+  - `make verify` pass
+  - `.venv/bin/python scripts/doctor.py` pass (`overall_status: pass`)
+- Second sweep completed:
+  - Fixed delegated click handling with `closest(...)` across workflow/workspace/demo/sandbox/quick-action surfaces to remove nested-target dead ends.
+  - Added explicit empty-state guards for empty scenario, flow, and workspace catalogs.

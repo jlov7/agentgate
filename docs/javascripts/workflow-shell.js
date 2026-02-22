@@ -1,12 +1,15 @@
 (function () {
-  function escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
-  }
+  const ui = window.AgentGateUi || {};
+  const escapeHtml =
+    ui.escapeHtml ||
+    function (value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    };
 
   function formatErrorState(whatHappened, why, howToFix, docsPath) {
     return [
@@ -20,9 +23,17 @@
     ].join("");
   }
 
-  function emitUxEvent(name, props) {
-    window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
-  }
+  const emitUxEvent =
+    ui.emitUxEvent ||
+    function (name, props) {
+      window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
+    };
+
+  const resolveDocsHref =
+    ui.resolveDocsHref ||
+    function (path) {
+      return String(path || "");
+    };
 
   async function loadJson(path) {
     if (!path) {
@@ -53,8 +64,9 @@
     const markup = steps
       .map((label, stepIndex) => {
         const state = stepIndex < index ? "done" : stepIndex === index ? "active" : "todo";
+        const current = stepIndex === index ? ' aria-current="step"' : "";
         return [
-          `<button type=\"button\" class=\"ag-workflow-step ag-workflow-step--${state}\" data-action=\"goto-step\" data-step-index=\"${stepIndex}\">`,
+          `<button type=\"button\" class=\"ag-workflow-step ag-workflow-step--${state}\" data-action=\"goto-step\" data-step-index=\"${stepIndex}\"${current}>`,
           `<span class=\"ag-workflow-step__index\">${stepIndex + 1}</span>`,
           `<span class=\"ag-workflow-step__label\">${escapeHtml(label)}</span>`,
           "</button>",
@@ -72,9 +84,33 @@
     }
   }
 
-  function renderControls(node, index, total) {
+  function completionTarget(kind) {
+    if (kind === "replay") {
+      return { href: resolveDocsHref("TENANT_ROLLOUTS/"), label: "Continue to tenant rollouts" };
+    }
+    if (kind === "incident") {
+      return { href: resolveDocsHref("TENANT_ROLLOUTS/"), label: "Continue to tenant rollouts" };
+    }
+    if (kind === "rollout") {
+      return { href: resolveDocsHref("OBSERVABILITY_PACK/"), label: "Review observability pack" };
+    }
+    return { href: resolveDocsHref("JOURNEYS/"), label: "Return to journey map" };
+  }
+
+  function renderControls(node, index, total, kind, completed) {
     const slot = node.querySelector("[data-slot='controls']");
     if (!slot) {
+      return;
+    }
+    if (completed) {
+      const target = completionTarget(kind);
+      slot.innerHTML = [
+        '<div class="ag-workflow-controls">',
+        '<button type="button" class="ag-btn ag-btn--ghost" data-action="restart">Run workflow again</button>',
+        `<a class="ag-btn" href="${escapeHtml(target.href)}">${escapeHtml(target.label)}</a>`,
+        "</div>",
+        '<p class="ag-workflow-note">Workflow completion recorded. Continue to the next operational gate.</p>',
+      ].join("");
       return;
     }
     const isFirst = index === 0;
@@ -203,6 +239,18 @@
     return allChecked;
   }
 
+  function focusActivePanelHeading(node, index) {
+    const activePanel = node.querySelector(`[data-step-panel='${index}']`);
+    if (!activePanel) {
+      return;
+    }
+    const activeHeading = activePanel.querySelector("h2, h3, h4, h5, h6");
+    if (activeHeading instanceof HTMLElement) {
+      activeHeading.setAttribute("tabindex", "-1");
+      activeHeading.focus();
+    }
+  }
+
   function mountWorkflow(node) {
     const steps = String(node.dataset.steps || "")
       .split(";;")
@@ -220,6 +268,7 @@
       incidentTimeline: [],
       rolloutStages: [],
       selectedQuarantine: "",
+      completed: false,
     };
 
     const deltaSlot = node.querySelector("[data-slot='delta-groups']");
@@ -237,17 +286,31 @@
         '<div class="ag-skeleton ag-skeleton--line"></div><div class="ag-skeleton ag-skeleton--line"></div>';
     }
 
-    function render() {
+    function render(options) {
+      const shouldFocus = Boolean(options && options.focusHeading);
       renderStepper(node, steps, state.index);
       showPanel(node, state.index);
-      renderControls(node, state.index, steps.length);
+      renderControls(node, state.index, steps.length, kind, state.completed);
+      if (shouldFocus) {
+        focusActivePanelHeading(node, state.index);
+      }
 
       const status = node.querySelector("[data-slot='status']");
       if (status) {
         status.setAttribute("aria-live", "polite");
-        status.textContent = `Step ${state.index + 1} of ${steps.length}: ${steps[state.index]}`;
+        status.textContent = state.completed
+          ? `Workflow completion recorded for ${steps[state.index]}.`
+          : `Step ${state.index + 1} of ${steps.length}: ${steps[state.index]}`;
       }
       emitUxEvent("workflow_step_viewed", { workflow: kind, step: state.index + 1, label: steps[state.index] });
+    }
+
+    function markCompleted() {
+      if (state.completed) {
+        return;
+      }
+      state.completed = true;
+      emitUxEvent("workflow_completed", { workflow: kind, step: state.index + 1, total_steps: steps.length });
     }
 
     node.addEventListener("click", (event) => {
@@ -255,32 +318,48 @@
       if (!(target instanceof HTMLElement)) {
         return;
       }
-
-      if (target.matches("[data-action='goto-step']")) {
-        state.index = Number(target.dataset.stepIndex || 0);
-        emitUxEvent("workflow_step_jump", { workflow: kind, step: state.index + 1 });
-        render();
+      const actionNode = target.closest("[data-action]");
+      if (!(actionNode instanceof HTMLElement) || !node.contains(actionNode)) {
+        return;
       }
 
-      if (target.matches("[data-action='prev']")) {
+      if (actionNode.matches("[data-action='goto-step']")) {
+        state.completed = false;
+        state.index = Number(actionNode.dataset.stepIndex || 0);
+        emitUxEvent("workflow_step_jump", { workflow: kind, step: state.index + 1 });
+        render({ focusHeading: true });
+      }
+
+      if (actionNode.matches("[data-action='prev']")) {
+        state.completed = false;
         state.index = Math.max(0, state.index - 1);
         emitUxEvent("workflow_back", { workflow: kind, step: state.index + 1 });
-        render();
+        render({ focusHeading: true });
       }
 
-      if (target.matches("[data-action='next']")) {
+      if (actionNode.matches("[data-action='next']")) {
         if (!validateStepGate(node, state.index)) {
           emitUxEvent("workflow_gate_blocked", { workflow: kind, step: state.index + 1 });
           return;
         }
 
         if (state.index < steps.length - 1) {
+          state.completed = false;
           state.index += 1;
+        } else {
+          markCompleted();
         }
-        render();
+        render({ focusHeading: true });
       }
 
-      if (target.matches("[data-action='generate-replay-test']")) {
+      if (actionNode.matches("[data-action='restart']")) {
+        state.completed = false;
+        state.index = 0;
+        emitUxEvent("workflow_restarted", { workflow: kind });
+        render({ focusHeading: true });
+      }
+
+      if (actionNode.matches("[data-action='generate-replay-test']")) {
         const slot = node.querySelector("[data-slot='generated-test']");
         if (!slot) {
           return;
@@ -295,7 +374,7 @@
         emitUxEvent("workflow_replay_test_generated", { workflow: kind, severity: delta.severity || "unknown" });
       }
 
-      if (target.matches("[data-action='apply-patch']")) {
+      if (actionNode.matches("[data-action='apply-patch']")) {
         const slot = node.querySelector("[data-slot='patch-status']");
         if (slot) {
           slot.innerHTML = '<p class="ag-risk ag-risk--info">Patch applied to candidate policy workspace. Re-run replay before promotion.</p>';
@@ -303,8 +382,8 @@
         emitUxEvent("workflow_patch_applied", { workflow: kind });
       }
 
-      if (target.matches("[data-action='quarantine-choice']")) {
-        const choice = String(target.getAttribute("data-choice") || "");
+      if (actionNode.matches("[data-action='quarantine-choice']")) {
+        const choice = String(actionNode.getAttribute("data-choice") || "");
         state.selectedQuarantine = choice;
         const slot = node.querySelector("[data-slot='quarantine-rationale']");
         if (slot) {
@@ -313,7 +392,7 @@
         emitUxEvent("workflow_quarantine_choice", { workflow: kind, choice });
       }
 
-      if (target.matches("[data-action='rollout-compare']")) {
+      if (actionNode.matches("[data-action='rollout-compare']")) {
         const select = node.querySelector("[data-field='stage-select']");
         if (!(select instanceof HTMLSelectElement)) {
           return;
@@ -326,13 +405,19 @@
         }
       }
 
-      if (target.matches("[data-action='generate-summary']")) {
+      if (actionNode.matches("[data-action='generate-summary']")) {
         const slot = node.querySelector("[data-slot='workflow-summary']");
         if (!slot) {
           return;
         }
 
         if (kind === "incident") {
+          if (!state.selectedQuarantine) {
+            slot.innerHTML =
+              '<p class="ag-risk ag-risk--warn">Select a quarantine scope in Step 2 before generating workflow completion summary.</p>';
+            emitUxEvent("workflow_summary_blocked", { workflow: kind, reason: "missing_quarantine_choice" });
+            return;
+          }
           const finalEvent = state.incidentTimeline[state.incidentTimeline.length - 1];
           slot.innerHTML = `<pre><code>Incident Summary\n- decision: ${escapeHtml(state.selectedQuarantine || "quarantine-confirmed")}\n- timeline_events: ${state.incidentTimeline.length}\n- final_state: ${escapeHtml(finalEvent ? finalEvent.state : "unknown")}\n- next_action: monitor for recurrence</code></pre>`;
         } else if (kind === "rollout") {
@@ -384,7 +469,7 @@
             details,
             "Fixture assets were unavailable or malformed.",
             "Validate the fixture path and JSON schema, then reload the page.",
-            "../JOURNEYS/",
+            resolveDocsHref("JOURNEYS/"),
           );
         }
         emitUxEvent("workflow_replay_failure", { workflow: kind, reason: details, step: state.index + 1 });

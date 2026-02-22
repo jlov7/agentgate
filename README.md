@@ -42,6 +42,35 @@
 
 ---
 
+## Choose Your Path
+
+| Audience | Goal | Start Here |
+|----------|------|------------|
+| Non-technical stakeholder | Understand why this exists and what “contained AI” means in practice | [Understanding AgentGate](docs/UNDERSTANDING_AGENTGATE.md) |
+| Executive sponsor | Evaluate risk reduction, proof artifacts, and rollout confidence | [Executive Summary](docs/EXEC_SUMMARY.md) |
+| First-time evaluator | Reach first value quickly with evidence outputs | [Try in 5 Minutes](docs/TRY_NOW.md) |
+| Security/ops team | Exercise replay, incident containment, and rollout gates | [Journey Map](docs/JOURNEYS.md) |
+| Platform engineer | Integrate, deploy, observe, and harden runtime controls | [Architecture](docs/ARCHITECTURE.md) |
+
+---
+
+## Onboarding User Guide
+
+If you’re setting this up for the first time, use the guided onboarding flow:
+
+1. Open [Start Here](docs/GET_STARTED.md) for role routing.
+2. Run [Hosted Browser Sandbox](docs/HOSTED_SANDBOX.md) to validate API behavior quickly.
+3. Run [Interactive Demo Lab](docs/DEMO_LAB.md) to replay high-signal scenarios.
+4. Run [Try in 5 Minutes](docs/TRY_NOW.md) for local proof-bundle generation.
+5. Move into [Journey Map](docs/JOURNEYS.md) for replay, incident response, and rollout operations.
+
+Returning users should begin at [Workspaces](docs/WORKSPACES.md) and then continue directly to:
+- [Replay Lab](docs/REPLAY_LAB.md)
+- [Incident Response](docs/INCIDENT_RESPONSE.md)
+- [Tenant Rollouts](docs/TENANT_ROLLOUTS.md)
+
+---
+
 ## 1-Minute Tour
 
 1) Run `make try` to launch the local stack, execute the showcase, and build a proof bundle.
@@ -153,6 +182,12 @@ flowchart LR
   B --> H[Webhook Alerts]
   B --> I[MCP Tool Servers]
 ```
+
+### Architecture Illustrations
+
+![AgentGate architecture flow](docs/assets/architecture-flow.svg)
+
+![Policy decision sequence](docs/assets/policy-sequence.svg)
 
 See `docs/ARCHITECTURE.md` for the policy decision sequence and slide-ready SVGs.
 
@@ -536,27 +571,28 @@ make pre-commit
 
 ```
 agentgate/
-├── src/agentgate/          # Core implementation
-│   ├── main.py             # FastAPI application
-│   ├── gateway.py          # Request handling
-│   ├── policy.py           # OPA integration
-│   ├── killswitch.py       # Kill switch controller
-│   ├── traces.py           # Append-only trace store
-│   ├── evidence.py         # Evidence exporter
-│   ├── replay.py           # Policy replay evaluator
-│   ├── quarantine.py       # Quarantine coordinator
-│   ├── rollout.py          # Tenant rollout controller
-│   ├── policy_packages.py  # Signed policy package verification
-│   └── models.py           # Pydantic models
-├── policies/               # OPA/Rego policies
-│   ├── default.rego        # Base policy rules
-│   └── data.json           # Policy data
-├── tests/                  # Test suite
-│   ├── adversarial/        # Security tests
-│   └── *.py                # Unit tests
-├── demo/                   # Demo agent
-└── examples/               # Sample outputs
+├── src/agentgate/              # Application core (gateway, policy, evidence, controls)
+├── policies/                   # Rego policy bundles + policy data
+├── tests/                      # Unit/integration/eval/adversarial coverage
+├── scripts/                    # Verification, release gates, audit automation
+├── docs/                       # Product docs, UX flows, architecture, trust artifacts
+│   ├── lab/                    # Hosted demo fixtures and workflow datasets
+│   ├── javascripts/            # Docs-site interactive frontend behavior
+│   ├── stylesheets/            # Shared visual system and responsive tokens
+│   ├── assets/                 # Architecture diagrams and showcase imagery
+│   └── showcase/               # Demonstration output examples
+├── deploy/                     # Helm/Terraform deployment artifacts
+├── sdk/                        # Official Python + TypeScript SDK packages
+├── demo/                       # Narrated demo workflows
+└── examples/                   # Sample evidence/output payloads
 ```
+
+### Repository Structure Principles
+
+- **Source-of-truth only:** committed files are code, docs, policy, tests, and reproducible automation.
+- **Generated artifacts excluded:** runtime/test outputs (for example `artifacts/`, `site/`, `traces.db`, coverage files) are ignored and not committed.
+- **Docs by purpose:** onboarding, architecture, operational trust, and reference material are separated for fast navigation.
+- **Executable quality gates:** every major surface has corresponding tests and release checks (`make verify`, `scripts/doctor.py`).
 
 ---
 
@@ -727,12 +763,6 @@ Contributions welcome! Start with the adversarial test suite if you want to find
 
 ---
 
-## Disclaimer
-
-This is a personal, independent project. It is not affiliated with any employer and is not intended for commercial use. See [DISCLAIMER.md](DISCLAIMER.md) for full details.
-
----
-
 ## Quick Links
 
 | Resource | Description |
@@ -763,3 +793,9 @@ This is a personal, independent project. It is not affiliated with any employer 
 | [Security Policy](SECURITY.md) | Security model and reporting |
 | [Changelog](CHANGELOG.md) | Version history |
 | [Sample Evidence](examples/sample_evidence.html) | Example audit report |
+
+---
+
+## Disclaimer
+
+This is a personal, independent project built outside of employment. It is not affiliated with, sponsored by, or representative of any employer, client, or workplace. See [DISCLAIMER.md](DISCLAIMER.md) and [INDEPENDENCE.md](INDEPENDENCE.md) for full details.

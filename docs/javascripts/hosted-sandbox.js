@@ -1,4 +1,5 @@
 (function () {
+  const ui = window.AgentGateUi || {};
   const root = document.getElementById("ag-hosted-sandbox");
   if (!root) {
     return;
@@ -21,14 +22,16 @@
     },
   };
 
-  function escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
-  }
+  const escapeHtml =
+    ui.escapeHtml ||
+    function (value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    };
 
   function formatErrorState(whatHappened, why, howToFix, docsPath) {
     return [
@@ -54,9 +57,17 @@
     return root.querySelector(selector);
   }
 
-  function emitUxEvent(name, props) {
-    window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
-  }
+  const emitUxEvent =
+    ui.emitUxEvent ||
+    function (name, props) {
+      window.dispatchEvent(new CustomEvent("ag-ux-event", { detail: { name, props: props || {} } }));
+    };
+
+  const resolveDocsHref =
+    ui.resolveDocsHref ||
+    function (path) {
+      return String(path || "");
+    };
 
   function inputValue(selector) {
     const node = find(selector);
@@ -70,6 +81,22 @@
     if (!state.milestones[key]) {
       state.milestones[key] = new Date().toISOString();
       renderMilestones();
+    }
+  }
+
+  function setInlineFeedback(level, message) {
+    const slot = find("[data-slot='inline-feedback']");
+    if (!slot) {
+      return;
+    }
+    const tone = level === "error" ? "critical" : level === "warn" ? "warn" : "info";
+    slot.innerHTML = `<p class="ag-risk ag-risk--${tone}">${escapeHtml(message)}</p>`;
+  }
+
+  function clearInlineFeedback() {
+    const slot = find("[data-slot='inline-feedback']");
+    if (slot) {
+      slot.innerHTML = "";
     }
   }
 
@@ -216,6 +243,7 @@
     }
 
     markMilestone("first_flow");
+    clearInlineFeedback();
     emitUxEvent("sandbox_flow_started", { flow_id: flow.id });
 
     const request = flow.request || {};
@@ -235,7 +263,7 @@
     } else {
       const baseUrl = inputValue("[data-field='base-url']");
       if (!baseUrl) {
-        window.alert("Set Base URL before running a flow.");
+        setInlineFeedback("warn", "Set Base URL before running a live flow, or enable mock mode.");
         emitUxEvent("sandbox_flow_retry", { flow_id: flow.id, reason: "missing_base_url" });
         return;
       }
@@ -260,14 +288,20 @@
         }
       } catch (error) {
         payload = { error: error instanceof Error ? error.message : String(error) };
+        setInlineFeedback("warn", "Flow request failed. Check endpoint reachability, CORS, and credentials.");
       }
     }
 
     const matchedExpectation = Number(status) === Number(flow.expected_status);
     if (matchedExpectation) {
       markMilestone("first_pass");
+      clearInlineFeedback();
       emitUxEvent("sandbox_first_pass", { flow_id: flow.id, mock_mode: state.mockMode });
     } else {
+      setInlineFeedback(
+        "warn",
+        `Flow did not match expected status (${flow.expected_status}). Review response payload and headers.`,
+      );
       emitUxEvent("sandbox_flow_failed", { flow_id: flow.id, status });
     }
 
@@ -364,29 +398,35 @@
         return;
       }
 
-      if (target.matches("[data-flow-id]")) {
-        void runFlow(target.dataset.flowId || "");
+      const flowNode = target.closest("[data-flow-id]");
+      if (flowNode instanceof HTMLElement && root.contains(flowNode)) {
+        void runFlow(flowNode.dataset.flowId || "");
       }
 
-      if (target.matches("[data-action='run-all']")) {
+      const actionNode = target.closest("[data-action]");
+      if (!(actionNode instanceof HTMLElement) || !root.contains(actionNode)) {
+        return;
+      }
+
+      if (actionNode.matches("[data-action='run-all']")) {
         void runAllFlows();
       }
 
-      if (target.matches("[data-action='download']")) {
+      if (actionNode.matches("[data-action='download']")) {
         downloadTranscript();
       }
 
-      if (target.matches("[data-action='download-trial-report']")) {
+      if (actionNode.matches("[data-action='download-trial-report']")) {
         downloadTrialReport();
       }
 
-      if (target.matches("[data-action='toggle-mock']")) {
+      if (actionNode.matches("[data-action='toggle-mock']")) {
         state.mockMode = !state.mockMode;
-        target.textContent = state.mockMode ? "Disable mock mode" : "Enable mock mode";
+        actionNode.textContent = state.mockMode ? "Disable mock mode" : "Enable mock mode";
         emitUxEvent("sandbox_mock_mode_toggled", { enabled: state.mockMode });
       }
 
-      if (target.matches("[data-action='safe-sample-tenant']")) {
+      if (actionNode.matches("[data-action='safe-sample-tenant']")) {
         const tenantField = find("[data-field='tenant-id']");
         const baseField = find("[data-field='base-url']");
         if (tenantField instanceof HTMLInputElement) {
@@ -398,7 +438,7 @@
         emitUxEvent("sandbox_safe_sample_enabled", { tenant: SAFE_SAMPLE_TENANT });
       }
 
-      if (target.matches("[data-action='complete-handoff']")) {
+      if (actionNode.matches("[data-action='complete-handoff']")) {
         completeHandoffChecklist();
       }
     });
@@ -412,6 +452,9 @@
     const payload = await response.json();
     if (!Array.isArray(payload)) {
       throw new Error("flows payload must be a list");
+    }
+    if (payload.length === 0) {
+      throw new Error("at least one flow is required");
     }
     state.flows = payload;
   }
@@ -432,6 +475,7 @@
         <label>Admin API Key <input data-field="admin-key" type="password" placeholder="optional"></label>
         <label>Requested Version <input data-field="requested-version" type="text" value="2026-02-17"></label>
       </div>
+      <div data-slot="inline-feedback" aria-live="polite"></div>
       <div class="ag-lab-actions">
         <button class="ag-btn ag-btn--ghost" data-action="toggle-mock">Enable mock mode</button>
         <button class="ag-btn ag-btn--ghost" data-action="safe-sample-tenant">Use safe sample tenant mode</button>
@@ -481,7 +525,7 @@
         details,
         "The hosted flow fixtures or endpoint configuration did not initialize.",
         "Check the flows asset path and retry in mock mode for deterministic validation.",
-        "../HOSTED_SANDBOX/",
+        resolveDocsHref("HOSTED_SANDBOX/"),
       );
     }
   }

@@ -86,8 +86,8 @@ curl -X POST http://localhost:8000/admin/incidents/<incident_id>/release \
 <div class="ag-next-steps">
   <h3>Next Best Actions</h3>
   <ol>
-    <li><a href="TENANT_ROLLOUTS/">Gate rollout progression on incident posture</a></li>
-    <li><a href="REPLAY_LAB/">Replay pre-incident traffic against new policy candidates</a></li>
-    <li><a href="OPERATIONAL_TRUST_LAYER/">Package incident evidence and support bundle</a></li>
+    <li><a href="../TENANT_ROLLOUTS/">Gate rollout progression on incident posture</a></li>
+    <li><a href="../REPLAY_LAB/">Replay pre-incident traffic against new policy candidates</a></li>
+    <li><a href="../OPERATIONAL_TRUST_LAYER/">Package incident evidence and support bundle</a></li>
   </ol>
 </div>
