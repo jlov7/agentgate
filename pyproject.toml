@@ -62,7 +62,7 @@ dev = [
   "mkdocs-material>=9.5",
 ]
 pdf = [
-  "weasyprint>=61.0",
+  "weasyprint>=68.1",
 ]
 all = [
   "agentgate[dev,pdf]",
