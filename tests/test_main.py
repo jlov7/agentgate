@@ -1513,3 +1513,36 @@ def test_strict_secrets_mode_accepts_explicit_values(monkeypatch) -> None:
     monkeypatch.setenv("AGENTGATE_ADMIN_JWT_SECRET", "super-secret-jwt")
 
     _validate_secret_baseline()
+
+
+def test_strict_secrets_mode_accepts_configured_oidc_jwks(monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_STRICT_SECRETS", "true")
+    monkeypatch.setenv("AGENTGATE_ADMIN_ALLOW_API_KEY", "false")
+    monkeypatch.setenv("AGENTGATE_APPROVAL_TOKEN", "super-secret-approval-token")
+    monkeypatch.setenv(
+        "AGENTGATE_ADMIN_JWKS_URL",
+        "https://idp.example.test/.well-known/jwks.json",
+    )
+    monkeypatch.setenv("AGENTGATE_ADMIN_JWT_ISSUER", "https://idp.example.test/")
+    monkeypatch.setenv("AGENTGATE_ADMIN_JWT_AUDIENCE", "agentgate-console")
+    monkeypatch.delenv("AGENTGATE_ADMIN_API_KEY", raising=False)
+    monkeypatch.delenv("AGENTGATE_ADMIN_JWT_SECRET", raising=False)
+
+    _validate_secret_baseline()
+
+
+def test_strict_secrets_mode_rejects_jwks_without_issuer_or_audience(monkeypatch) -> None:
+    monkeypatch.setenv("AGENTGATE_STRICT_SECRETS", "true")
+    monkeypatch.setenv("AGENTGATE_ADMIN_ALLOW_API_KEY", "false")
+    monkeypatch.setenv("AGENTGATE_APPROVAL_TOKEN", "super-secret-approval-token")
+    monkeypatch.setenv(
+        "AGENTGATE_ADMIN_JWKS_URL",
+        "https://idp.example.test/.well-known/jwks.json",
+    )
+    monkeypatch.delenv("AGENTGATE_ADMIN_API_KEY", raising=False)
+    monkeypatch.delenv("AGENTGATE_ADMIN_JWT_SECRET", raising=False)
+    monkeypatch.delenv("AGENTGATE_ADMIN_JWT_ISSUER", raising=False)
+    monkeypatch.delenv("AGENTGATE_ADMIN_JWT_AUDIENCE", raising=False)
+
+    with pytest.raises(RuntimeError, match="Strict secrets mode failed"):
+        _validate_secret_baseline()

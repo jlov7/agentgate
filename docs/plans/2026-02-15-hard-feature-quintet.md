@@ -1,6 +1,6 @@
 # Hard Feature Quintet Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Codex:** REQUIRED SKILL: Use `executing-plans` to implement this plan task-by-task.
 
 **Goal:** Implement five high-complexity control features end-to-end: policy invariants, exactly-once quarantine orchestration, taint+DLP enforcement, transparency log verification, and shadow policy replay with patch suggestions.
 

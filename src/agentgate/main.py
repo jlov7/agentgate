@@ -24,10 +24,7 @@ Key capabilities in v0.2.x:
 
 from __future__ import annotations
 
-import base64
-import binascii
 import hashlib
-import hmac
 import inspect
 import json
 import os
@@ -50,8 +47,18 @@ from fastapi.openapi.docs import (
 )
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from redis.asyncio import Redis
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 
+from agentgate.admin_auth import (
+    admin_jwks_configured,
+    admin_oidc_validation_configured,
+    verify_admin_bearer_token,
+)
+from agentgate.api_v1 import create_api_v1_router
 from agentgate.approvals import ApprovalWorkflowEngine
+from agentgate.console_repository import SqlAlchemyConsoleRepository
+from agentgate.console_service import ConsoleRepository, ConsoleService, TraceStoreConsoleRepository
 from agentgate.credentials import CredentialBroker
 from agentgate.evidence import EvidenceExporter
 from agentgate.gateway import Gateway, ToolExecutor
@@ -99,6 +106,7 @@ from agentgate.replay import PolicyReplayEvaluator, summarize_replay_deltas
 from agentgate.rollout import CanaryEvaluator, RolloutController
 from agentgate.shadow import ShadowPolicyTwin
 from agentgate.slo import SLOMonitor
+from agentgate.storage import database_url, metadata
 from agentgate.taint import TaintTracker
 from agentgate.traces import TraceStore
 from agentgate.transparency import TransparencyLog
@@ -270,6 +278,23 @@ def _get_rate_limit_window_seconds() -> int:
         return 60
 
 
+def _get_idempotency_ttl_seconds() -> int:
+    raw = os.getenv("AGENTGATE_IDEMPOTENCY_TTL_SECONDS", "900")
+    try:
+        return max(60, int(raw))
+    except ValueError:
+        return 900
+
+
+def _console_repository_mode() -> str:
+    return os.getenv("AGENTGATE_CONSOLE_REPOSITORY", "trace_store").strip().lower()
+
+
+def _should_auto_create_console_schema() -> bool:
+    value = os.getenv("AGENTGATE_CONSOLE_AUTO_CREATE_SCHEMA", "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
 def _get_admin_api_key() -> str:
     """Return the admin API key for privileged endpoints."""
     if _ADMIN_API_KEY_OVERRIDE:
@@ -285,14 +310,6 @@ def _get_admin_api_key() -> str:
 def _allow_legacy_admin_api_key() -> bool:
     value = os.getenv("AGENTGATE_ADMIN_ALLOW_API_KEY", "true").strip().lower()
     return value in {"1", "true", "yes", "on"}
-
-
-def _get_admin_jwt_secret() -> str | None:
-    secret = os.getenv("AGENTGATE_ADMIN_JWT_SECRET")
-    if not secret:
-        return None
-    trimmed = secret.strip()
-    return trimmed or None
 
 
 def _is_strict_secrets_mode() -> bool:
@@ -311,13 +328,17 @@ def _validate_secret_baseline() -> None:
     api_key = os.getenv("AGENTGATE_ADMIN_API_KEY", "").strip()
     jwt_secret = os.getenv("AGENTGATE_ADMIN_JWT_SECRET", "").strip()
     approval_token = os.getenv("AGENTGATE_APPROVAL_TOKEN", "").strip()
+    jwks_configured = admin_jwks_configured()
 
     if _allow_legacy_admin_api_key() and len(api_key) < 24:
         issues.append("AGENTGATE_ADMIN_API_KEY (minimum length: 24)")
-    if not jwt_secret and not api_key:
+    if not jwt_secret and not api_key and not jwks_configured:
         issues.append(
-            "AGENTGATE_ADMIN_JWT_SECRET (or explicit AGENTGATE_ADMIN_API_KEY fallback)"
+            "AGENTGATE_ADMIN_JWT_SECRET, AGENTGATE_ADMIN_JWKS_URL, "
+            "or explicit AGENTGATE_ADMIN_API_KEY fallback"
         )
+    if jwks_configured and not admin_oidc_validation_configured():
+        issues.append("AGENTGATE_ADMIN_JWT_ISSUER and AGENTGATE_ADMIN_JWT_AUDIENCE")
     if len(approval_token) < 12:
         issues.append("AGENTGATE_APPROVAL_TOKEN (minimum length: 12)")
 
@@ -337,70 +358,13 @@ def _reset_admin_api_key_override() -> None:
     _ADMIN_API_KEY_OVERRIDE = None
 
 
-def _decode_base64url(value: str) -> bytes:
-    padding = "=" * ((4 - len(value) % 4) % 4)
-    return base64.urlsafe_b64decode(value + padding)
-
-
-def _encode_base64url(value: bytes) -> str:
-    return base64.urlsafe_b64encode(value).decode("utf-8").rstrip("=")
-
-
-def _roles_from_claims(claims: dict[str, Any]) -> set[str]:
-    raw_roles = claims.get("roles")
-    if isinstance(raw_roles, str):
-        return {raw_roles}
-    if isinstance(raw_roles, list):
-        roles = {item for item in raw_roles if isinstance(item, str)}
-        return roles
-    return set()
-
-
-def _verify_admin_bearer_token(authorization: str | None) -> set[str] | None:
-    if not authorization:
-        return None
-    parts = authorization.split(" ", 1)
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        return None
-    token = parts[1].strip()
-    token_parts = token.split(".")
-    if len(token_parts) != 3:
-        return None
-
-    secret = _get_admin_jwt_secret()
-    if not secret:
-        return None
-
-    header_segment, payload_segment, signature_segment = token_parts
-    signing_input = f"{header_segment}.{payload_segment}".encode()
-    expected_signature = _encode_base64url(
-        hmac.new(secret.encode("utf-8"), signing_input, hashlib.sha256).digest()
-    )
-    if not secrets.compare_digest(signature_segment, expected_signature):
-        return None
-
-    try:
-        payload_raw = _decode_base64url(payload_segment)
-        payload = json.loads(payload_raw.decode("utf-8"))
-    except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
-        return None
-    if not isinstance(payload, dict):
-        return None
-
-    exp = payload.get("exp")
-    if isinstance(exp, (int, float)) and time.time() >= float(exp):
-        return None
-
-    return _roles_from_claims(payload)
-
-
 def _authorize_admin_request(
     *,
     required_roles: set[str],
     x_api_key: str | None,
     authorization: str | None,
 ) -> None:
-    bearer_roles = _verify_admin_bearer_token(authorization)
+    bearer_roles = verify_admin_bearer_token(authorization)
     if bearer_roles is not None:
         if "admin" in bearer_roles or required_roles.issubset(bearer_roles):
             return
@@ -413,6 +377,20 @@ def _authorize_admin_request(
         raise HTTPException(status_code=403, detail="Invalid API key")
 
     raise HTTPException(status_code=403, detail="Missing admin credentials")
+
+
+def _create_console_repository(trace_store: TraceStore) -> tuple[ConsoleRepository, Engine | None]:
+    mode = _console_repository_mode()
+    if mode in {"trace_store", "tracestore"}:
+        return TraceStoreConsoleRepository(trace_store), None
+    if mode in {"sqlalchemy", "postgres", "postgresql", "sqlite"}:
+        engine = create_engine(database_url())
+        if _should_auto_create_console_schema():
+            metadata.create_all(engine)
+        return SqlAlchemyConsoleRepository(engine), engine
+    raise RuntimeError(
+        "Unsupported AGENTGATE_CONSOLE_REPOSITORY; expected trace_store or sqlalchemy"
+    )
 
 
 POLICY_ADMIN_ROLE = "policy_admin"
@@ -519,6 +497,9 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
+        console_engine = getattr(app.state, "console_engine", None)
+        if isinstance(console_engine, Engine):
+            console_engine.dispose()
         app.state.trace_store.close()
         redis_client = getattr(app.state.kill_switch, "redis", None)
         if redis_client is None:
@@ -619,8 +600,24 @@ def create_app(
     app.state.rate_limiter = rate_limiter
     app.state.webhook_notifier = webhook_notifier
     app.state.slo_monitor = slo_monitor
+    app.state.authorize_admin_request = _authorize_admin_request
+    app.state.idempotency_cache = cast(dict[str, dict[str, Any]], {})
+    app.state.idempotency_ttl_seconds = _get_idempotency_ttl_seconds()
     app.state.policy_path = policy_path
     app.state.policy_data_path = policy_data_path
+    console_repository, console_engine = _create_console_repository(trace_store)
+    app.state.console_repository_name = _console_repository_mode()
+    app.state.console_engine = console_engine
+    console_service = ConsoleService(
+        console_repository,
+        environment=os.getenv("AGENTGATE_ENV", "development"),
+        tenant_id=os.getenv("AGENTGATE_CONSOLE_TENANT_ID", "demo-tenant"),
+        policy_version=_get_policy_version(),
+        slo_enabled=_is_slo_enabled(),
+        availability_target=_get_slo_availability_target(),
+        p95_latency_seconds=_get_slo_p95_latency_seconds(),
+    )
+    app.include_router(create_api_v1_router(console_service=console_service))
     swagger_oauth2_redirect_url = (
         app.swagger_ui_oauth2_redirect_url or "/docs/oauth2-redirect"
     )
@@ -739,6 +736,37 @@ def create_app(
             return "elevated"
         return "normal"
 
+    def _error_docs_url(path: str) -> str:
+        if path.startswith("/admin/"):
+            return "https://jlov7.github.io/agentgate/OPERATIONAL_TRUST_LAYER/"
+        if path.startswith("/sessions/"):
+            return "https://jlov7.github.io/agentgate/JOURNEYS/"
+        return "https://jlov7.github.io/agentgate/GET_STARTED/"
+
+    def _error_hint(*, status_code: int, detail: str, path: str) -> str:
+        normalized = detail.lower()
+        if status_code == 400:
+            return "Validate request payload fields and retry with a supported format."
+        if status_code == 401:
+            return "Authenticate and retry the request."
+        if status_code == 403:
+            if "credential" in normalized or "api key" in normalized or "role" in normalized:
+                return "Use an admin credential with the required role scope."
+            return "This action is blocked by policy. Review access scope and retry."
+        if status_code == 404:
+            return "Verify identifiers and tenant scope, then retry."
+        if status_code == 409:
+            return (
+                "Resolve state conflict (for example stale revision, rollout state, "
+                "or idempotency mismatch) and retry."
+            )
+        if status_code >= 500:
+            return (
+                "Retry after dependencies recover, then inspect service logs if the "
+                "error persists."
+            )
+        return "Review the request and retry."
+
     @app.middleware("http")
     async def request_size_middleware(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -807,6 +835,111 @@ def create_app(
             response.headers["traceparent"] = traceparent
         return response
 
+    @app.middleware("http")
+    async def admin_idempotency_middleware(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+            return await call_next(request)
+        if not request.url.path.startswith("/admin/"):
+            return await call_next(request)
+
+        idempotency_key = request.headers.get("Idempotency-Key")
+        if not idempotency_key:
+            return await call_next(request)
+
+        request_body = await request.body()
+        payload_hash = hashlib.sha256(request_body).hexdigest()
+        scoped_key = f"{request.method}:{request.url.path}:{idempotency_key}"
+        cache = cast(dict[str, dict[str, Any]], app.state.idempotency_cache)
+        now_seconds = time.time()
+        ttl_seconds = int(app.state.idempotency_ttl_seconds)
+
+        stale_keys = [
+            key
+            for key, value in cache.items()
+            if now_seconds - float(value.get("created_at", 0.0)) > ttl_seconds
+        ]
+        for key in stale_keys:
+            cache.pop(key, None)
+
+        existing = cache.get(scoped_key)
+        if existing is not None:
+            if existing.get("payload_hash") != payload_hash:
+                return JSONResponse(
+                    {
+                        "error": "Idempotency key reuse with different payload",
+                        "detail": "Idempotency key reuse with different payload",
+                        "error_code": "AG-409",
+                        "hint": _error_hint(
+                            status_code=409,
+                            detail="Idempotency key reuse with different payload",
+                            path=request.url.path,
+                        ),
+                        "docs_url": _error_docs_url(request.url.path),
+                    },
+                    status_code=409,
+                )
+            replay_headers = {
+                "Content-Type": str(existing.get("content_type", "application/json")),
+                "X-Idempotent-Replay": "true",
+            }
+            replay_body = existing.get("body", b"")
+            if not isinstance(replay_body, (bytes, bytearray)):
+                replay_body = str(replay_body).encode("utf-8")
+            return Response(
+                content=bytes(replay_body),
+                status_code=int(existing.get("status_code", 200)),
+                headers=replay_headers,
+            )
+
+        response = await call_next(request)
+        response_body = getattr(response, "body", None)
+        if response_body is None:
+            response_chunks: list[bytes] = []
+            body_iterator = getattr(response, "body_iterator", None)
+            if body_iterator is None:
+                return response
+            async for chunk in body_iterator:
+                if isinstance(chunk, (bytes, bytearray)):
+                    response_chunks.append(bytes(chunk))
+                else:
+                    response_chunks.append(str(chunk).encode("utf-8"))
+            response_body = b"".join(response_chunks)
+            response = Response(
+                content=response_body,
+                status_code=response.status_code,
+                headers=dict(response.headers),
+                media_type=response.media_type,
+            )
+        elif not isinstance(response_body, (bytes, bytearray)):
+            response_body = str(response_body).encode("utf-8")
+
+        cache[scoped_key] = {
+            "payload_hash": payload_hash,
+            "status_code": response.status_code,
+            "content_type": response.headers.get("content-type", "application/json"),
+            "body": bytes(response_body),
+            "created_at": now_seconds,
+        }
+        return response
+
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+        detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+        payload = {
+            "error": detail,
+            "detail": detail,
+            "error_code": f"AG-{exc.status_code}",
+            "hint": _error_hint(
+                status_code=exc.status_code,
+                detail=detail,
+                path=request.url.path,
+            ),
+            "docs_url": _error_docs_url(request.url.path),
+        }
+        return JSONResponse(payload, status_code=exc.status_code, headers=exc.headers)
+
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
         request: Request, exc: RequestValidationError
@@ -835,8 +968,10 @@ def create_app(
         payload: dict[str, Any] = {
             "error": "Invalid request",
             "message": "Request validation failed.",
+            "error_code": "AG-422",
             "hint": hint,
             "detail": detail,
+            "docs_url": _error_docs_url(request.url.path),
         }
         if example is not None:
             payload["example"] = example
@@ -1314,6 +1449,8 @@ def create_app(
         else:
             app.state.rate_limiter = None
             app.state.gateway.rate_limiter = None
+
+    app.state.apply_runtime_policy_data = _apply_runtime_policy_data
 
     def _raise_policy_lifecycle_error(exc: ValueError) -> Never:
         message = str(exc)

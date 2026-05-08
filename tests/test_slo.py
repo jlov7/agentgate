@@ -71,7 +71,10 @@ def test_slo_monitor_status_includes_objectives() -> None:
     monitor.record_tool_call(success=True, latency_seconds=0.8, now=now + timedelta(seconds=1))
     status = monitor.current_status(now=now + timedelta(seconds=2))
     objectives = status["objectives"]
+    burn_rate = status["burn_rate"]
     assert status["enabled"] is True
     assert status["sample_count"] == 2
     assert objectives["availability"]["actual"] == 1.0
     assert objectives["latency_p95_seconds"]["breached"] is True
+    assert isinstance(burn_rate["availability"], float)
+    assert isinstance(burn_rate["latency_p95_seconds"], float)

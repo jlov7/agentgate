@@ -10,6 +10,7 @@
   const VIEWS_KEY = "ag_workspace_saved_views_v1";
   const MODE_KEY = "ag_workspace_terminology_mode_v1";
   const DEFAULT_WORKSPACE_PATH = "JOURNEYS/";
+
   const actionDestinations = {
     "Review trust posture": "OPERATIONAL_TRUST_LAYER/",
     "Validate launch gate": "JOURNEYS/",
@@ -101,7 +102,7 @@
   }
 
   function adaptiveDefaultPersona() {
-    // adaptive default: infer from recent event usage if no explicit choice was saved.
+    // adaptive default: infer likely role from recent interaction patterns.
     const events = window.AgentGateUX && typeof window.AgentGateUX.events === "function" ? window.AgentGateUX.events() : [];
     const counts = { executive: 0, security: 0, engineering: 0, compliance: 0, ops: 0 };
     for (const event of events.slice(-80)) {
@@ -138,12 +139,42 @@
     slot.innerHTML = `<ul class="ag-card-grid">${blocks}</ul>`;
   }
 
-  function renderWorkspace() {
-    const persona = currentPersona();
-    if (!persona) {
-      return;
-    }
+  function kpiSection(persona) {
+    const kpiRows = persona.kpis
+      .map(
+        (kpi) => `
+      <article class="ag-kpi">
+        <span class="ag-kpi__label">${escapeHtml(workspaceCopyLabel(kpi.label))}</span>
+        <strong>${escapeHtml(kpi.value)}</strong>
+      </article>
+    `,
+      )
+      .join("");
 
+    return [
+      '<section class="ag-next-steps" data-workspace-section="kpis">',
+      "<h3>Current signals</h3>",
+      `<div class="ag-kpis">${kpiRows}</div>`,
+      "</section>",
+    ].join("");
+  }
+
+  function narrativeSection(persona) {
+    const label = state.terminologyMode === "technical" ? "Technical terminology" : "Non-technical terminology";
+    const adminPolicyLine = state.adminPolicyLocked
+      ? '<p class="ag-risk ag-risk--warn"><strong>Admin policy</strong>: regulated tenant defaults are enforced and layout changes are locked.</p>'
+      : '<p class="ag-risk ag-risk--info"><strong>Admin policy</strong>: default workspace can be customized for this tenant.</p>';
+
+    return [
+      '<section class="ag-next-steps" data-workspace-section="narrative">',
+      `<h3>${escapeHtml(persona.headline)}</h3>`,
+      `<p>Mode: <strong>${escapeHtml(label)}</strong></p>`,
+      adminPolicyLine,
+      "</section>",
+    ].join("");
+  }
+
+  function actionsSection(persona) {
     const actions = persona.actions
       .map((action) => {
         const path = actionPath(action);
@@ -151,35 +182,73 @@
       })
       .join("");
 
-    const kpiRows = persona.kpis
-      .map(
-        (kpi) => `
-        <article class="ag-kpi">
-          <span class="ag-kpi__label">${escapeHtml(workspaceCopyLabel(kpi.label))}</span>
-          <strong>${escapeHtml(kpi.value)}</strong>
-        </article>
-      `,
-      )
+    return [
+      '<section class="ag-next-steps" data-workspace-section="actions">',
+      "<h3>Next actions</h3>",
+      `<ul>${actions}</ul>`,
+      "</section>",
+    ].join("");
+  }
+
+  function genericSection(title, body, sectionKey) {
+    return [
+      `<section class="ag-next-steps" data-workspace-section="${escapeHtml(sectionKey)}">`,
+      `<h3>${escapeHtml(title)}</h3>`,
+      `<p>${escapeHtml(body)}</p>`,
+      "</section>",
+    ].join("");
+  }
+
+  function renderWorkspaceSections(persona, layoutOrder) {
+    const sectionMap = {
+      kpis: kpiSection(persona),
+      narrative: narrativeSection(persona),
+      actions: actionsSection(persona),
+      timeline: genericSection(
+        "Recent timeline",
+        "Track the last critical decision changes before approving promotion.",
+        "timeline",
+      ),
+      controls: genericSection(
+        "Operational controls",
+        "Use the sandbox and rollout controls to validate decisions before release.",
+        "controls",
+      ),
+      evidence: genericSection(
+        "Evidence readiness",
+        "Prepare signed exports and trust artifacts for support and audit handoff.",
+        "evidence",
+      ),
+      alerts: genericSection(
+        "Live alerts",
+        "Prioritize active incidents and rollback tasks before escalating deployment scope.",
+        "alerts",
+      ),
+    };
+
+    return layoutOrder
+      .map((key) => sectionMap[key] || genericSection(key, "Workspace section configured for this persona.", key))
       .join("");
+  }
 
-    const label = state.terminologyMode === "technical" ? "Technical terminology" : "Non-technical terminology";
-    const adminPolicyLine = state.adminPolicyLocked
-      ? '<p class="ag-risk ag-risk--warn"><strong>Admin policy</strong>: regulated tenant defaults are enforced and layout changes are locked.</p>'
-      : '<p class="ag-risk ag-risk--info"><strong>Admin policy</strong>: default workspace can be customized for this tenant.</p>';
+  function renderWorkspace() {
+    const persona = currentPersona();
+    if (!persona) {
+      return;
+    }
 
-    root.querySelector("[data-slot='workspace']").innerHTML = `
-      <div class="ag-next-steps">
-        <h3>${escapeHtml(persona.headline)}</h3>
-        <p>Mode: <strong>${escapeHtml(label)}</strong></p>
-        ${adminPolicyLine}
-      </div>
-      <div class="ag-kpis">${kpiRows}</div>
-      <div class="ag-next-steps">
-        <h3>Next actions</h3>
-        <ul>${actions}</ul>
-      </div>
-    `;
+    const layoutOrder = state.layout.length
+      ? state.layout.slice()
+      : Array.isArray(persona.default_layout)
+        ? persona.default_layout.slice()
+        : ["narrative", "kpis", "actions"];
 
+    const slot = root.querySelector("[data-slot='workspace']");
+    if (!slot) {
+      return;
+    }
+
+    slot.innerHTML = renderWorkspaceSections(persona, layoutOrder);
     renderLayoutControls();
   }
 
@@ -189,12 +258,17 @@
       return;
     }
 
-    slot.innerHTML = state.catalog
-      .map((entry) => {
-        const active = entry.persona === state.persona ? "ag-lab-chip ag-lab-chip--active" : "ag-lab-chip";
-        return `<button type="button" class="${active}" data-action="select-persona" data-persona="${escapeHtml(entry.persona)}">${escapeHtml(entry.persona)}</button>`;
-      })
-      .join("");
+    slot.innerHTML = [
+      '<div class="ag-lab-chip-row" role="tablist" aria-label="Workspace personas">',
+      state.catalog
+        .map((entry) => {
+          const active = entry.persona === state.persona;
+          const activeClass = active ? "ag-lab-chip ag-lab-chip--active" : "ag-lab-chip";
+          return `<button type="button" class="${activeClass}" role="tab" aria-selected="${active ? "true" : "false"}" tabindex="${active ? "0" : "-1"}" data-action="select-persona" data-persona="${escapeHtml(entry.persona)}">${escapeHtml(entry.persona)}</button>`;
+        })
+        .join(""),
+      "</div>",
+    ].join("");
   }
 
   function saveView() {
@@ -244,6 +318,25 @@
     saveJson(LAYOUT_KEY, { persona: state.persona, layout: state.layout });
   }
 
+  function applyPersonaSelection(persona, options) {
+    const nextPersona = String(persona || "executive");
+    const shouldFocus = Boolean(options && options.focusTab);
+    state.persona = nextPersona;
+    const current = currentPersona();
+    state.layout = Array.isArray(current && current.default_layout) ? current.default_layout.slice() : state.layout;
+    persistLayout();
+    renderPersonaTabs();
+    renderWorkspace();
+    if (shouldFocus) {
+      const tabs = Array.from(root.querySelectorAll("[role='tab']")).filter((entry) => entry instanceof HTMLElement);
+      const focused = tabs.find((entry) => entry.getAttribute("data-persona") === nextPersona);
+      if (focused instanceof HTMLElement) {
+        focused.focus();
+      }
+    }
+    emitUxEvent("workspace_persona_selected", { persona: state.persona, tenant: state.tenant });
+  }
+
   function wireEvents() {
     root.addEventListener("click", (event) => {
       const target = event.target;
@@ -256,13 +349,7 @@
       }
 
       if (actionNode.matches("[data-action='select-persona']")) {
-        state.persona = String(actionNode.getAttribute("data-persona") || "executive");
-        const persona = currentPersona();
-        state.layout = Array.isArray(persona.default_layout) ? persona.default_layout.slice() : state.layout;
-        persistLayout();
-        renderPersonaTabs();
-        renderWorkspace();
-        emitUxEvent("workspace_persona_selected", { persona: state.persona, tenant: state.tenant });
+        applyPersonaSelection(actionNode.getAttribute("data-persona") || "executive", { focusTab: false });
       }
 
       if (actionNode.matches("[data-action='toggle-terminology']")) {
@@ -309,7 +396,7 @@
         clone[nextIndex] = temp;
         state.layout = clone;
         persistLayout();
-        renderLayoutControls();
+        renderWorkspace();
         emitUxEvent("workspace_layout_changed", { layout: state.layout, persona: state.persona });
       }
 
@@ -326,6 +413,40 @@
           destination: actionNode.getAttribute("data-action-path") || "",
         });
       }
+    });
+
+    root.addEventListener("keydown", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement) || target.getAttribute("role") !== "tab") {
+        return;
+      }
+
+      const tabs = Array.from(root.querySelectorAll("[role='tab']")).filter((entry) => entry instanceof HTMLElement);
+      if (!tabs.length) {
+        return;
+      }
+
+      const index = tabs.indexOf(target);
+      if (index < 0) {
+        return;
+      }
+
+      let nextIndex = index;
+      if (event.key === "ArrowRight") {
+        nextIndex = (index + 1) % tabs.length;
+      } else if (event.key === "ArrowLeft") {
+        nextIndex = (index - 1 + tabs.length) % tabs.length;
+      } else if (event.key === "Home") {
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        nextIndex = tabs.length - 1;
+      } else {
+        return;
+      }
+
+      event.preventDefault();
+      const persona = tabs[nextIndex].getAttribute("data-persona") || state.persona;
+      applyPersonaSelection(persona, { focusTab: true });
     });
   }
 
@@ -396,7 +517,7 @@
     } catch (error) {
       root.innerHTML = `<article class="ag-empty"><h4>Workspace unavailable</h4><p>${escapeHtml(
         error instanceof Error ? error.message : String(error),
-      )}</p></article>`;
+      )}</p><p><a href="${escapeHtml(resolveDocsHref("WORKSPACES/"))}">Retry this page</a></p></article>`;
     }
   }
 

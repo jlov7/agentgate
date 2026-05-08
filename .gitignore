@@ -27,9 +27,13 @@ coverage.xml
 mutants/
 playwright-report/
 test-results/
+.playwright-mcp/
 
 # Node
 node_modules/
+.next/
+.turbo/
+*.tsbuildinfo
 
 # Type checking
 .mypy_cache/
@@ -60,6 +64,7 @@ dist/
 Thumbs.db
 
 # Project specific
+.codex/
 reports/
 demo_recording.log
 evidence_*.json

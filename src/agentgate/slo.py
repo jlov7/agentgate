@@ -90,6 +90,8 @@ class SLOMonitor:
         sample_count = len(self._samples)
         availability_actual: float | None = None
         latency_p95_actual: float | None = None
+        availability_burn_rate: float | None = None
+        latency_burn_rate: float | None = None
         availability_breached = False
         latency_breached = False
 
@@ -99,6 +101,10 @@ class SLOMonitor:
             availability_breached = availability_actual < self.availability_target
             latency_p95_actual = self._p95([sample.latency_seconds for sample in self._samples])
             latency_breached = latency_p95_actual > self.p95_latency_seconds
+            error_budget = max(1e-9, 1.0 - self.availability_target)
+            observed_error = max(0.0, 1.0 - availability_actual)
+            availability_burn_rate = observed_error / error_budget
+            latency_burn_rate = latency_p95_actual / self.p95_latency_seconds
 
         return {
             "enabled": self.enabled,
@@ -116,6 +122,10 @@ class SLOMonitor:
                     "actual": latency_p95_actual,
                     "breached": latency_breached,
                 },
+            },
+            "burn_rate": {
+                "availability": availability_burn_rate,
+                "latency_p95_seconds": latency_burn_rate,
             },
         }
 
@@ -238,6 +248,10 @@ class SLOMonitor:
                         "actual": None,
                         "breached": False,
                     },
+                },
+                "burn_rate": {
+                    "availability": None,
+                    "latency_p95_seconds": None,
                 },
             }
 

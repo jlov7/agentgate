@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@source "../**/*.{ts,tsx}";
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../packages/agentgate-client/src/**/*.{ts,tsx}";
+
+@theme {
+  --font-sans: "Geist", "Geist Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "SFMono-Regular", ui-monospace, monospace;
+
+  --color-bone-50: oklch(0.986 0.007 96);
+  --color-bone-100: oklch(0.962 0.011 96);
+  --color-bone-200: oklch(0.914 0.014 96);
+
+  --color-graphite-50: oklch(0.972 0.006 180);
+  --color-graphite-100: oklch(0.925 0.008 180);
+  --color-graphite-200: oklch(0.846 0.01 180);
+  --color-graphite-300: oklch(0.746 0.012 180);
+  --color-graphite-500: oklch(0.548 0.015 180);
+  --color-graphite-650: oklch(0.405 0.016 180);
+  --color-graphite-700: oklch(0.33 0.015 180);
+  --color-graphite-800: oklch(0.245 0.014 180);
+  --color-graphite-900: oklch(0.174 0.012 180);
+  --color-graphite-950: oklch(0.118 0.01 180);
+
+  --color-verdigris-50: oklch(0.966 0.028 174);
+  --color-verdigris-100: oklch(0.913 0.05 174);
+  --color-verdigris-400: oklch(0.685 0.095 174);
+  --color-verdigris-500: oklch(0.596 0.087 174);
+  --color-verdigris-700: oklch(0.402 0.068 174);
+  --color-verdigris-800: oklch(0.324 0.055 174);
+  --color-verdigris-900: oklch(0.248 0.045 174);
+
+  --ease-cockpit: cubic-bezier(0.22, 1, 0.36, 1);
+  --breakpoint-3xl: 120rem;
+}
+
+:root {
+  color-scheme: light;
+  background: var(--color-bone-50);
+  font-variant-numeric: tabular-nums;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 8% 0%, oklch(0.93 0.025 174 / 0.55), transparent 28rem),
+    linear-gradient(180deg, var(--color-bone-50), var(--color-bone-100));
+  color: var(--color-graphite-950);
+  font-family: var(--font-sans);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  content: "";
+  opacity: 0.045;
+  background-image:
+    linear-gradient(90deg, var(--color-graphite-950) 1px, transparent 1px),
+    linear-gradient(var(--color-graphite-950) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid oklch(0.596 0.087 174 / 0.72);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}

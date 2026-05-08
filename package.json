@@ -1,6 +1,15 @@
 {
   "name": "agentgate",
+  "packageManager": "pnpm@11.0.4",
   "private": true,
+  "scripts": {
+    "console:dev": "pnpm --filter @agentgate/console dev",
+    "console:build": "pnpm --filter @agentgate/console build",
+    "console:test": "pnpm --filter @agentgate/console test",
+    "console:typecheck": "pnpm --filter @agentgate/console typecheck",
+    "console:lint": "pnpm --filter @agentgate/console lint",
+    "packages:typecheck": "pnpm --filter @agentgate/ui typecheck && pnpm --filter @agentgate/client typecheck"
+  },
   "devDependencies": {
     "@playwright/test": "^1.58.0"
   }

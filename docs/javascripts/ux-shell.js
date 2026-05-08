@@ -143,6 +143,9 @@
     if (document.querySelector(".ag-breadcrumb")) {
       return;
     }
+    if (window.matchMedia("(min-width: 961px)").matches) {
+      return;
+    }
 
     const container = document.querySelector(".md-content__inner");
     if (!(container instanceof HTMLElement)) {
@@ -180,6 +183,7 @@
     launch.textContent = "Quick Actions";
     launch.setAttribute("aria-haspopup", "dialog");
     launch.setAttribute("aria-controls", "ag-command-modal");
+    launch.setAttribute("aria-label", "Quick actions (Command+K)");
 
     const modal = document.createElement("div");
     modal.id = "ag-command-modal";
@@ -190,8 +194,8 @@
     launch.setAttribute("aria-expanded", "false");
     modal.innerHTML = [
       '<div class="ag-command-overlay" data-action="close"></div>',
-      '<div class="ag-command-panel" role="dialog" aria-modal="true" aria-label="Quick actions">',
-      '<div class="ag-command-head"><h2>Quick Actions</h2><button type="button" class="ag-btn ag-btn--ghost" data-action="close">Close</button></div>',
+      '<div class="ag-command-panel" role="dialog" aria-modal="true" aria-labelledby="ag-command-title">',
+      '<div class="ag-command-head"><h2 id="ag-command-title">Quick Actions</h2><button type="button" class="ag-btn ag-btn--ghost" data-action="close">Close</button></div>',
       '<p class="ag-command-copy">Jump directly to the next task in your current journey.</p>',
       '<div class="ag-command-links">',
       quickLinks
@@ -219,7 +223,9 @@
       if (modal.classList.contains("ag-command-modal--open")) {
         return;
       }
-      lastFocused = document.activeElement;
+      const activeElement = document.activeElement;
+      lastFocused =
+        activeElement instanceof HTMLElement && activeElement !== document.body ? activeElement : launch;
       previousBodyOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
       modal.removeAttribute("hidden");
@@ -244,9 +250,10 @@
       modal.setAttribute("inert", "");
       launch.setAttribute("aria-expanded", "false");
       document.body.style.overflow = previousBodyOverflow;
-      if (lastFocused instanceof HTMLElement) {
-        lastFocused.focus();
-      }
+      const focusTarget = lastFocused instanceof HTMLElement && lastFocused.isConnected ? lastFocused : launch;
+      window.setTimeout(() => {
+        focusTarget.focus();
+      }, 0);
     }
 
     launch.addEventListener("click", open);
@@ -290,12 +297,66 @@
         }
       }
       if (modal.classList.contains("ag-command-modal--open") && event.key === "Escape") {
+        event.preventDefault();
         close();
       }
     });
 
     document.body.appendChild(launch);
     document.body.appendChild(modal);
+  }
+
+  function mountUserStateRoute() {
+    const root = document.getElementById("ag-user-state");
+    if (!root) {
+      return;
+    }
+
+    const progress = loadJson(CHECKLIST_KEY, {});
+    const returning = loadJson(RETURNING_KEY, { seen: false });
+    const completedCount = Object.values(progress).filter(Boolean).length;
+
+    const steps = [
+      "Confirm environment + tenant context",
+      "Run health check in hosted sandbox",
+      "Execute allow/deny flows",
+      "Export evidence transcript",
+      "Review replay/incident/rollout journeys",
+    ];
+
+    const links = [
+      resolveDocsHref("HOSTED_SANDBOX/"),
+      resolveDocsHref("HOSTED_SANDBOX/"),
+      resolveDocsHref("DEMO_LAB/"),
+      resolveDocsHref("TRY_NOW/"),
+      resolveDocsHref("JOURNEYS/"),
+    ];
+
+    let nextIndex = steps.findIndex((_, index) => !progress[index]);
+    if (nextIndex < 0) {
+      nextIndex = steps.length - 1;
+    }
+
+    if (returning.seen && completedCount > 0) {
+      root.innerHTML = [
+        '<div class="ag-next-state" data-user-state="returning">',
+        "<strong>Welcome back.</strong>",
+        `<p>You have completed ${completedCount} of ${steps.length} onboarding milestones.</p>`,
+        `<p><a href="${escapeHtml(links[nextIndex])}">Resume: ${escapeHtml(steps[nextIndex])}</a></p>`,
+        "</div>",
+      ].join("");
+      emitUxEvent("user_state_returning", { completed_count: completedCount });
+      return;
+    }
+
+    root.innerHTML = [
+      '<div class="ag-next-state" data-user-state="first-visit">',
+      "<strong>First visit path.</strong>",
+      "<p>Start with Hosted Sandbox to reach first value quickly, then continue into role journeys.</p>",
+      `<p><a href="${escapeHtml(resolveDocsHref("HOSTED_SANDBOX/"))}">Start guided trial</a></p>`,
+      "</div>",
+    ].join("");
+    emitUxEvent("user_state_first_visit");
   }
 
   function mountOnboardingChecklist() {
@@ -440,6 +501,7 @@
     mountBreadcrumbs();
     mountContextBar();
     mountCommandPalette();
+    mountUserStateRoute();
     mountOnboardingChecklist();
     mountContextTips();
     mountStartTour();

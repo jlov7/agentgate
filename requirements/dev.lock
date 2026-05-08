@@ -4,6 +4,8 @@
 #
 #    pip-compile --extra=dev --extra=pdf --output-file=requirements/dev.lock --strip-extras pyproject.toml
 #
+alembic==1.18.4
+    # via agentgate (pyproject.toml)
 annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
@@ -58,8 +60,9 @@ coverage==7.13.3
     # via
     #   mutmut
     #   pytest-cov
-cryptography==46.0.5
+cryptography==48.0.0
     # via
+    #   agentgate (pyproject.toml)
     #   types-pyopenssl
     #   types-redis
 cssselect2==0.8.0
@@ -126,8 +129,10 @@ license-expression==30.4.4
     # via cyclonedx-python-lib
 linkify-it-py==2.0.3
     # via markdown-it-py
-lxml==6.0.2
+lxml==6.1.0
     # via cyclonedx-python-lib
+mako==1.3.12
+    # via alembic
 markdown==3.10.2
     # via
     #   mkdocs
@@ -141,6 +146,7 @@ markdown-it-py==4.0.0
 markupsafe==3.0.3
     # via
     #   jinja2
+    #   mako
     #   mkdocs
 mdit-py-plugins==0.5.0
     # via textual
@@ -187,7 +193,7 @@ pathspec==1.0.4
     # via
     #   mkdocs
     #   mypy
-pillow==12.1.1
+pillow==12.2.0
     # via weasyprint
 pip-api==0.0.34
     # via pip-audit
@@ -209,6 +215,10 @@ pluggy==1.6.0
     #   pytest-cov
 pre-commit==4.5.1
     # via agentgate (pyproject.toml)
+psycopg==3.3.4
+    # via agentgate (pyproject.toml)
+psycopg-binary==3.3.4
+    # via psycopg
 py-serializable==2.1.0
     # via cyclonedx-python-lib
 pycparser==3.0
@@ -221,19 +231,19 @@ pydantic-core==2.41.5
     # via pydantic
 pydyf==0.12.1
     # via weasyprint
-pygments==2.19.2
+pygments==2.20.0
     # via
     #   mkdocs-material
     #   pytest
     #   rich
     #   textual
-pymdown-extensions==10.20.1
+pymdown-extensions==10.21.2
     # via mkdocs-material
 pyparsing==3.3.2
     # via pip-requirements-parser
 pyphen==0.17.2
     # via weasyprint
-pytest==9.0.2
+pytest==9.0.3
     # via
     #   agentgate (pyproject.toml)
     #   mutmut
@@ -266,7 +276,7 @@ referencing==0.37.0
     #   cyclonedx-python-lib
     #   jsonschema
     #   jsonschema-specifications
-requests==2.32.5
+requests==2.33.1
     # via
     #   cachecontrol
     #   mkdocs-material
@@ -297,6 +307,10 @@ six==1.17.0
     #   rfc3339-validator
 sortedcontainers==2.4.0
     # via cyclonedx-python-lib
+sqlalchemy==2.0.49
+    # via
+    #   agentgate (pyproject.toml)
+    #   alembic
 starlette==0.50.0
     # via fastapi
 stevedore==5.6.0
@@ -325,14 +339,17 @@ types-setuptools==80.10.0.20260124
     # via types-cffi
 typing-extensions==4.15.0
     # via
+    #   alembic
     #   anyio
     #   cyclonedx-python-lib
     #   fastapi
     #   mypy
+    #   psycopg
     #   pydantic
     #   pydantic-core
     #   pytest-asyncio
     #   referencing
+    #   sqlalchemy
     #   starlette
     #   textual
     #   typing-inspection

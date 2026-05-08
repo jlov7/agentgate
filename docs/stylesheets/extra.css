@@ -2,7 +2,7 @@
 
 :root {
   --ag-ink: #0b1d1a;
-  --ag-ink-muted: #31524b;
+  --ag-ink-muted: #274640;
   --ag-surface: #f7f1e9;
   --ag-surface-strong: #efe7dd;
   --ag-accent: #0e7c7b;
@@ -28,8 +28,8 @@
 body {
   background-color: var(--ag-surface);
   background-image:
-    radial-gradient(circle at 15% 15%, rgba(14, 124, 123, 0.08), transparent 35%),
-    radial-gradient(circle at 80% 20%, rgba(242, 166, 90, 0.12), transparent 40%),
+    radial-gradient(circle at 15% 15%, rgba(14, 124, 123, 0.11), transparent 32%),
+    radial-gradient(circle at 80% 20%, rgba(242, 166, 90, 0.14), transparent 36%),
     linear-gradient(180deg, #f7f1e9 0%, #f2f4f1 100%);
   color: var(--ag-ink);
 }
@@ -168,7 +168,7 @@ body {
   border: 1px solid var(--ag-line);
   border-radius: 18px;
   padding: 1.25rem;
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 14px 34px rgba(11, 29, 26, 0.1);
 }
 
@@ -335,11 +335,15 @@ body {
 }
 
 .ag-sandbox-run--pass {
-  border-left: 4px solid var(--ag-accent);
+  border-color: rgba(14, 124, 123, 0.35);
+  background: rgba(14, 124, 123, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(14, 124, 123, 0.08);
 }
 
 .ag-sandbox-run--fail {
-  border-left: 4px solid #cf3e3e;
+  border-color: rgba(207, 62, 62, 0.36);
+  background: rgba(207, 62, 62, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(207, 62, 62, 0.08);
 }
 
 .ag-sandbox-run header {
@@ -422,7 +426,7 @@ body {
 .ag-card {
   border: 1px solid var(--ag-line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   padding: 0.9rem;
   display: grid;
   gap: 0.45rem;
@@ -457,6 +461,16 @@ body {
   touch-action: manipulation;
 }
 
+.ag-btn:focus-visible,
+.ag-lab-chip:focus-visible,
+.ag-command-link:focus-visible,
+.ag-workflow-step:focus-visible,
+.ag-card button:focus-visible,
+.ag-card a:focus-visible {
+  outline: 3px solid var(--ag-accent);
+  outline-offset: 2px;
+}
+
 .ag-tag {
   display: inline-block;
   width: fit-content;
@@ -474,7 +488,7 @@ body {
   border: 1px dashed var(--ag-line);
   border-radius: 12px;
   padding: 0.85rem 1rem;
-  background: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.84);
 }
 
 .ag-next-steps h3 {
@@ -539,7 +553,7 @@ body {
 .ag-command-launch {
   position: fixed;
   right: 1rem;
-  bottom: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
   z-index: 999;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -629,7 +643,7 @@ body {
 @media (max-width: 768px) {
   .ag-command-launch {
     right: 0.7rem;
-    bottom: 0.7rem;
+    bottom: calc(0.7rem + env(safe-area-inset-bottom));
     padding: 0.5rem 0.75rem;
   }
 }
@@ -639,7 +653,7 @@ body {
   gap: 1rem;
   border: 1px solid var(--ag-line);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.92);
   padding: 1rem;
 }
 
@@ -769,7 +783,7 @@ body {
 .ag-empty {
   border: 1px dashed var(--ag-line);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.9);
   padding: 0.8rem;
 }
 
@@ -792,22 +806,22 @@ body {
 }
 
 .ag-risk--info {
-  border-left: 4px solid #0e7c7b;
+  border-color: rgba(14, 124, 123, 0.34);
   background: rgba(14, 124, 123, 0.08);
 }
 
 .ag-risk--warn {
-  border-left: 4px solid #a36b00;
+  border-color: rgba(163, 107, 0, 0.34);
   background: rgba(242, 166, 90, 0.2);
 }
 
 .ag-risk--high {
-  border-left: 4px solid #bd4b00;
+  border-color: rgba(189, 75, 0, 0.34);
   background: rgba(255, 139, 56, 0.18);
 }
 
 .ag-risk--critical {
-  border-left: 4px solid #9c1f1f;
+  border-color: rgba(156, 31, 31, 0.36);
   background: rgba(207, 62, 62, 0.2);
 }
 
@@ -848,6 +862,7 @@ body {
 
 .md-main__inner {
   padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
 }
 
 [data-md-color-scheme="slate"] {

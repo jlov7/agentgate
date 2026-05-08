@@ -20,7 +20,7 @@
        |___/        Containment-First Security
 ```
 
-> **Note:** This is a personal, independent R&D project. See [INDEPENDENCE.md](INDEPENDENCE.md) for details. This is a reference implementation—not production-ready.
+> **Note:** This is a personal, independent R&D project. See [INDEPENDENCE.md](INDEPENDENCE.md) for details. AgentGate now has release-gated product and console surfaces, but it is still security-sensitive infrastructure: run the verification gates, configure production identity/storage/credential providers, and complete your own deployment review before using it in a regulated environment.
 
 ---
 
@@ -39,6 +39,57 @@
 **For the docs site**, visit **https://jlov7.github.io/agentgate/**.
 
 **For technical details**, continue reading this README.
+
+---
+
+## Frontier Console
+
+AgentGate now includes a product-console foundation alongside the reference docs. The console is the primary product surface for new work; MkDocs remains the reference and evaluation surface during the migration.
+
+- `apps/console` is the Next.js App Router console with the public product front door, containment cockpit, session detail, policy studio, operations board, and `/reference` bridge.
+- `packages/ui` contains the Containment Cockpit design primitives and tokens.
+- `packages/agentgate-client` contains the typed console contract surface shared by the UI and tests.
+- `/api/v1/control/overview`, `/api/v1/sessions`, `/api/v1/policies/revisions`, `/api/v1/replay/runs`, `/api/v1/incidents`, `/api/v1/rollouts`, and `/api/v1/events/stream` expose the stable console API.
+
+The console uses a BFF pattern: browsers call Next route handlers, and Next proxies to FastAPI when `AGENTGATE_API_BASE_URL` is configured. If no backend URL is configured, it serves deterministic demo data so visual, a11y, and product journeys remain inspectable without secrets.
+
+Run the console locally:
+
+```bash
+pnpm install
+make console-dev
+```
+
+Validate the console:
+
+```bash
+make console-test
+env -u NO_COLOR npx playwright test -c playwright.console.config.ts
+```
+
+MkDocs remains the reference surface during migration; new product UI work should start in `apps/console`.
+
+See [apps/console/README.md](apps/console/README.md) for frontend architecture, environment variables, route ownership, and visual verification rules.
+
+---
+
+## Repository Structure
+
+| Path | Purpose |
+|------|---------|
+| `src/agentgate` | FastAPI gateway, policy enforcement, admin auth, console API services, and storage boundaries |
+| `src/agentgate/api/v1` | Versioned console/control-plane routers with RBAC dependencies |
+| `migrations` | Alembic migrations for the durable console/control-plane schema |
+| `apps/console` | Next.js product console and public product front door |
+| `packages/ui` | Shared AgentGate design primitives and tokens |
+| `packages/agentgate-client` | Typed TypeScript contract models used by the console |
+| `sdk/typescript` | Public TypeScript SDK package path retained in the workspace |
+| `docs` | MkDocs reference, demos, visual journeys, and generated showcase assets |
+| `tests` | Python unit/integration/eval tests plus Playwright visual and browser journeys |
+| `scripts` | Release gates, diagnostics, support bundles, drills, and frontend gate orchestration |
+| `.codex` | Execution plans and session scratchpad for long-running implementation work |
+
+Generated artifacts such as `.next`, `*.tsbuildinfo`, `.playwright-mcp`, `test-results`, `artifacts`, and virtualenv/cache directories are intentionally ignored and must not be committed.
 
 ---
 
@@ -86,11 +137,11 @@ Returning users should begin at [Workspaces](docs/WORKSPACES.md) and then contin
 **This is:**
 - A containment-first gateway for MCP tool calls with real-time policy enforcement.
 - An evidence engine that produces signed JSON/HTML/PDF audit packs.
-- A reference implementation you can integrate into agent runtimes.
+- A release-gated product foundation you can integrate into agent runtimes and evaluate through the console.
 
 **This isn’t:**
 - A model, agent framework, or autonomous system by itself.
-- A turnkey production product (see the R&D note above).
+- A managed service or turnkey compliance boundary. You still own identity, infrastructure, key management, data retention, and deployment review.
 
 ---
 
@@ -113,7 +164,7 @@ AgentGate implements a containment-first model with four control layers:
 |-------|------------|----------------|
 | **Policy Gates** | ALLOW / DENY / REQUIRE_APPROVAL | OPA/Rego policies evaluated on every call |
 | **Kill Switches** | Session / Tool / Global termination | Redis-backed real-time state |
-| **Credential Broker** | Time-bound, scope-limited access | Stub pattern (integrate with Vault, etc.) |
+| **Credential Broker** | Time-bound, scope-limited access | Local stub for demos plus HTTP, OAuth client-credentials, and AWS STS provider paths |
 | **Evidence Export** | Audit-ready JSON, HTML, PDF reports | Append-only SQLite trace store with cryptographic signing |
 
 **Current release:** v0.2.1 (patch: docs/example version alignment)
@@ -248,6 +299,32 @@ Then open:
 - `docs/showcase/metrics.prom` (Prometheus snapshot)
 - `docs/showcase/showcase.log` (narrated terminal run)
 - `docs/showcase/proof-bundle-*.zip` (shareable proof bundle)
+
+## Executable Demos (Showboat)
+
+This repo now includes executable markdown demos generated with Showboat. They combine commentary with real command output so a reviewer can re-run and validate what the docs claim.
+
+- [Showboat overview](docs/showboat/README.md)
+- [Release readiness proof](docs/showboat/release-readiness.md)
+- [Frontend excellence proof](docs/showboat/frontend-excellence.md)
+
+Regenerate both demos:
+
+```bash
+make showboat-demos
+```
+
+Force fresh gate execution before regenerating:
+
+```bash
+SHOWBOAT_REFRESH_GATES=1 make showboat-demos
+```
+
+Re-verify a demo:
+
+```bash
+make showboat-verify
+```
 
 ---
 
@@ -736,13 +813,14 @@ pip install -e ".[pdf]"
 
 ## Limitations
 
-This is a **reference implementation** for demonstration purposes:
+AgentGate is release-gated, but it is not a hosted compliance product:
 
-- **Not production-ready** — Use as a starting point, not hardened infrastructure
-- **Not compliant** — No FedRAMP, SOC2, HIPAA, or other compliance claims
-- **Credential broker is a stub** — Integrate with Vault/Secrets Manager for production
-- **Single-node only** — No clustering or horizontal scaling
-- **MCP proxy pattern only** — Does not work with non-MCP integrations
+- **No compliance claim** — There is no FedRAMP, SOC2, HIPAA, or equivalent certification claim.
+- **Credential provider defaults to demo mode** — The local stub is for development; production deployments must configure HTTP, OAuth client-credentials, AWS STS, Vault, or an equivalent broker.
+- **Storage mode is deployment-sensitive** — SQLite and trace-store compatibility paths are for local/dev; production console reads should use the SQLAlchemy/Postgres path with managed migrations.
+- **Identity must be configured deliberately** — Enterprise mode expects JWKS-backed JWTs with issuer/audience validation and explicit role mapping.
+- **Scaling is not automatic** — Clustering, multi-region rollout, retention policy, and queue backpressure are deployment responsibilities.
+- **MCP proxy pattern only** — Non-MCP integrations require a separate adapter layer.
 
 ---
 
@@ -752,8 +830,10 @@ Contributions welcome! Start with the adversarial test suite if you want to find
 
 1. Fork the repository
 2. Create a feature branch
-3. Run `make test && make lint`
-4. Submit a pull request
+3. Run `make verify`
+4. Run `scripts/run_frontend_gate.sh` for UI changes
+5. Run `scripts/doctor.sh` before opening a release-facing PR
+6. Submit a pull request
 
 ---
 

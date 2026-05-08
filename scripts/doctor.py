@@ -61,6 +61,12 @@ CHECK_SPECS: tuple[CheckSpec, ...] = (
         command="env -u NO_COLOR npx playwright test tests/e2e/a11y*.spec.ts",
     ),
     CheckSpec(
+        name="frontend_excellence",
+        gate="RG-13",
+        description="Cross-browser docs UX, visual, and mobile geometry gate",
+        command="scripts/run_frontend_gate.sh",
+    ),
+    CheckSpec(
         name="perf",
         gate="RG-05",
         description="Performance budget gate",

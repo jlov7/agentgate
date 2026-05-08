@@ -1,6 +1,6 @@
 # Release-Ready Master Program Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Codex:** REQUIRED SKILL: Use `executing-plans` to implement this plan task-by-task.
 
 **Goal:** Execute every remaining pre-release requirement to move AgentGate from strong reference implementation to production-grade release candidate.
 

@@ -1,4 +1,4 @@
-.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals e2e a11y-smoke mutate load-smoke load-test load-test-remote staging-smoke staging-reset risk-tune usage-meter compliance-map check-docker rego-quality docs-ux-lint verify verify-strict doctor scorecard product-audit security-closure support-bundle
+.PHONY: setup lock dev test lint test-adversarial demo showcase showcase-record showcase-video showcase-video-silent try clean sbom docker docker-prod pre-commit install-hooks unit integration evals ai-evals console-dev console-build console-test e2e a11y-smoke mutate load-smoke load-test load-test-remote staging-smoke staging-reset risk-tune usage-meter compliance-map check-docker rego-quality docs-ux-lint frontend-gate resilience-drill durability-drill showboat-demos showboat-verify verify verify-strict doctor scorecard product-audit security-closure support-bundle
 
 # ============================================================================
 # Development
@@ -69,6 +69,19 @@ evals:
 
 ai-evals:
 	.venv/bin/python evals/run_evals.py
+
+console-dev:
+	pnpm --filter @agentgate/console dev
+
+console-build:
+	pnpm --filter @agentgate/console build
+
+console-test:
+	pnpm --filter @agentgate/console typecheck
+	pnpm --filter @agentgate/ui typecheck
+	pnpm --filter @agentgate/client typecheck
+	pnpm --filter @agentgate/console test
+	pnpm --filter @agentgate/console build
 
 e2e:
 	env -u NO_COLOR npx playwright test
@@ -152,6 +165,22 @@ rego-quality:
 
 docs-ux-lint:
 	.venv/bin/python scripts/docs_ux_lint.py --output artifacts/docs-ux-lint.json
+
+frontend-gate:
+	scripts/run_frontend_gate.sh
+
+resilience-drill:
+	.venv/bin/python scripts/resilience_drill.py --output artifacts/resilience-drill.json
+
+durability-drill:
+	.venv/bin/python scripts/durability_drill.py --trace-db traces.db --output artifacts/durability-drill.json
+
+showboat-demos:
+	scripts/build_showboat_demos.sh
+
+showboat-verify:
+	uvx showboat verify docs/showboat/release-readiness.md
+	uvx showboat verify docs/showboat/frontend-excellence.md
 
 verify-strict: verify mutate
 

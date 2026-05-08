@@ -12,6 +12,7 @@
     flows: [],
     runs: [],
     mockMode: false,
+    isRunningAll: false,
     trialStartAt: Date.now(),
     timerId: null,
     milestones: {
@@ -97,6 +98,22 @@
     const slot = find("[data-slot='inline-feedback']");
     if (slot) {
       slot.innerHTML = "";
+    }
+  }
+
+  function setBusyState(isBusy) {
+    state.isRunningAll = isBusy;
+    root.setAttribute("aria-busy", isBusy ? "true" : "false");
+    const runAllButton = find("[data-action='run-all']");
+    if (runAllButton instanceof HTMLButtonElement) {
+      runAllButton.disabled = isBusy;
+      runAllButton.textContent = isBusy ? "Running all flows..." : "Run all flows";
+    }
+    const flowButtons = Array.from(root.querySelectorAll("[data-flow-id]"));
+    for (const node of flowButtons) {
+      if (node instanceof HTMLButtonElement) {
+        node.disabled = isBusy;
+      }
     }
   }
 
@@ -319,9 +336,21 @@
   }
 
   async function runAllFlows() {
+    if (state.isRunningAll) {
+      return;
+    }
+    setBusyState(true);
     emitUxEvent("sandbox_run_all_started", { flow_count: state.flows.length });
-    for (const flow of state.flows) {
-      await runFlow(flow.id);
+    try {
+      for (let index = 0; index < state.flows.length; index += 1) {
+        const flow = state.flows[index];
+        setInlineFeedback("info", `Running flow ${index + 1}/${state.flows.length}: ${flow.title}`);
+        emitUxEvent("sandbox_run_all_progress", { flow_id: flow.id, index: index + 1, total: state.flows.length });
+        await runFlow(flow.id);
+      }
+      clearInlineFeedback();
+    } finally {
+      setBusyState(false);
     }
     emitUxEvent("sandbox_run_all_completed", { run_count: state.runs.length });
   }
@@ -400,6 +429,10 @@
 
       const flowNode = target.closest("[data-flow-id]");
       if (flowNode instanceof HTMLElement && root.contains(flowNode)) {
+        if (state.isRunningAll) {
+          setInlineFeedback("warn", "Wait for the current run-all operation to complete before launching an individual flow.");
+          return;
+        }
         void runFlow(flowNode.dataset.flowId || "");
       }
 

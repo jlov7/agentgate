@@ -18,6 +18,7 @@ This document defines release-readiness gates and required evidence artifacts.
 | RG-09 | Product Audit | `.venv/bin/python scripts/product_audit.py --output artifacts/product-audit.json` | Product checklist complete, README onboarding/support sections present, self-check CLI available |
 | RG-10 | Supportability Bundle | `.venv/bin/python scripts/support_bundle.py --output artifacts/support-bundle.tar.gz --manifest artifacts/support-bundle.json --require README.md --require artifacts/scorecard.json --require artifacts/product-audit.json --require artifacts/security-closure.json --require artifacts/replay-report.json --require artifacts/incident-report.json --require artifacts/rollout-report.json --require artifacts/logs/verify.log --require artifacts/logs/security.log` | Reproducible triage bundle + manifest generated for release artifacts/logs |
 | RG-11 | Advanced Controls | `.venv/bin/python scripts/controls_audit.py --output-dir artifacts` | Replay/quarantine/rollout artifacts generated (`artifacts/replay-report.json`, `artifacts/incident-report.json`, `artifacts/rollout-report.json`) |
+| RG-13 | Frontend Excellence | `scripts/run_frontend_gate.sh` | Static docs and Next console UX journeys pass across browser/mobile matrix; visual snapshots pass; zero console errors on primary console routes; `artifacts/frontend-gate-report.json` and `artifacts/console-frontend-gate-report.json` generated |
 
 ## Evidence Rules
 - Every gate run must be recorded in `artifacts/doctor.json`.
@@ -25,4 +26,4 @@ This document defines release-readiness gates and required evidence artifacts.
 - Failing gates must map to at least one entry in `GAPS.md`.
 
 ## Release Decision
-Release is permitted only when all RG-01..RG-12 are `pass` and `artifacts/doctor.json` reports `overall_status: pass`.
+Release is permitted only when all RG-01..RG-13 are `pass` and `artifacts/doctor.json` reports `overall_status: pass`.

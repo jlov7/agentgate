@@ -1,6 +1,6 @@
 # Next-Level Feature Trilogy Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Codex:** REQUIRED SKILL: Use `executing-plans` to implement this plan task-by-task.
 
 **Goal:** Deliver three advanced capabilities in one coordinated program: policy replay diffs, automated quarantine/revocation, and signed tenant canary rollouts.
 

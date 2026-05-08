@@ -18,7 +18,10 @@
       `<p><strong>What happened:</strong> ${escapeHtml(whatHappened)}</p>`,
       `<p><strong>Why:</strong> ${escapeHtml(why)}</p>`,
       `<p><strong>How to fix:</strong> ${escapeHtml(howToFix)}</p>`,
-      `<p><a href="${escapeHtml(docsPath)}">Open docs</a></p>`,
+      '<div class="ag-lab-actions">',
+      `<button type="button" class="ag-btn ag-btn--ghost" data-action='retry-load'>Retry load</button>`,
+      `<a class="ag-btn ag-btn--ghost" href="${escapeHtml(docsPath)}">Open docs</a>`,
+      "</div>",
       "</article>",
     ].join("");
   }
@@ -359,6 +362,11 @@
         render({ focusHeading: true });
       }
 
+      if (actionNode.matches("[data-action='retry-load']")) {
+        emitUxEvent("workflow_retry_load", { workflow: kind });
+        loadWorkflowFixtures();
+      }
+
       if (actionNode.matches("[data-action='generate-replay-test']")) {
         const slot = node.querySelector("[data-slot='generated-test']");
         if (!slot) {
@@ -428,52 +436,56 @@
       }
     });
 
-    Promise.all([
-      loadJson(node.dataset.replayDeltas || ""),
-      loadJson(node.dataset.incidentTimeline || ""),
-      loadJson(node.dataset.rolloutStages || ""),
-    ])
-      .then(([replayDeltas, incidentTimeline, rolloutStages]) => {
-        state.replayDeltas = replayDeltas;
-        state.incidentTimeline = incidentTimeline;
-        state.rolloutStages = rolloutStages;
+    function loadWorkflowFixtures() {
+      Promise.all([
+        loadJson(node.dataset.replayDeltas || ""),
+        loadJson(node.dataset.incidentTimeline || ""),
+        loadJson(node.dataset.rolloutStages || ""),
+      ])
+        .then(([replayDeltas, incidentTimeline, rolloutStages]) => {
+          state.replayDeltas = replayDeltas;
+          state.incidentTimeline = incidentTimeline;
+          state.rolloutStages = rolloutStages;
 
-        renderReplayDeltas(node, replayDeltas);
-        renderIncidentTimeline(node, incidentTimeline);
-        renderRolloutStages(node, rolloutStages);
-        emitUxEvent("workflow_loaded", {
-          workflow: kind,
-          replay_count: replayDeltas.length,
-          incident_count: incidentTimeline.length,
-          rollout_count: rolloutStages.length,
+          renderReplayDeltas(node, replayDeltas);
+          renderIncidentTimeline(node, incidentTimeline);
+          renderRolloutStages(node, rolloutStages);
+          emitUxEvent("workflow_loaded", {
+            workflow: kind,
+            replay_count: replayDeltas.length,
+            incident_count: incidentTimeline.length,
+            rollout_count: rolloutStages.length,
+          });
+
+          const select = node.querySelector("[data-field='stage-select']");
+          if (select instanceof HTMLSelectElement && rolloutStages.length) {
+            select.innerHTML = rolloutStages
+              .map((stage) => `<option value=\"${escapeHtml(stage.stage)}\">${escapeHtml(stage.stage)}</option>`)
+              .join("");
+          }
+
+          render();
+        })
+        .catch((error) => {
+          const details = error instanceof Error ? error.message : String(error);
+          const status = node.querySelector("[data-slot='status']");
+          if (status) {
+            status.textContent = "Workflow shell failed to load.";
+          }
+          const currentPanel = node.querySelector("[data-step-panel='0']");
+          if (currentPanel) {
+            currentPanel.innerHTML = formatErrorState(
+              details,
+              "Fixture assets were unavailable or malformed.",
+              "Validate the fixture path and JSON schema, then retry loading.",
+              resolveDocsHref("JOURNEYS/"),
+            );
+          }
+          emitUxEvent("workflow_replay_failure", { workflow: kind, reason: details, step: state.index + 1 });
         });
+    }
 
-        const select = node.querySelector("[data-field='stage-select']");
-        if (select instanceof HTMLSelectElement && rolloutStages.length) {
-          select.innerHTML = rolloutStages
-            .map((stage) => `<option value=\"${escapeHtml(stage.stage)}\">${escapeHtml(stage.stage)}</option>`)
-            .join("");
-        }
-
-        render();
-      })
-      .catch((error) => {
-        const details = error instanceof Error ? error.message : String(error);
-        const status = node.querySelector("[data-slot='status']");
-        if (status) {
-          status.textContent = "Workflow shell failed to load.";
-        }
-        const currentPanel = node.querySelector("[data-step-panel='0']");
-        if (currentPanel) {
-          currentPanel.innerHTML = formatErrorState(
-            details,
-            "Fixture assets were unavailable or malformed.",
-            "Validate the fixture path and JSON schema, then reload the page.",
-            resolveDocsHref("JOURNEYS/"),
-          );
-        }
-        emitUxEvent("workflow_replay_failure", { workflow: kind, reason: details, step: state.index + 1 });
-      });
+    loadWorkflowFixtures();
   }
 
   function init() {

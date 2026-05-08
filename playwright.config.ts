@@ -6,6 +6,11 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL || localBaseUrl;
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore: [
+    '**/visual-regression.spec.ts',
+    '**/docs-frontend-*.spec.ts',
+    '**/console-frontend.spec.ts',
+  ],
   timeout: 120_000,
   expect: {
     timeout: 5_000,

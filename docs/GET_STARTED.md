@@ -2,6 +2,7 @@
 
 <div data-ag-context></div>
 <div data-ag-tip="start-here-tip"></div>
+<div id="ag-user-state"></div>
 
 This page routes you to the fastest path for your role and intent.
 

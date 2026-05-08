@@ -3,6 +3,15 @@
   const FEEDBACK_KEY = "ag_ux_feedback_v1";
   const MAX_EVENTS = 1200;
 
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
   function loadState() {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -104,7 +113,7 @@
     const personaRows = Object.entries(personaMap)
       .map(
         ([persona, stats]) =>
-          `<tr><td>${persona}</td><td>${stats.events}</td><td>${stats.completed}</td></tr>`,
+          `<tr><td>${escapeHtml(persona)}</td><td>${stats.events}</td><td>${stats.completed}</td></tr>`,
       )
       .join("");
 
@@ -112,7 +121,9 @@
     const replayRows = replayFailures
       .map(
         (event) =>
-          `<li><code>${event.at}</code> ${event.props.reason || "unknown"} (${event.props.step || "n/a"})</li>`,
+          `<li><code>${escapeHtml(event.at)}</code> ${escapeHtml(event.props.reason || "unknown")} (${escapeHtml(
+            event.props.step || "n/a",
+          )})</li>`,
       )
       .join("");
 
@@ -129,7 +140,7 @@
 
     const feedbackRows = feedback
       .slice(-5)
-      .map((entry) => `<li><code>${entry.at}</code> ${entry.note}</li>`)
+      .map((entry) => `<li><code>${escapeHtml(entry.at)}</code> ${escapeHtml(entry.note)}</li>`)
       .join("");
 
     node.innerHTML = `
