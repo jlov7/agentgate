@@ -44,7 +44,7 @@ dependencies = [
   "alembic>=1.13",
   "psycopg[binary]>=3.2",
   "cryptography>=42",
-  "structlog>=24.1",
+  "structlog>=25.5.0",
   "rich>=13.7",
 ]
 
