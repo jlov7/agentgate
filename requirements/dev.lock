@@ -6,21 +6,23 @@ annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anyio==4.12.1
+anyio==4.13.0
     # via
     #   httpx
     #   starlette
 arrow==1.4.0
     # via isoduration
-attrs==25.4.0
+ast-serialize==0.3.0
+    # via mypy
+attrs==26.1.0
     # via
     #   jsonschema
     #   referencing
 babel==2.18.0
     # via mkdocs-material
-backrefs==6.1
+backrefs==7.0
     # via mkdocs-material
-bandit==1.9.3
+bandit==1.9.4
     # via agentgate (pyproject.toml)
 boolean-py==5.0
     # via license-expression
@@ -28,7 +30,7 @@ brotli==1.2.0
     # via fonttools
 cachecontrol==0.14.4
     # via pip-audit
-certifi==2026.1.4
+certifi==2026.4.22
     # via
     #   httpcore
     #   httpx
@@ -41,16 +43,16 @@ cfgv==3.5.0
     # via pre-commit
 chardet==5.2.0
     # via cyclonedx-bom
-charset-normalizer==3.4.4
+charset-normalizer==3.4.7
     # via requests
-click==8.3.1
+click==8.3.3
     # via
     #   mkdocs
     #   mutmut
     #   uvicorn
 colorama==0.4.6
     # via mkdocs-material
-coverage==7.13.3
+coverage==7.14.0
     # via
     #   mutmut
     #   pytest-cov
@@ -59,11 +61,11 @@ cryptography==48.0.0
     #   agentgate (pyproject.toml)
     #   types-pyopenssl
     #   types-redis
-cssselect2==0.8.0
+cssselect2==0.9.0
     # via weasyprint
-cyclonedx-bom==7.2.1
+cyclonedx-bom==7.3.0
     # via agentgate (pyproject.toml)
-cyclonedx-python-lib==11.6.0
+cyclonedx-python-lib==11.7.0
     # via
     #   cyclonedx-bom
     #   pip-audit
@@ -71,13 +73,14 @@ defusedxml==0.7.1
     # via py-serializable
 distlib==0.4.0
     # via virtualenv
-fastapi==0.128.2
+fastapi==0.136.1
     # via agentgate (pyproject.toml)
-filelock==3.20.3
+filelock==3.29.0
     # via
     #   cachecontrol
+    #   python-discovery
     #   virtualenv
-fonttools==4.61.1
+fonttools==4.62.1
     # via weasyprint
 fqdn==1.5.1
     # via jsonschema
@@ -91,9 +94,9 @@ httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via agentgate (pyproject.toml)
-identify==2.6.16
+identify==2.6.19
     # via pre-commit
-idna==3.11
+idna==3.14
     # via
     #   anyio
     #   httpx
@@ -107,7 +110,7 @@ jinja2==3.1.6
     # via
     #   mkdocs
     #   mkdocs-material
-jsonpointer==3.0.0
+jsonpointer==3.1.1
     # via jsonschema
 jsonschema==4.26.0
     # via cyclonedx-python-lib
@@ -117,11 +120,11 @@ lark==1.3.1
     # via rfc3987-syntax
 libcst==1.8.6
     # via mutmut
-librt==0.7.8
+librt==0.11.0
     # via mypy
 license-expression==30.4.4
     # via cyclonedx-python-lib
-linkify-it-py==2.0.3
+linkify-it-py==2.1.0
     # via markdown-it-py
 lxml==6.1.0
     # via cyclonedx-python-lib
@@ -132,7 +135,7 @@ markdown==3.10.2
     #   mkdocs
     #   mkdocs-material
     #   pymdown-extensions
-markdown-it-py==4.0.0
+markdown-it-py==4.2.0
     # via
     #   mdit-py-plugins
     #   rich
@@ -142,7 +145,7 @@ markupsafe==3.0.3
     #   jinja2
     #   mako
     #   mkdocs
-mdit-py-plugins==0.5.0
+mdit-py-plugins==0.6.0
     # via textual
 mdurl==0.1.2
     # via markdown-it-py
@@ -154,17 +157,17 @@ mkdocs==1.6.1
     # via
     #   agentgate (pyproject.toml)
     #   mkdocs-material
-mkdocs-get-deps==0.2.0
+mkdocs-get-deps==0.2.2
     # via mkdocs
-mkdocs-material==9.7.1
+mkdocs-material==9.7.6
     # via agentgate (pyproject.toml)
 mkdocs-material-extensions==1.3.1
     # via mkdocs-material
 msgpack==1.1.2
     # via cachecontrol
-mutmut==3.4.0
+mutmut==3.5.0
     # via agentgate (pyproject.toml)
-mypy==1.19.1
+mypy==2.0.0
     # via agentgate (pyproject.toml)
 mypy-extensions==1.1.0
     # via mypy
@@ -174,7 +177,7 @@ packageurl-python==0.17.6
     # via
     #   cyclonedx-bom
     #   cyclonedx-python-lib
-packaging==25.0
+packaging==26.2
     # via
     #   cyclonedx-bom
     #   mkdocs
@@ -183,7 +186,7 @@ packaging==25.0
     #   pytest
 paginate==0.5.7
     # via mkdocs-material
-pathspec==1.0.4
+pathspec==1.1.1
     # via
     #   mkdocs
     #   mypy
@@ -199,17 +202,18 @@ pip-requirements-parser==32.0.1
     # via
     #   cyclonedx-bom
     #   pip-audit
-platformdirs==4.5.1
+platformdirs==4.9.6
     # via
     #   mkdocs-get-deps
     #   pip-audit
+    #   python-discovery
     #   textual
     #   virtualenv
 pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
-pre-commit==4.5.1
+pre-commit==4.6.0
     # via agentgate (pyproject.toml)
 psycopg==3.3.4
     # via agentgate (pyproject.toml)
@@ -219,11 +223,11 @@ py-serializable==2.1.0
     # via cyclonedx-python-lib
 pycparser==3.0
     # via cffi
-pydantic==2.12.5
+pydantic==2.13.4
     # via
     #   agentgate (pyproject.toml)
     #   fastapi
-pydantic-core==2.41.5
+pydantic-core==2.46.4
     # via pydantic
 pydyf==0.12.1
     # via weasyprint
@@ -247,12 +251,14 @@ pytest==9.0.3
     #   pytest-cov
 pytest-asyncio==1.3.0
     # via agentgate (pyproject.toml)
-pytest-cov==7.0.0
+pytest-cov==7.1.0
     # via agentgate (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via
     #   arrow
     #   ghp-import
+python-discovery==1.3.0
+    # via virtualenv
 pyyaml==6.0.3
     # via
     #   agentgate (pyproject.toml)
@@ -265,7 +271,7 @@ pyyaml==6.0.3
     #   pyyaml-env-tag
 pyyaml-env-tag==1.1
     # via mkdocs
-redis==7.1.0
+redis==7.4.0
     # via agentgate (pyproject.toml)
 referencing==0.37.0
     # via
@@ -283,7 +289,7 @@ rfc3986-validator==0.1.1
     # via jsonschema
 rfc3987-syntax==1.1.0
     # via jsonschema
-rich==14.3.2
+rich==15.0.0
     # via
     #   agentgate (pyproject.toml)
     #   bandit
@@ -293,7 +299,7 @@ rpds-py==0.30.0
     # via
     #   jsonschema
     #   referencing
-ruff==0.15.0
+ruff==0.15.12
     # via agentgate (pyproject.toml)
 setproctitle==1.3.7
     # via mutmut
@@ -307,31 +313,31 @@ sqlalchemy==2.0.49
     # via
     #   agentgate (pyproject.toml)
     #   alembic
-starlette==0.50.0
+starlette==1.0.0
     # via fastapi
-stevedore==5.6.0
+stevedore==5.7.0
     # via bandit
 structlog==25.5.0
     # via agentgate (pyproject.toml)
-textual==7.5.0
+textual==8.2.5
     # via mutmut
 tinycss2==1.5.1
     # via
     #   cssselect2
     #   weasyprint
-tinyhtml5==2.0.0
+tinyhtml5==2.1.0
     # via weasyprint
-tomli==2.4.0
+tomli==2.4.1
     # via pip-audit
 tomli-w==1.2.0
     # via pip-audit
-types-cffi==1.17.0.20250915
+types-cffi==2.0.0.20260508
     # via types-pyopenssl
 types-pyopenssl==24.1.0.20240722
     # via types-redis
 types-redis==4.6.0.20241004
     # via agentgate (pyproject.toml)
-types-setuptools==80.10.0.20260124
+types-setuptools==82.0.0.20260508
     # via types-cffi
 typing-extensions==4.15.0
     # via
@@ -353,9 +359,9 @@ typing-inspection==0.4.2
     # via
     #   fastapi
     #   pydantic
-tzdata==2025.3
+tzdata==2026.2
     # via arrow
-uc-micro-py==1.0.3
+uc-micro-py==2.0.0
     # via linkify-it-py
 uri-template==1.3.0
     # via jsonschema
@@ -363,9 +369,9 @@ urllib3==2.7.0
     # via
     #   agentgate (pyproject.toml)
     #   requests
-uvicorn==0.40.0
+uvicorn==0.46.0
     # via agentgate (pyproject.toml)
-virtualenv==20.36.1
+virtualenv==21.3.1
     # via pre-commit
 watchdog==6.0.0
     # via mkdocs
@@ -378,5 +384,5 @@ webencodings==0.5.1
     #   cssselect2
     #   tinycss2
     #   tinyhtml5
-zopfli==0.4.0
+zopfli==0.4.1
     # via fonttools

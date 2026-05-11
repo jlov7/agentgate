@@ -138,7 +138,7 @@ def _check_self_check(findings: list[str], checks: dict[str, str], skip: bool) -
     if skip:
         checks["self_check_cli"] = "skipped"
         return
-    result = subprocess.run(  # noqa: S603
+    result = subprocess.run(
         [sys.executable, "-m", "agentgate", "--self-check", "--self-check-json"],
         check=False,
         capture_output=True,
