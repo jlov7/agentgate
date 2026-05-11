@@ -67,7 +67,7 @@ dev = [
   "urllib3>=2.7.0",
 ]
 pdf = [
-  "weasyprint>=61.0",
+  "weasyprint>=68.1",
 ]
 all = [
   "agentgate[dev,pdf]",
