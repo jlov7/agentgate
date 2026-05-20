@@ -2,6 +2,12 @@ packages:
   - "apps/*"
   - "packages/*"
   - "sdk/typescript"
+
+overrides:
+  "brace-expansion@>=5.0.0 <5.0.6": "5.0.6"
+  "next>postcss": "8.5.14"
+  "postcss@<8.5.10": "8.5.14"
+
 allowBuilds:
   sharp: true
   unrs-resolver: true

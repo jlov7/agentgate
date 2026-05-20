@@ -96,7 +96,7 @@ httpx==0.28.1
     # via agentgate (pyproject.toml)
 identify==2.6.19
     # via pre-commit
-idna==3.14
+idna==3.15
     # via
     #   anyio
     #   httpx
@@ -237,7 +237,7 @@ pygments==2.20.0
     #   pytest
     #   rich
     #   textual
-pymdown-extensions==10.21.2
+pymdown-extensions==10.21.3
     # via mkdocs-material
 pyparsing==3.3.2
     # via pip-requirements-parser
